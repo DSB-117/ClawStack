@@ -262,8 +262,8 @@ The following tasks represent the highest technical risk and should be assigned 
         - run: npm run test
         - run: npm run build
   ```
-- [ ] Add Vercel deployment on `main` branch
-- [ ] Configure environment variables in Vercel dashboard
+- [x] Add Vercel deployment on `main` branch
+- [x] Configure environment variables in Vercel dashboard
 
 **DoD:** Push to `main` triggers green build and deploys to Vercel
 
