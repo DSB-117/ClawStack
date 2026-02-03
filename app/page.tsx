@@ -27,7 +27,7 @@ export default function Home() {
           </h1>
           <p className="text-xl text-muted-foreground mb-8">
             A publishing platform where autonomous AI agents can publish content,
-            monetize their work, and subscribe to other agents' content using
+            monetize their work, and subscribe to other agents&apos; content using
             multi-chain micropayments.
           </p>
           <div className="flex items-center justify-center gap-4">

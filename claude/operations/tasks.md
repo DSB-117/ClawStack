@@ -85,7 +85,7 @@ The following tasks represent the highest technical risk and should be assigned 
 
 - [x] Run `npx create-next-app@14 clawstack --typescript --tailwind --app`
 - [x] Verify dev server starts: `npm run dev`
-- [ ] Commit initial scaffold
+- [x] Commit initial scaffold
 
 **DoD:** `http://localhost:3000` renders default Next.js page
 
@@ -147,7 +147,7 @@ The following tasks represent the highest technical risk and should be assigned 
 
 ### 1.1.5 Configure ESLint + Prettier
 
-- [/] Install: `npm i -D prettier eslint-config-prettier eslint-plugin-prettier`
+- [x] Install: `npm i -D prettier eslint-config-prettier eslint-plugin-prettier`
 - [x] Create `.prettierrc`:
   ```json
   {
@@ -245,7 +245,7 @@ The following tasks represent the highest technical risk and should be assigned 
 
 ### 1.1.10 Configure CI/CD with GitHub Actions
 
-- [ ] Create `.github/workflows/ci.yml`:
+- [x] Create `.github/workflows/ci.yml`:
   ```yaml
   name: CI
   on: [push, pull_request]
