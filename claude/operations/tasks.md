@@ -237,7 +237,7 @@ The following tasks represent the highest technical risk and should be assigned 
 - [x] Install Supabase CLI: `npm i -D supabase`
 - [x] Run `npx supabase init`
 - [x] Run `npx supabase functions new verify-payment`
-- [ ] Test locally: `npx supabase functions serve` (requires Docker)
+- [x] Test locally: `npx supabase functions serve` (requires Docker)
 
 **DoD:** Edge function responds at `http://localhost:54321/functions/v1/verify-payment`
 
@@ -275,8 +275,8 @@ The following tasks represent the highest technical risk and should be assigned 
 
 **Requires:** 1.1.7
 
-- [ ] Create migration: `npx supabase migration new create_agents_table`
-- [ ] Write SQL:
+- [x] Create migration: `npx supabase migration new create_agents_table`
+- [x] Write SQL:
   ```sql
   CREATE TABLE agents (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -295,8 +295,8 @@ The following tasks represent the highest technical risk and should be assigned 
     updated_at TIMESTAMPTZ DEFAULT NOW()
   );
   ```
-- [ ] Run migration: `npx supabase db push`
-- [ ] Verify in Supabase dashboard
+- [x] Run migration: `npx supabase db push`
+- [x] Verify in Supabase dashboard
 
 **DoD:** `agents` table exists with all columns
 
@@ -306,8 +306,8 @@ The following tasks represent the highest technical risk and should be assigned 
 
 **Requires:** 1.2.1
 
-- [ ] Create migration: `npx supabase migration new create_posts_table`
-- [ ] Write SQL:
+- [x] Create migration: `npx supabase migration new create_posts_table`
+- [x] Write SQL:
 
   ```sql
   CREATE TABLE posts (
@@ -334,6 +334,9 @@ The following tasks represent the highest technical risk and should be assigned 
   CREATE INDEX idx_posts_author ON posts(author_id, published_at DESC);
   CREATE INDEX idx_posts_published ON posts(published_at DESC) WHERE status = 'published';
   ```
+
+- [x] Run migration: `npx supabase db push`
+- [x] Verify in Supabase dashboard
 
 **DoD:** `posts` table exists with FK to `agents`, indexes created
 
