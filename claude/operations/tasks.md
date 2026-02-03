@@ -346,8 +346,8 @@ The following tasks represent the highest technical risk and should be assigned 
 
 **Requires:** 1.2.1
 
-- [ ] Create migration: `npx supabase migration new create_subscriptions_table`
-- [ ] Write SQL:
+- [x] Create migration: `npx supabase migration new create_subscriptions_table`
+- [x] Write SQL:
 
   ```sql
   CREATE TABLE subscriptions (
@@ -368,6 +368,9 @@ The following tasks represent the highest technical risk and should be assigned 
     WHERE status = 'active' AND webhook_url IS NOT NULL;
   ```
 
+- [x] Run migration: `npx supabase db push`
+- [x] Verify table exists
+
 **DoD:** `subscriptions` table with unique constraint prevents duplicate subscriptions
 
 ---
@@ -376,8 +379,8 @@ The following tasks represent the highest technical risk and should be assigned 
 
 **Requires:** 1.2.1
 
-- [ ] Create migration: `npx supabase migration new create_webhook_configs_table`
-- [ ] Write SQL:
+- [x] Create migration: `npx supabase migration new create_webhook_configs_table`
+- [x] Write SQL:
   ```sql
   CREATE TABLE webhook_configs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -393,6 +396,8 @@ The following tasks represent the highest technical risk and should be assigned 
     created_at TIMESTAMPTZ DEFAULT NOW()
   );
   ```
+- [x] Run migration: `npx supabase db push`
+- [x] Verify table exists
 
 **DoD:** `webhook_configs` table created with events filter array
 
@@ -402,8 +407,8 @@ The following tasks represent the highest technical risk and should be assigned 
 
 **Requires:** 1.2.1
 
-- [ ] Create migration: `npx supabase migration new create_payment_events_table`
-- [ ] Write SQL (CRITICAL for double-spend prevention):
+- [x] Create migration: `npx supabase migration new create_payment_events_table`
+- [x] Write SQL (CRITICAL for double-spend prevention):
 
   ```sql
   CREATE TABLE payment_events (
@@ -436,6 +441,9 @@ The following tasks represent the highest technical risk and should be assigned 
   CREATE INDEX idx_payment_payer ON payment_events(payer_id, created_at DESC);
   ```
 
+- [x] Run migration: `npx supabase db push`
+- [x] Verify table exists with UNIQUE constraint
+
 **DoD:** `payment_events` table with `UNIQUE (network, transaction_signature)` constraint
 
 ---
@@ -444,8 +452,8 @@ The following tasks represent the highest technical risk and should be assigned 
 
 **Requires:** 1.2.1
 
-- [ ] Create migration: `npx supabase migration new create_analytics_aggregates_table`
-- [ ] Write SQL:
+- [x] Create migration: `npx supabase migration new create_analytics_aggregates_table`
+- [x] Write SQL:
 
   ```sql
   CREATE TABLE analytics_aggregates (
@@ -473,6 +481,9 @@ The following tasks represent the highest technical risk and should be assigned 
     ON analytics_aggregates(agent_id, period_type, period_start DESC);
   ```
 
+- [x] Run migration: `npx supabase db push`
+- [x] Verify table exists with generated column
+
 **DoD:** `analytics_aggregates` table with generated `earnings_total_raw` column
 
 ---
@@ -481,8 +492,8 @@ The following tasks represent the highest technical risk and should be assigned 
 
 **Requires:** 1.2.1
 
-- [ ] Create migration: `npx supabase migration new agents_rls_policies`
-- [ ] Write SQL:
+- [x] Create migration: `npx supabase migration new agents_rls_policies`
+- [x] Write SQL:
 
   ```sql
   ALTER TABLE agents ENABLE ROW LEVEL SECURITY;
@@ -497,6 +508,9 @@ The following tasks represent the highest technical risk and should be assigned 
     FOR SELECT
     USING (TRUE);
   ```
+
+- [x] Run migration: `npx supabase db push`
+- [x] Verify RLS enabled
 
 **DoD:** Non-service-role clients can only SELECT from `agents`, not UPDATE/DELETE others
 
