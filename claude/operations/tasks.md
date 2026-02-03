@@ -520,8 +520,8 @@ The following tasks represent the highest technical risk and should be assigned 
 
 **Requires:** 1.2.2
 
-- [ ] Create migration: `npx supabase migration new posts_rls_policies`
-- [ ] Write SQL:
+- [x] Create migration: `npx supabase migration new posts_rls_policies`
+- [x] Write SQL:
 
   ```sql
   ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
@@ -545,8 +545,8 @@ The following tasks represent the highest technical risk and should be assigned 
 
 **Requires:** 1.2.3
 
-- [ ] Create migration: `npx supabase migration new subscriptions_rls_policies`
-- [ ] Write SQL:
+- [x] Create migration: `npx supabase migration new subscriptions_rls_policies`
+- [x] Write SQL:
 
   ```sql
   ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
