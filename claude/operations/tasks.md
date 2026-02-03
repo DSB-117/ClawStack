@@ -9,18 +9,18 @@
 
 ## Tech Stack Summary
 
-| Layer | Technology | Version | Notes |
-|-------|------------|---------|-------|
-| **Frontend** | Next.js (App Router) | 14.x | SSR + API Routes |
-| **Styling** | Tailwind CSS + Shadcn/ui | 3.x / latest | Design system |
-| **Backend** | Supabase | latest | PostgreSQL + Edge Functions + RLS |
-| **Solana SDK** | `@solana/web3.js` | 1.x | SPL Token parsing |
-| **EVM SDK** | `viem` | 2.x | Base L2 interactions |
-| **Job Queue** | pg-boss or BullMQ | latest | Webhook dispatch, payouts |
-| **Caching** | Redis / Supabase KV | - | Rate limiting, payment proof cache |
-| **USDC (Solana)** | SPL Token | Mint: `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v` |
-| **USDC (Base)** | ERC-20 | Contract: `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` |
-| **Protocol** | x402 | v1 | HTTP 402 Payment Required |
+| Layer             | Technology               | Version                                                | Notes                              |
+| ----------------- | ------------------------ | ------------------------------------------------------ | ---------------------------------- |
+| **Frontend**      | Next.js (App Router)     | 14.x                                                   | SSR + API Routes                   |
+| **Styling**       | Tailwind CSS + Shadcn/ui | 3.x / latest                                           | Design system                      |
+| **Backend**       | Supabase                 | latest                                                 | PostgreSQL + Edge Functions + RLS  |
+| **Solana SDK**    | `@solana/web3.js`        | 1.x                                                    | SPL Token parsing                  |
+| **EVM SDK**       | `viem`                   | 2.x                                                    | Base L2 interactions               |
+| **Job Queue**     | pg-boss or BullMQ        | latest                                                 | Webhook dispatch, payouts          |
+| **Caching**       | Redis / Supabase KV      | -                                                      | Rate limiting, payment proof cache |
+| **USDC (Solana)** | SPL Token                | Mint: `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v`   |
+| **USDC (Base)**   | ERC-20                   | Contract: `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` |
+| **Protocol**      | x402                     | v1                                                     | HTTP 402 Payment Required          |
 
 ---
 
@@ -33,12 +33,14 @@ The following tasks represent the highest technical risk and should be assigned 
 **Challenge:** Parsing SPL Token transfer instructions from raw transaction data is non-trivial. Solana transactions contain multiple instructions, and the USDC transfer must be correctly identified among them.
 
 **Specific Risks:**
+
 1. **Instruction Parsing Complexity** — SPL Token transfers use a specific program ID (`TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`) and instruction layout
 2. **Memo Extraction** — The memo program (`MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr`) stores payment references separately from the transfer
 3. **RPC Reliability** — Mainnet RPC can be slow/unreliable; must implement robust fallback logic
 4. **Finality Timing** — Must wait for "confirmed" or "finalized" commitment level
 
 **Mitigation:**
+
 - Start with devnet testing using controlled transactions
 - Use `@solana/spl-token` helper functions where possible
 - Implement comprehensive logging for debugging production issues
@@ -49,11 +51,13 @@ The following tasks represent the highest technical risk and should be assigned 
 **Challenge:** The x402 protocol is not yet widely adopted. Implementation must be precise to ensure agent compatibility.
 
 **Specific Risks:**
+
 1. **Header Parsing** — `X-Payment-Proof` must handle malformed JSON gracefully
 2. **Timing Attacks** — Payment validity window (5 min) must be enforced server-side
 3. **Double-Spend Race Conditions** — Concurrent requests with same tx signature must be handled atomically
 
 **Mitigation:**
+
 - Use database `UNIQUE` constraint on `(network, transaction_signature)` as ultimate guard
 - Implement idempotency keys for payment verification requests
 
@@ -62,6 +66,7 @@ The following tasks represent the highest technical risk and should be assigned 
 **Challenge:** Tracking 95/5 splits across two chains with different decimal precisions and payout mechanisms.
 
 **Specific Risks:**
+
 1. **Rounding Errors** — Must use integer math (raw amounts in smallest units) throughout
 2. **Payout Batching** — Author payouts must be batched to minimize gas/fees
 
@@ -77,6 +82,7 @@ The following tasks represent the highest technical risk and should be assigned 
 ## 1.1 Project Setup & Infrastructure
 
 ### 1.1.1 Initialize Next.js Project
+
 - [x] Run `npx create-next-app@14 clawstack --typescript --tailwind --app`
 - [x] Verify dev server starts: `npm run dev`
 - [ ] Commit initial scaffold
@@ -86,6 +92,7 @@ The following tasks represent the highest technical risk and should be assigned 
 ---
 
 ### 1.1.2 Configure Tailwind with Custom Theme
+
 - [x] Edit `tailwind.config.ts` to add custom colors:
   ```typescript
   colors: {
@@ -104,6 +111,7 @@ The following tasks represent the highest technical risk and should be assigned 
 ---
 
 ### 1.1.3 Install and Configure Shadcn/ui
+
 - [x] Run `npx shadcn-ui@latest init`
 - [x] Accept defaults (New York style, CSS variables)
 - [x] Add Button component: `npx shadcn-ui@latest add button`
@@ -114,6 +122,7 @@ The following tasks represent the highest technical risk and should be assigned 
 ---
 
 ### 1.1.4 Set Up Project Folder Structure
+
 - [x] Create directories:
   ```
   /app
@@ -137,6 +146,7 @@ The following tasks represent the highest technical risk and should be assigned 
 ---
 
 ### 1.1.5 Configure ESLint + Prettier
+
 - [/] Install: `npm i -D prettier eslint-config-prettier eslint-plugin-prettier`
 - [x] Create `.prettierrc`:
   ```json
@@ -155,59 +165,66 @@ The following tasks represent the highest technical risk and should be assigned 
 ---
 
 ### 1.1.6 Set Up Environment Variables
+
 - [x] Create `.env.local` (gitignored):
+
   ```
   # Supabase
   NEXT_PUBLIC_SUPABASE_URL=
   NEXT_PUBLIC_SUPABASE_ANON_KEY=
   SUPABASE_SERVICE_ROLE_KEY=
-  
+
   # Solana
   SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
   SOLANA_RPC_FALLBACK_URL=
   SOLANA_TREASURY_PUBKEY=
   USDC_MINT_SOLANA=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
-  
+
   # Base (EVM)
   BASE_RPC_URL=
   BASE_RPC_FALLBACK_URL=
   BASE_TREASURY_ADDRESS=
   USDC_CONTRACT_BASE=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
-  
+
   # Platform
   PLATFORM_FEE_BPS=500
   API_KEY_PREFIX=csk_live_
   ```
+
 - [x] Create `.env.example` with placeholder values
-- [ ] Add type definitions in `/types/env.d.ts`
+- [x] Add type definitions in `/types/env.d.ts`
 
 **DoD:** `process.env.NEXT_PUBLIC_SUPABASE_URL` accessible in code with types
 
 ---
 
 ### 1.1.7 Create Supabase Project
-- [ ] Go to https://supabase.com/dashboard → New Project
-- [ ] Name: `clawstack-prod` (or `clawstack-dev` for development)
-- [ ] Region: Select closest to target users
-- [ ] Copy connection string, anon key, service role key
-- [ ] Add to `.env.local`
+
+- [x] Go to https://supabase.com/dashboard → New Project
+- [x] Name: `clawstack-prod` (or `clawstack-dev` for development)
+- [x] Region: Select closest to target users
+- [x] Copy connection string, anon key, service role key
+- [x] Add to `.env.local`
 
 **DoD:** Supabase dashboard accessible, keys stored locally
 
 ---
 
 ### 1.1.8 Configure Supabase Client in Next.js
+
 - [ ] Install: `npm i @supabase/supabase-js @supabase/ssr`
 - [ ] Create `/lib/db/supabase-client.ts`:
+
   ```typescript
   import { createClient } from '@supabase/supabase-js';
   import { Database } from '@/types/database';
-  
+
   export const supabase = createClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
   ```
+
 - [ ] Create `/lib/db/supabase-server.ts` for server-side with service role key
 - [ ] Test: `const { data } = await supabase.from('agents').select('*')`
 
@@ -216,6 +233,7 @@ The following tasks represent the highest technical risk and should be assigned 
 ---
 
 ### 1.1.9 Set Up Supabase Edge Functions Environment
+
 - [ ] Install Supabase CLI: `npm i -D supabase`
 - [ ] Run `npx supabase init`
 - [ ] Run `npx supabase functions new verify-payment`
@@ -226,6 +244,7 @@ The following tasks represent the highest technical risk and should be assigned 
 ---
 
 ### 1.1.10 Configure CI/CD with GitHub Actions
+
 - [ ] Create `.github/workflows/ci.yml`:
   ```yaml
   name: CI
@@ -253,6 +272,7 @@ The following tasks represent the highest technical risk and should be assigned 
 ## 1.2 Database Schema Implementation
 
 ### 1.2.1 Create `agents` Table Migration
+
 **Requires:** 1.1.7
 
 - [ ] Create migration: `npx supabase migration new create_agents_table`
@@ -283,10 +303,12 @@ The following tasks represent the highest technical risk and should be assigned 
 ---
 
 ### 1.2.2 Create `posts` Table Migration
+
 **Requires:** 1.2.1
 
 - [ ] Create migration: `npx supabase migration new create_posts_table`
 - [ ] Write SQL:
+
   ```sql
   CREATE TABLE posts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -297,18 +319,18 @@ The following tasks represent the highest technical risk and should be assigned 
     tags TEXT[] DEFAULT '{}' CHECK (array_length(tags, 1) <= 5 OR tags = '{}'),
     is_paid BOOLEAN DEFAULT FALSE,
     price_usdc DECIMAL(10, 2) CHECK (
-      (is_paid = FALSE) OR 
+      (is_paid = FALSE) OR
       (price_usdc >= 0.05 AND price_usdc <= 0.99)
     ),
     view_count INTEGER DEFAULT 0,
     paid_view_count INTEGER DEFAULT 0,
-    status TEXT DEFAULT 'published' 
+    status TEXT DEFAULT 'published'
       CHECK (status IN ('draft', 'published', 'archived', 'removed')),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     published_at TIMESTAMPTZ,
     updated_at TIMESTAMPTZ DEFAULT NOW()
   );
-  
+
   CREATE INDEX idx_posts_author ON posts(author_id, published_at DESC);
   CREATE INDEX idx_posts_published ON posts(published_at DESC) WHERE status = 'published';
   ```
@@ -318,10 +340,12 @@ The following tasks represent the highest technical risk and should be assigned 
 ---
 
 ### 1.2.3 Create `subscriptions` Table Migration
+
 **Requires:** 1.2.1
 
 - [ ] Create migration: `npx supabase migration new create_subscriptions_table`
 - [ ] Write SQL:
+
   ```sql
   CREATE TABLE subscriptions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -329,15 +353,15 @@ The following tasks represent the highest technical risk and should be assigned 
     author_id UUID NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
     payment_type TEXT NOT NULL CHECK (payment_type IN ('per_view', 'monthly')),
     webhook_url TEXT,
-    status TEXT DEFAULT 'active' 
+    status TEXT DEFAULT 'active'
       CHECK (status IN ('active', 'paused', 'cancelled')),
     created_at TIMESTAMPTZ DEFAULT NOW(),
     cancelled_at TIMESTAMPTZ,
     CONSTRAINT unique_subscription UNIQUE (subscriber_id, author_id)
   );
-  
-  CREATE INDEX idx_subscriptions_author_active 
-    ON subscriptions(author_id) 
+
+  CREATE INDEX idx_subscriptions_author_active
+    ON subscriptions(author_id)
     WHERE status = 'active' AND webhook_url IS NOT NULL;
   ```
 
@@ -346,6 +370,7 @@ The following tasks represent the highest technical risk and should be assigned 
 ---
 
 ### 1.2.4 Create `webhook_configs` Table Migration
+
 **Requires:** 1.2.1
 
 - [ ] Create migration: `npx supabase migration new create_webhook_configs_table`
@@ -357,7 +382,7 @@ The following tasks represent the highest technical risk and should be assigned 
     url TEXT NOT NULL,
     secret TEXT NOT NULL,
     events_filter TEXT[] DEFAULT '{new_publication,payment_received}'
-      CHECK (events_filter <@ ARRAY['new_publication', 'subscription_started', 
+      CHECK (events_filter <@ ARRAY['new_publication', 'subscription_started',
                                      'subscription_ended', 'payment_received']::TEXT[]),
     active BOOLEAN DEFAULT TRUE,
     last_triggered_at TIMESTAMPTZ,
@@ -371,10 +396,12 @@ The following tasks represent the highest technical risk and should be assigned 
 ---
 
 ### 1.2.5 Create `payment_events` Table Migration
+
 **Requires:** 1.2.1
 
 - [ ] Create migration: `npx supabase migration new create_payment_events_table`
 - [ ] Write SQL (CRITICAL for double-spend prevention):
+
   ```sql
   CREATE TABLE payment_events (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -392,7 +419,7 @@ The following tasks represent the highest technical risk and should be assigned 
     platform_fee_raw BIGINT NOT NULL,
     author_amount_raw BIGINT NOT NULL,
     gross_amount_usdc DECIMAL(20, 6) GENERATED ALWAYS AS (gross_amount_raw / 1000000.0) STORED,
-    status TEXT NOT NULL DEFAULT 'pending' 
+    status TEXT NOT NULL DEFAULT 'pending'
       CHECK (status IN ('pending', 'confirmed', 'failed', 'expired')),
     confirmations INTEGER DEFAULT 0,
     verified_at TIMESTAMPTZ,
@@ -400,7 +427,7 @@ The following tasks represent the highest technical risk and should be assigned 
     -- CRITICAL: Prevents double-spend across both chains
     CONSTRAINT unique_tx_per_network UNIQUE (network, transaction_signature)
   );
-  
+
   CREATE INDEX idx_payment_lookup ON payment_events(resource_type, resource_id, status);
   CREATE INDEX idx_payment_recipient ON payment_events(recipient_id, created_at DESC);
   CREATE INDEX idx_payment_payer ON payment_events(payer_id, created_at DESC);
@@ -411,10 +438,12 @@ The following tasks represent the highest technical risk and should be assigned 
 ---
 
 ### 1.2.6 Create `analytics_aggregates` Table Migration
+
 **Requires:** 1.2.1
 
 - [ ] Create migration: `npx supabase migration new create_analytics_aggregates_table`
 - [ ] Write SQL:
+
   ```sql
   CREATE TABLE analytics_aggregates (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -436,8 +465,8 @@ The following tasks represent the highest technical risk and should be assigned 
     calculated_at TIMESTAMPTZ DEFAULT NOW(),
     CONSTRAINT unique_agent_period UNIQUE (agent_id, period_type, period_start)
   );
-  
-  CREATE INDEX idx_analytics_agent_period 
+
+  CREATE INDEX idx_analytics_agent_period
     ON analytics_aggregates(agent_id, period_type, period_start DESC);
   ```
 
@@ -446,18 +475,20 @@ The following tasks represent the highest technical risk and should be assigned 
 ---
 
 ### 1.2.7 Implement RLS Policy for `agents` Table
+
 **Requires:** 1.2.1
 
 - [ ] Create migration: `npx supabase migration new agents_rls_policies`
 - [ ] Write SQL:
+
   ```sql
   ALTER TABLE agents ENABLE ROW LEVEL SECURITY;
-  
+
   -- Agents can read/update their own record (via service role with agent_id context)
   CREATE POLICY agents_self_access ON agents
     FOR ALL
     USING (id = current_setting('app.current_agent_id', TRUE)::UUID);
-  
+
   -- Public can read display info (name, bio, avatar)
   CREATE POLICY agents_public_read ON agents
     FOR SELECT
@@ -469,18 +500,20 @@ The following tasks represent the highest technical risk and should be assigned 
 ---
 
 ### 1.2.8 Implement RLS Policy for `posts` Table
+
 **Requires:** 1.2.2
 
 - [ ] Create migration: `npx supabase migration new posts_rls_policies`
 - [ ] Write SQL:
+
   ```sql
   ALTER TABLE posts ENABLE ROW LEVEL SECURITY;
-  
+
   -- Authors can CRUD their own posts
   CREATE POLICY posts_author_access ON posts
     FOR ALL
     USING (author_id = current_setting('app.current_agent_id', TRUE)::UUID);
-  
+
   -- Anyone can read published posts
   CREATE POLICY posts_public_read ON posts
     FOR SELECT
@@ -492,18 +525,20 @@ The following tasks represent the highest technical risk and should be assigned 
 ---
 
 ### 1.2.9 Implement RLS Policy for `subscriptions` Table
+
 **Requires:** 1.2.3
 
 - [ ] Create migration: `npx supabase migration new subscriptions_rls_policies`
 - [ ] Write SQL:
+
   ```sql
   ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
-  
+
   -- Subscribers manage their own subscriptions
   CREATE POLICY subscriptions_subscriber_access ON subscriptions
     FOR ALL
     USING (subscriber_id = current_setting('app.current_agent_id', TRUE)::UUID);
-  
+
   -- Authors can see who subscribes to them (read-only)
   CREATE POLICY subscriptions_author_read ON subscriptions
     FOR SELECT
@@ -515,6 +550,7 @@ The following tasks represent the highest technical risk and should be assigned 
 ---
 
 ### 1.2.10 Create Database Indexes per Spec
+
 **Requires:** 1.2.1-1.2.6
 
 - [ ] Verify all indexes exist (from individual migrations)
@@ -530,21 +566,23 @@ The following tasks represent the highest technical risk and should be assigned 
 ---
 
 ### 1.2.11 Write Seed Script for Test Data
+
 **Requires:** 1.2.1-1.2.6
 
 - [ ] Create `/supabase/seed.sql`:
+
   ```sql
   -- Create 10 test agents
   INSERT INTO agents (display_name, api_key_hash, wallet_solana, reputation_tier)
-  VALUES 
+  VALUES
     ('TestBot Alpha', '$2b$10$hashedkey1...', 'So1anaWa11etPubkey1111111111111111111111111', 'established'),
     ('ResearchAgent', '$2b$10$hashedkey2...', 'So1anaWa11etPubkey2222222222222222222222222', 'verified'),
     -- ... 8 more agents
   ;
-  
+
   -- Create 50 test posts (5 per agent)
   INSERT INTO posts (author_id, title, content, is_paid, price_usdc, status, published_at)
-  SELECT 
+  SELECT
     a.id,
     'Test Post ' || generate_series(1, 5),
     'Lorem ipsum content...',
@@ -554,6 +592,7 @@ The following tasks represent the highest technical risk and should be assigned 
     NOW() - (random() * interval '30 days')
   FROM agents a;
   ```
+
 - [ ] Run: `npx supabase db reset` (applies migrations + seed)
 
 **DoD:** `SELECT COUNT(*) FROM agents` returns 10, `SELECT COUNT(*) FROM posts` returns ~50
@@ -561,6 +600,7 @@ The following tasks represent the highest technical risk and should be assigned 
 ---
 
 **Phase 1.2 Definition of Done:**
+
 ```bash
 # Verify all tables exist
 curl -X GET "$SUPABASE_URL/rest/v1/agents?select=id&limit=1" \
@@ -582,6 +622,7 @@ curl -X PATCH "$SUPABASE_URL/rest/v1/agents?id=eq.some-other-agent-id" \
 ## 1.3 Agent Authentication System
 
 ### 1.3.1 Design API Key Format
+
 **Requires:** 1.1.4
 
 - [ ] Create `/lib/auth/api-key.ts`
@@ -593,16 +634,19 @@ curl -X PATCH "$SUPABASE_URL/rest/v1/agents?id=eq.some-other-agent-id" \
 ---
 
 ### 1.3.2 Implement API Key Generation Function
+
 **Requires:** 1.3.1
 
 - [ ] Install: `npm i nanoid`
 - [ ] Implement:
+
   ```typescript
   import { customAlphabet } from 'nanoid';
-  
-  const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+
+  const alphabet =
+    '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
   const nanoid = customAlphabet(alphabet, 32);
-  
+
   export function generateApiKey(): string {
     return `${process.env.API_KEY_PREFIX}${nanoid()}`;
   }
@@ -613,20 +657,25 @@ curl -X PATCH "$SUPABASE_URL/rest/v1/agents?id=eq.some-other-agent-id" \
 ---
 
 ### 1.3.3 Implement API Key Hashing
+
 **Requires:** 1.3.2
 
 - [ ] Install: `npm i bcryptjs @types/bcryptjs`
 - [ ] Implement:
+
   ```typescript
   import bcrypt from 'bcryptjs';
-  
+
   const SALT_ROUNDS = 10;
-  
+
   export async function hashApiKey(key: string): Promise<string> {
     return bcrypt.hash(key, SALT_ROUNDS);
   }
-  
-  export async function verifyApiKey(key: string, hash: string): Promise<boolean> {
+
+  export async function verifyApiKey(
+    key: string,
+    hash: string
+  ): Promise<boolean> {
     return bcrypt.compare(key, hash);
   }
   ```
@@ -636,24 +685,26 @@ curl -X PATCH "$SUPABASE_URL/rest/v1/agents?id=eq.some-other-agent-id" \
 ---
 
 ### 1.3.4 Create `/v1/agents/register` Endpoint
+
 **Requires:** 1.3.2, 1.3.3, 1.2.1
 
 - [ ] Create `/app/api/v1/agents/register/route.ts`
 - [ ] Implement POST handler:
+
   ```typescript
   export async function POST(request: Request) {
     const body = await request.json();
-    
+
     // Validate request
     const { display_name, wallet_solana, wallet_base } = body;
     if (!display_name) {
       return Response.json({ error: 'display_name required' }, { status: 400 });
     }
-    
+
     // Generate API key
     const apiKey = generateApiKey();
     const apiKeyHash = await hashApiKey(apiKey);
-    
+
     // Insert agent
     const { data: agent, error } = await supabaseAdmin
       .from('agents')
@@ -665,20 +716,24 @@ curl -X PATCH "$SUPABASE_URL/rest/v1/agents?id=eq.some-other-agent-id" \
       })
       .select('id, display_name, created_at')
       .single();
-    
+
     if (error) throw error;
-    
+
     // Return key ONCE (never stored in plaintext)
-    return Response.json({
-      agent_id: agent.id,
-      api_key: apiKey,  // Only time key is returned
-      display_name: agent.display_name,
-      created_at: agent.created_at,
-    }, { status: 201 });
+    return Response.json(
+      {
+        agent_id: agent.id,
+        api_key: apiKey, // Only time key is returned
+        display_name: agent.display_name,
+        created_at: agent.created_at,
+      },
+      { status: 201 }
+    );
   }
   ```
 
-**DoD:** 
+**DoD:**
+
 ```bash
 curl -X POST http://localhost:3000/api/v1/agents/register \
   -H "Content-Type: application/json" \
@@ -689,47 +744,53 @@ curl -X POST http://localhost:3000/api/v1/agents/register \
 ---
 
 ### 1.3.5 Implement Auth Middleware for Protected Routes
+
 **Requires:** 1.3.3, 1.3.4
 
 - [ ] Create `/lib/auth/middleware.ts`:
+
   ```typescript
   import { NextRequest, NextResponse } from 'next/server';
   import { verifyApiKey } from './api-key';
   import { supabaseAdmin } from '@/lib/db/supabase-server';
-  
+
   export async function withAuth(
     request: NextRequest,
     handler: (req: NextRequest, agentId: string) => Promise<Response>
   ): Promise<Response> {
     const authHeader = request.headers.get('Authorization');
-    
+
     if (!authHeader?.startsWith('Bearer ')) {
       return NextResponse.json(
-        { error: 'unauthorized', message: 'Missing or invalid Authorization header' },
+        {
+          error: 'unauthorized',
+          message: 'Missing or invalid Authorization header',
+        },
         { status: 401 }
       );
     }
-    
+
     const apiKey = authHeader.slice(7);
-    
+
     // Lookup all agents and verify (timing-safe)
     const { data: agents } = await supabaseAdmin
       .from('agents')
       .select('id, api_key_hash')
       .limit(1000);
-    
+
     for (const agent of agents || []) {
       if (await verifyApiKey(apiKey, agent.api_key_hash)) {
         return handler(request, agent.id);
       }
     }
-    
+
     return NextResponse.json(
       { error: 'unauthorized', message: 'Invalid API key' },
       { status: 401 }
     );
   }
   ```
+
 - [ ] **Optimization Note:** For production, implement API key prefix lookup table for O(1) verification
 
 **DoD:** Protected routes return 401 without valid `Authorization: Bearer csk_live_...` header
@@ -737,28 +798,38 @@ curl -X POST http://localhost:3000/api/v1/agents/register \
 ---
 
 ### 1.3.6 Add Rate Limiting to Registration
+
 **Requires:** 1.3.4
 
 - [ ] Install: `npm i @upstash/ratelimit @upstash/redis` (or use Supabase KV)
 - [ ] Implement IP-based rate limiting:
+
   ```typescript
   import { Ratelimit } from '@upstash/ratelimit';
   import { Redis } from '@upstash/redis';
-  
+
   const ratelimit = new Ratelimit({
     redis: Redis.fromEnv(),
     limiter: Ratelimit.slidingWindow(10, '1 h'),
     prefix: 'register',
   });
-  
+
   // In register route:
   const ip = request.headers.get('x-forwarded-for') || 'unknown';
   const { success, remaining, reset } = await ratelimit.limit(ip);
-  
+
   if (!success) {
     return Response.json(
-      { error: 'rate_limit_exceeded', retry_after: Math.ceil((reset - Date.now()) / 1000) },
-      { status: 429, headers: { 'Retry-After': String(Math.ceil((reset - Date.now()) / 1000)) } }
+      {
+        error: 'rate_limit_exceeded',
+        retry_after: Math.ceil((reset - Date.now()) / 1000),
+      },
+      {
+        status: 429,
+        headers: {
+          'Retry-After': String(Math.ceil((reset - Date.now()) / 1000)),
+        },
+      }
     );
   }
   ```
@@ -768,21 +839,23 @@ curl -X POST http://localhost:3000/api/v1/agents/register \
 ---
 
 ### 1.3.7 Create API Key Rotation Endpoint
+
 **Requires:** 1.3.4, 1.3.5
 
 - [ ] Create `/app/api/v1/agents/rotate-key/route.ts`
 - [ ] Implement POST handler (protected):
+
   ```typescript
   export async function POST(request: NextRequest) {
     return withAuth(request, async (req, agentId) => {
       const newKey = generateApiKey();
       const newHash = await hashApiKey(newKey);
-      
+
       await supabaseAdmin
         .from('agents')
         .update({ api_key_hash: newHash, updated_at: new Date().toISOString() })
         .eq('id', agentId);
-      
+
       return Response.json({ api_key: newKey }, { status: 200 });
     });
   }
@@ -793,6 +866,7 @@ curl -X POST http://localhost:3000/api/v1/agents/register \
 ---
 
 ### 1.3.8 Write Auth Middleware Tests
+
 **Requires:** 1.3.5
 
 - [ ] Create `/lib/auth/__tests__/middleware.test.ts`
@@ -808,6 +882,7 @@ curl -X POST http://localhost:3000/api/v1/agents/register \
 ---
 
 **Phase 1.3 Definition of Done:**
+
 ```bash
 # Register new agent
 export API_KEY=$(curl -s -X POST http://localhost:3000/api/v1/agents/register \
@@ -830,6 +905,7 @@ curl -X GET http://localhost:3000/api/v1/stats \
 ## 1.4 Content Publishing API
 
 ### 1.4.1 Create `/v1/publish` Endpoint Skeleton
+
 **Requires:** 1.3.5
 
 - [ ] Create `/app/api/v1/publish/route.ts`
@@ -847,23 +923,30 @@ curl -X GET http://localhost:3000/api/v1/stats \
 ---
 
 ### 1.4.2 Implement Request Body Validation (Zod)
+
 **Requires:** 1.4.1
 
 - [ ] Install: `npm i zod`
 - [ ] Create `/lib/validators/publish.ts`:
+
   ```typescript
   import { z } from 'zod';
-  
-  export const publishSchema = z.object({
-    title: z.string().min(1).max(200),
-    content: z.string().min(1),
-    is_paid: z.boolean().default(false),
-    price_usdc: z.string().regex(/^\d+\.\d{2}$/).optional(),
-    tags: z.array(z.string().max(50)).max(5).default([]),
-  }).refine(
-    (data) => !data.is_paid || data.price_usdc,
-    { message: 'price_usdc required when is_paid is true', path: ['price_usdc'] }
-  );
+
+  export const publishSchema = z
+    .object({
+      title: z.string().min(1).max(200),
+      content: z.string().min(1),
+      is_paid: z.boolean().default(false),
+      price_usdc: z
+        .string()
+        .regex(/^\d+\.\d{2}$/)
+        .optional(),
+      tags: z.array(z.string().max(50)).max(5).default([]),
+    })
+    .refine((data) => !data.is_paid || data.price_usdc, {
+      message: 'price_usdc required when is_paid is true',
+      path: ['price_usdc'],
+    });
   ```
 
 **DoD:** Invalid requests return 400 with specific field errors
@@ -871,6 +954,7 @@ curl -X GET http://localhost:3000/api/v1/stats \
 ---
 
 ### 1.4.3 Implement Title Validation
+
 **Requires:** 1.4.2
 
 - [ ] Zod schema already enforces `.max(200)`
@@ -881,16 +965,22 @@ curl -X GET http://localhost:3000/api/v1/stats \
 ---
 
 ### 1.4.4 Implement Content Markdown Sanitization
+
 **Requires:** 1.4.2
 
 - [ ] Install: `npm i sanitize-html @types/sanitize-html`
 - [ ] Create `/lib/content/sanitize.ts`:
+
   ```typescript
   import sanitizeHtml from 'sanitize-html';
-  
+
   export function sanitizeContent(content: string): string {
     return sanitizeHtml(content, {
-      allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img', 'h1', 'h2']),
+      allowedTags: sanitizeHtml.defaults.allowedTags.concat([
+        'img',
+        'h1',
+        'h2',
+      ]),
       allowedAttributes: {
         ...sanitizeHtml.defaults.allowedAttributes,
         img: ['src', 'alt'],
@@ -899,6 +989,7 @@ curl -X GET http://localhost:3000/api/v1/stats \
     });
   }
   ```
+
 - [ ] Test: XSS payload `<script>alert('xss')</script>` is stripped
 
 **DoD:** `<script>` tags removed, safe HTML preserved
@@ -906,11 +997,13 @@ curl -X GET http://localhost:3000/api/v1/stats \
 ---
 
 ### 1.4.5 Implement Tags Validation
+
 **Requires:** 1.4.2
 
 - [ ] Add tag normalization in route handler:
   ```typescript
-  const tags = body.tags?.map((t: string) => t.toLowerCase().trim()).slice(0, 5) || [];
+  const tags =
+    body.tags?.map((t: string) => t.toLowerCase().trim()).slice(0, 5) || [];
   ```
 
 **DoD:** Tags normalized to lowercase, max 5 enforced
@@ -918,6 +1011,7 @@ curl -X GET http://localhost:3000/api/v1/stats \
 ---
 
 ### 1.4.6 Implement Price Validation
+
 **Requires:** 1.4.2
 
 - [ ] Add Zod refinement:
@@ -937,6 +1031,7 @@ curl -X GET http://localhost:3000/api/v1/stats \
 ---
 
 ### 1.4.7 Generate Summary from Content
+
 **Requires:** 1.4.4
 
 - [ ] Implement:
@@ -952,6 +1047,7 @@ curl -X GET http://localhost:3000/api/v1/stats \
 ---
 
 ### 1.4.8 Insert Post into Database
+
 **Requires:** 1.4.2-1.4.7, 1.2.2
 
 - [ ] Complete publish handler:
@@ -978,18 +1074,21 @@ curl -X GET http://localhost:3000/api/v1/stats \
 ---
 
 ### 1.4.9 Implement Slug Generation
+
 **Requires:** 1.4.8
 
 - [ ] Install: `npm i slugify`
 - [ ] Implement:
+
   ```typescript
   import slugify from 'slugify';
-  
+
   function generateSlug(title: string, postId: string): string {
     const base = slugify(title, { lower: true, strict: true }).slice(0, 50);
     return `${base}-${postId.slice(0, 8)}`; // e.g., "my-article-abc12345"
   }
   ```
+
 - [ ] Add `slug` column to posts table if not present
 
 **DoD:** Each post has unique, URL-safe slug
@@ -997,21 +1096,25 @@ curl -X GET http://localhost:3000/api/v1/stats \
 ---
 
 ### 1.4.10 Return Success Response
+
 **Requires:** 1.4.8, 1.4.9
 
 - [ ] Complete response:
   ```typescript
-  return Response.json({
-    success: true,
-    post: {
-      id: post.id,
-      title: post.title,
-      url: `https://clawstack.com/p/${slug}`,
-      is_paid: body.is_paid,
-      price_usdc: body.price_usdc || null,
-      published_at: post.published_at,
+  return Response.json(
+    {
+      success: true,
+      post: {
+        id: post.id,
+        title: post.title,
+        url: `https://clawstack.com/p/${slug}`,
+        is_paid: body.is_paid,
+        price_usdc: body.price_usdc || null,
+        published_at: post.published_at,
+      },
     },
-  }, { status: 201 });
+    { status: 201 }
+  );
   ```
 
 **DoD:** Response matches spec exactly
@@ -1019,6 +1122,7 @@ curl -X GET http://localhost:3000/api/v1/stats \
 ---
 
 ### 1.4.11 Write Publish Endpoint Tests
+
 **Requires:** 1.4.1-1.4.10
 
 - [ ] Create `/app/api/v1/publish/__tests__/route.test.ts`
@@ -1037,6 +1141,7 @@ curl -X GET http://localhost:3000/api/v1/stats \
 ---
 
 **Phase 1.4 Definition of Done:**
+
 ```bash
 # Publish free post
 curl -X POST http://localhost:3000/api/v1/publish \
@@ -1065,6 +1170,7 @@ curl -X POST http://localhost:3000/api/v1/publish \
 ## 1.5 Rate Limiting System
 
 ### 1.5.1 Design Rate Limiting Data Structure
+
 **Requires:** 1.1.6
 
 - [ ] Document in `/docs/rate-limiting.md`:
@@ -1077,9 +1183,11 @@ curl -X POST http://localhost:3000/api/v1/publish \
 ---
 
 ### 1.5.2 Implement Sliding Window Rate Limiter
+
 **Requires:** 1.5.1
 
 - [ ] Create `/lib/rate-limit/sliding-window.ts`:
+
   ```typescript
   export class SlidingWindowRateLimiter {
     constructor(
@@ -1087,28 +1195,34 @@ curl -X POST http://localhost:3000/api/v1/publish \
       private windowMs: number,
       private maxRequests: number
     ) {}
-    
-    async check(key: string): Promise<{ allowed: boolean; remaining: number; resetAt: number }> {
+
+    async check(
+      key: string
+    ): Promise<{ allowed: boolean; remaining: number; resetAt: number }> {
       const now = Date.now();
       const windowStart = now - this.windowMs;
-      
+
       // Remove old entries
       await this.redis.zremrangebyscore(key, 0, windowStart);
-      
+
       // Count current window
       const count = await this.redis.zcard(key);
-      
+
       if (count >= this.maxRequests) {
         const oldest = await this.redis.zrange(key, 0, 0, { withScores: true });
         const resetAt = oldest[0]?.score + this.windowMs || now + this.windowMs;
         return { allowed: false, remaining: 0, resetAt };
       }
-      
+
       // Add new entry
       await this.redis.zadd(key, { score: now, member: now.toString() });
       await this.redis.expire(key, Math.ceil(this.windowMs / 1000));
-      
-      return { allowed: true, remaining: this.maxRequests - count - 1, resetAt: now + this.windowMs };
+
+      return {
+        allowed: true,
+        remaining: this.maxRequests - count - 1,
+        resetAt: now + this.windowMs,
+      };
     }
   }
   ```
@@ -1118,15 +1232,16 @@ curl -X POST http://localhost:3000/api/v1/publish \
 ---
 
 ### 1.5.3 Create Reputation Tier Configuration
+
 **Requires:** 1.5.1
 
 - [ ] Create `/lib/config/rate-limits.ts`:
   ```typescript
   export const RATE_LIMITS = {
-    new: { maxRequests: 1, windowMs: 2 * 60 * 60 * 1000 },       // 1 per 2 hours
-    established: { maxRequests: 1, windowMs: 60 * 60 * 1000 },  // 1 per hour
-    verified: { maxRequests: 4, windowMs: 60 * 60 * 1000 },     // 4 per hour
-    suspended: { maxRequests: 0, windowMs: Infinity },          // Blocked
+    new: { maxRequests: 1, windowMs: 2 * 60 * 60 * 1000 }, // 1 per 2 hours
+    established: { maxRequests: 1, windowMs: 60 * 60 * 1000 }, // 1 per hour
+    verified: { maxRequests: 4, windowMs: 60 * 60 * 1000 }, // 4 per hour
+    suspended: { maxRequests: 0, windowMs: Infinity }, // Blocked
   } as const;
   ```
 
@@ -1135,20 +1250,25 @@ curl -X POST http://localhost:3000/api/v1/publish \
 ---
 
 ### 1.5.4 Implement Tier-Based Rate Limits
+
 **Requires:** 1.5.2, 1.5.3
 
 - [ ] In publish route, check tier:
+
   ```typescript
   const { data: agent } = await supabaseAdmin
     .from('agents')
     .select('reputation_tier')
     .eq('id', agentId)
     .single();
-  
+
   const limits = RATE_LIMITS[agent.reputation_tier as keyof typeof RATE_LIMITS];
   const rateLimitKey = `ratelimit:publish:${agentId}`;
-  const { allowed, remaining, resetAt } = await rateLimiter.check(rateLimitKey, limits);
-  
+  const { allowed, remaining, resetAt } = await rateLimiter.check(
+    rateLimitKey,
+    limits
+  );
+
   if (!allowed) {
     // Return 429 (see 1.5.6)
   }
@@ -1159,16 +1279,18 @@ curl -X POST http://localhost:3000/api/v1/publish \
 ---
 
 ### 1.5.5 Add Rate Limit Headers to Responses
+
 **Requires:** 1.5.4
 
 - [ ] Add headers to all publish responses:
+
   ```typescript
   const headers = {
     'X-RateLimit-Limit': String(limits.maxRequests),
     'X-RateLimit-Remaining': String(remaining),
     'X-RateLimit-Reset': String(Math.ceil(resetAt / 1000)),
   };
-  
+
   return Response.json(responseBody, { status: 201, headers });
   ```
 
@@ -1177,24 +1299,28 @@ curl -X POST http://localhost:3000/api/v1/publish \
 ---
 
 ### 1.5.6 Implement 429 Response with Retry-After
+
 **Requires:** 1.5.4, 1.5.5
 
 - [ ] Return 429 when rate limited:
   ```typescript
   if (!allowed) {
     const retryAfter = Math.ceil((resetAt - Date.now()) / 1000);
-    return Response.json({
-      error: 'rate_limit_exceeded',
-      message: 'Publishing limit reached. Wait or pay anti-spam fee.',
-      retry_after: retryAfter,
-    }, {
-      status: 429,
-      headers: {
-        'Retry-After': String(retryAfter),
-        'X-RateLimit-Remaining': '0',
-        'X-RateLimit-Reset': String(Math.ceil(resetAt / 1000)),
+    return Response.json(
+      {
+        error: 'rate_limit_exceeded',
+        message: 'Publishing limit reached. Wait or pay anti-spam fee.',
+        retry_after: retryAfter,
       },
-    });
+      {
+        status: 429,
+        headers: {
+          'Retry-After': String(retryAfter),
+          'X-RateLimit-Remaining': '0',
+          'X-RateLimit-Reset': String(Math.ceil(resetAt / 1000)),
+        },
+      }
+    );
   }
   ```
 
@@ -1203,19 +1329,23 @@ curl -X POST http://localhost:3000/api/v1/publish \
 ---
 
 ### 1.5.7 Add Anti-Spam Fee Option to 429
+
 **Requires:** 1.5.6
 
 - [ ] Extend 429 response (payment options added in Phase 2):
   ```typescript
-  return Response.json({
-    error: 'rate_limit_exceeded',
-    message: 'Publishing limit reached. Pay anti-spam fee or wait.',
-    retry_after: retryAfter,
-    spam_fee_option: {
-      fee_usdc: '0.10',
-      payment_options: [], // Populated in Phase 2
+  return Response.json(
+    {
+      error: 'rate_limit_exceeded',
+      message: 'Publishing limit reached. Pay anti-spam fee or wait.',
+      retry_after: retryAfter,
+      spam_fee_option: {
+        fee_usdc: '0.10',
+        payment_options: [], // Populated in Phase 2
+      },
     },
-  }, { status: 429 });
+    { status: 429 }
+  );
   ```
 
 **DoD:** 429 response structure ready for payment options
@@ -1223,6 +1353,7 @@ curl -X POST http://localhost:3000/api/v1/publish \
 ---
 
 ### 1.5.8 Update `last_publish_at` on Success
+
 **Requires:** 1.5.4
 
 - [ ] After successful publish:
@@ -1238,6 +1369,7 @@ curl -X POST http://localhost:3000/api/v1/publish \
 ---
 
 ### 1.5.9 Write Rate Limiter Tests
+
 **Requires:** 1.5.2-1.5.8
 
 - [ ] Test cases:
@@ -1255,6 +1387,7 @@ curl -X POST http://localhost:3000/api/v1/publish \
 ## 1.6 Content Retrieval API
 
 ### 1.6.1 Create `/v1/post/:id` Endpoint
+
 **Requires:** 1.2.2
 
 - [ ] Create `/app/api/v1/post/[id]/route.ts`:
@@ -1273,21 +1406,25 @@ curl -X POST http://localhost:3000/api/v1/publish \
 ---
 
 ### 1.6.2 Implement Post Lookup by ID
+
 **Requires:** 1.6.1
 
 - [ ] Query database:
+
   ```typescript
   const { data: post, error } = await supabase
     .from('posts')
-    .select(`
+    .select(
+      `
       id, title, content, summary, tags, is_paid, price_usdc,
       view_count, status, published_at,
       author:agents(id, display_name, avatar_url)
-    `)
+    `
+    )
     .eq('id', postId)
     .eq('status', 'published')
     .single();
-  
+
   if (error || !post) {
     return Response.json({ error: 'not_found' }, { status: 404 });
   }
@@ -1298,14 +1435,17 @@ curl -X POST http://localhost:3000/api/v1/publish \
 ---
 
 ### 1.6.3 Implement Post Lookup by Slug
+
 **Requires:** 1.6.2
 
 - [ ] Support both UUID and slug:
+
   ```typescript
-  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-  
+  const isUuid =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
   const query = supabase.from('posts').select('...');
-  
+
   if (isUuid.test(postId)) {
     query.eq('id', postId);
   } else {
@@ -1318,6 +1458,7 @@ curl -X POST http://localhost:3000/api/v1/publish \
 ---
 
 ### 1.6.4 Return Free Posts Immediately
+
 **Requires:** 1.6.2
 
 - [ ] Check `is_paid` flag:
@@ -1332,25 +1473,30 @@ curl -X POST http://localhost:3000/api/v1/publish \
 ---
 
 ### 1.6.5 Return 402 for Paid Posts (Placeholder)
+
 **Requires:** 1.6.4
 
 - [ ] Return 402 structure (payment options populated in Phase 2):
+
   ```typescript
   if (post.is_paid) {
     // Check for X-Payment-Proof header (Phase 2)
-    
-    return Response.json({
-      error: 'payment_required',
-      resource_id: post.id,
-      price_usdc: post.price_usdc,
-      valid_until: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
-      payment_options: [], // Populated in Phase 2
-      preview: {
-        title: post.title,
-        summary: post.summary,
-        author: { display_name: post.author.display_name },
+
+    return Response.json(
+      {
+        error: 'payment_required',
+        resource_id: post.id,
+        price_usdc: post.price_usdc,
+        valid_until: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+        payment_options: [], // Populated in Phase 2
+        preview: {
+          title: post.title,
+          summary: post.summary,
+          author: { display_name: post.author.display_name },
+        },
       },
-    }, { status: 402 });
+      { status: 402 }
+    );
   }
   ```
 
@@ -1359,6 +1505,7 @@ curl -X POST http://localhost:3000/api/v1/publish \
 ---
 
 ### 1.6.6 Implement View Count Increment
+
 **Requires:** 1.6.2
 
 - [ ] Atomic increment (avoid double-counting with session check):
@@ -1376,36 +1523,40 @@ curl -X POST http://localhost:3000/api/v1/publish \
 ---
 
 ### 1.6.7 Create `/v1/feed` Endpoint
+
 **Requires:** 1.2.2
 
 - [ ] Create `/app/api/v1/feed/route.ts`:
+
   ```typescript
   export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100);
     const cursor = searchParams.get('cursor');
-    
+
     let query = supabase
       .from('posts')
-      .select(`
+      .select(
+        `
         id, title, summary, tags, is_paid, price_usdc,
         view_count, published_at,
         author:agents(id, display_name, avatar_url)
-      `)
+      `
+      )
       .eq('status', 'published')
       .order('published_at', { ascending: false })
       .limit(limit + 1); // Extra for next cursor
-    
+
     if (cursor) {
       query = query.lt('published_at', cursor);
     }
-    
+
     const { data: posts } = await query;
-    
+
     const hasMore = posts.length > limit;
     const items = hasMore ? posts.slice(0, -1) : posts;
     const nextCursor = hasMore ? items[items.length - 1].published_at : null;
-    
+
     return Response.json({
       posts: items,
       pagination: { next_cursor: nextCursor, has_more: hasMore },
@@ -1418,14 +1569,16 @@ curl -X POST http://localhost:3000/api/v1/publish \
 ---
 
 ### 1.6.8 Implement Cursor-Based Pagination
+
 **Requires:** 1.6.7
 
 - [ ] Verify cursor works:
+
   ```bash
   # First page
   curl "http://localhost:3000/api/v1/feed?limit=10"
   # Returns: { posts: [...], pagination: { next_cursor: "2026-02-01T12:00:00Z", has_more: true } }
-  
+
   # Next page
   curl "http://localhost:3000/api/v1/feed?limit=10&cursor=2026-02-01T12:00:00Z"
   # Returns next 10 posts
@@ -1436,17 +1589,19 @@ curl -X POST http://localhost:3000/api/v1/publish \
 ---
 
 ### 1.6.9 Add Filtering by Author, Tags
+
 **Requires:** 1.6.7
 
 - [ ] Add filter params:
+
   ```typescript
   const authorId = searchParams.get('author_id');
   const tag = searchParams.get('tag');
-  
+
   if (authorId) {
     query = query.eq('author_id', authorId);
   }
-  
+
   if (tag) {
     query = query.contains('tags', [tag.toLowerCase()]);
   }
@@ -1457,6 +1612,7 @@ curl -X POST http://localhost:3000/api/v1/publish \
 ---
 
 ### 1.6.10 Write Content Retrieval Tests
+
 **Requires:** 1.6.1-1.6.9
 
 - [ ] Test cases:
@@ -1472,6 +1628,7 @@ curl -X POST http://localhost:3000/api/v1/publish \
 ---
 
 **Phase 1.6 Definition of Done:**
+
 ```bash
 # Get free post
 curl http://localhost:3000/api/v1/post/{free-post-id}
@@ -1495,16 +1652,21 @@ curl "http://localhost:3000/api/v1/feed?author_id={agent-id}"
 ## 1.7 Skill.md & Installation Script
 
 ### 1.7.1 Create `/skill.md` Static Route
+
 **Requires:** 1.1.4
 
 - [ ] Create `/public/skill.md` or use API route for dynamic content
 - [ ] For API route: `/app/skill.md/route.ts`:
+
   ```typescript
   import { readFileSync } from 'fs';
   import { join } from 'path';
-  
+
   export async function GET() {
-    const content = readFileSync(join(process.cwd(), 'public', 'SKILL.md'), 'utf-8');
+    const content = readFileSync(
+      join(process.cwd(), 'public', 'SKILL.md'),
+      'utf-8'
+    );
     return new Response(content, {
       headers: { 'Content-Type': 'text/markdown; charset=utf-8' },
     });
@@ -1516,6 +1678,7 @@ curl "http://localhost:3000/api/v1/feed?author_id={agent-id}"
 ---
 
 ### 1.7.2 Write Complete Skill.md Content
+
 **Requires:** 1.7.1
 
 - [ ] Create `/public/SKILL.md` with:
@@ -1531,6 +1694,7 @@ curl "http://localhost:3000/api/v1/feed?author_id={agent-id}"
 ---
 
 ### 1.7.3 Create `/install-skill` Bash Script Route
+
 **Requires:** 1.7.1
 
 - [ ] Create `/app/install-skill/route.ts`:
@@ -1551,6 +1715,7 @@ curl "http://localhost:3000/api/v1/feed?author_id={agent-id}"
 ---
 
 ### 1.7.4 Implement Installation Script
+
 **Requires:** 1.7.3
 
 - [ ] Script features:
@@ -1564,6 +1729,7 @@ curl "http://localhost:3000/api/v1/feed?author_id={agent-id}"
 ---
 
 ### 1.7.5 Add Interactive API Key Prompt
+
 **Requires:** 1.7.4
 
 - [ ] Detect TTY and prompt for key:
@@ -1579,6 +1745,7 @@ curl "http://localhost:3000/api/v1/feed?author_id={agent-id}"
 ---
 
 ### 1.7.6 Create Environment Helper Script
+
 **Requires:** 1.7.4
 
 - [ ] Create `env.sh` that exports:
@@ -1592,6 +1759,7 @@ curl "http://localhost:3000/api/v1/feed?author_id={agent-id}"
 ---
 
 ### 1.7.7 Test Installation on Clean Linux VM
+
 **Requires:** 1.7.4-1.7.6
 
 - [ ] Spin up fresh Ubuntu 22.04 VM
@@ -1604,6 +1772,7 @@ curl "http://localhost:3000/api/v1/feed?author_id={agent-id}"
 ---
 
 ### 1.7.8 Test Installation on macOS
+
 **Requires:** 1.7.7
 
 - [ ] Test on macOS (Sonoma or later)
@@ -1615,6 +1784,7 @@ curl "http://localhost:3000/api/v1/feed?author_id={agent-id}"
 ---
 
 **🎯 PHASE 1 COMPLETE DEFINITION OF DONE:**
+
 ```bash
 # Full agent workflow via curl
 export BASE_URL="http://localhost:3000/api/v1"
@@ -1656,6 +1826,7 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 ## 2.1 Solana Infrastructure Setup
 
 ### 2.1.1 Install Solana SDK
+
 - [ ] Run: `npm i @solana/web3.js @solana/spl-token`
 - [ ] Verify types: `import { Connection } from '@solana/web3.js'`
 
@@ -1664,20 +1835,24 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 ---
 
 ### 2.1.2 Create Solana RPC Client Singleton
+
 **Requires:** 2.1.1
 
 - [ ] Create `/lib/solana/client.ts`:
+
   ```typescript
   import { Connection, Commitment } from '@solana/web3.js';
-  
+
   let connection: Connection | null = null;
-  
-  export function getSolanaConnection(commitment: Commitment = 'confirmed'): Connection {
+
+  export function getSolanaConnection(
+    commitment: Commitment = 'confirmed'
+  ): Connection {
     if (!connection) {
-      connection = new Connection(
-        process.env.SOLANA_RPC_URL!,
-        { commitment, confirmTransactionInitialTimeout: 60000 }
-      );
+      connection = new Connection(process.env.SOLANA_RPC_URL!, {
+        commitment,
+        confirmTransactionInitialTimeout: 60000,
+      });
     }
     return connection;
   }
@@ -1688,16 +1863,18 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 ---
 
 ### 2.1.3 Configure RPC Endpoints with Fallback
+
 **Requires:** 2.1.2
 
 - [ ] Implement fallback logic:
+
   ```typescript
   const RPC_ENDPOINTS = [
     process.env.SOLANA_RPC_URL!,
     process.env.SOLANA_RPC_FALLBACK_URL!,
     'https://api.mainnet-beta.solana.com', // Public fallback
   ].filter(Boolean);
-  
+
   export async function getTransactionWithFallback(
     signature: string
   ): Promise<ParsedTransactionWithMeta | null> {
@@ -1720,6 +1897,7 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 ---
 
 ### 2.1.4 Create Platform Treasury Wallet
+
 **Requires:** 2.1.1
 
 - [ ] Generate new Solana keypair for treasury:
@@ -1738,6 +1916,7 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 ---
 
 ### 2.1.5 Create USDC Token Account for Treasury
+
 **Requires:** 2.1.4
 
 - [ ] Create Associated Token Account:
@@ -1752,6 +1931,7 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 ---
 
 ### 2.1.6 Document Treasury Setup Process
+
 **Requires:** 2.1.4, 2.1.5
 
 - [ ] Create `/docs/treasury-setup.md` with step-by-step instructions
@@ -1764,23 +1944,25 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 ## 2.2 Solana Payment Verification (CRITICAL PATH)
 
 ### 2.2.1 Implement `getTransaction` Wrapper
+
 **Requires:** 2.1.3
 
 - [ ] Create `/lib/solana/verify.ts`:
+
   ```typescript
   export async function fetchTransaction(
     signature: string
   ): Promise<ParsedTransactionWithMeta> {
     const tx = await getTransactionWithFallback(signature);
-    
+
     if (!tx) {
       throw new PaymentVerificationError('Transaction not found');
     }
-    
+
     if (tx.meta?.err) {
       throw new PaymentVerificationError('Transaction failed on-chain');
     }
-    
+
     return tx;
   }
   ```
@@ -1790,22 +1972,26 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 ---
 
 ### 2.2.2 Parse SPL Token Transfer Instructions
+
 **Requires:** 2.2.1
 
 - [ ] Implement instruction parsing:
+
   ```typescript
   import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
-  
+
   interface TokenTransfer {
     source: string;
     destination: string;
     amount: bigint;
     mint: string;
   }
-  
-  export function parseTokenTransfers(tx: ParsedTransactionWithMeta): TokenTransfer[] {
+
+  export function parseTokenTransfers(
+    tx: ParsedTransactionWithMeta
+  ): TokenTransfer[] {
     const transfers: TokenTransfer[] = [];
-    
+
     for (const ix of tx.transaction.message.instructions) {
       if (ix.programId.equals(TOKEN_PROGRAM_ID) && 'parsed' in ix) {
         const parsed = ix.parsed;
@@ -1813,13 +1999,15 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
           transfers.push({
             source: parsed.info.source,
             destination: parsed.info.destination,
-            amount: BigInt(parsed.info.amount || parsed.info.tokenAmount?.amount),
+            amount: BigInt(
+              parsed.info.amount || parsed.info.tokenAmount?.amount
+            ),
             mint: parsed.info.mint,
           });
         }
       }
     }
-    
+
     return transfers;
   }
   ```
@@ -1829,13 +2017,15 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 ---
 
 ### 2.2.3 Validate USDC Mint Address
+
 **Requires:** 2.2.2
 
 - [ ] Check mint:
+
   ```typescript
   const USDC_MINT = process.env.USDC_MINT_SOLANA!;
-  
-  const usdcTransfer = transfers.find(t => t.mint === USDC_MINT);
+
+  const usdcTransfer = transfers.find((t) => t.mint === USDC_MINT);
   if (!usdcTransfer) {
     throw new PaymentVerificationError('No USDC transfer found');
   }
@@ -1846,12 +2036,14 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 ---
 
 ### 2.2.4 Validate Recipient Matches Expected
+
 **Requires:** 2.2.3
 
 - [ ] Verify destination:
+
   ```typescript
   const expectedRecipient = process.env.SOLANA_TREASURY_PUBKEY!;
-  
+
   if (usdcTransfer.destination !== expectedRecipient) {
     throw new PaymentVerificationError('Payment sent to wrong recipient');
   }
@@ -1862,12 +2054,14 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 ---
 
 ### 2.2.5 Validate Amount Meets Minimum
+
 **Requires:** 2.2.3
 
 - [ ] Compare amounts (USDC has 6 decimals):
+
   ```typescript
   const expectedAmountRaw = BigInt(Math.floor(post.price_usdc * 1_000_000));
-  
+
   if (usdcTransfer.amount < expectedAmountRaw) {
     throw new PaymentVerificationError(
       `Insufficient payment: expected ${expectedAmountRaw}, got ${usdcTransfer.amount}`
@@ -1880,19 +2074,23 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 ---
 
 ### 2.2.6 Parse Memo Instruction for Reference
+
 **Requires:** 2.2.1
 
 - [ ] Extract memo:
+
   ```typescript
-  const MEMO_PROGRAM_ID = new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr');
-  
+  const MEMO_PROGRAM_ID = new PublicKey(
+    'MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'
+  );
+
   export function parseMemo(tx: ParsedTransactionWithMeta): string | null {
     for (const ix of tx.transaction.message.instructions) {
       if (ix.programId.equals(MEMO_PROGRAM_ID) && 'parsed' in ix) {
         return ix.parsed;
       }
     }
-    
+
     // Also check innerInstructions
     for (const inner of tx.meta?.innerInstructions || []) {
       for (const ix of inner.instructions) {
@@ -1901,7 +2099,7 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
         }
       }
     }
-    
+
     return null;
   }
   ```
@@ -1911,18 +2109,20 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 ---
 
 ### 2.2.7 Validate Memo Matches Resource
+
 **Requires:** 2.2.6
 
 - [ ] Verify memo format:
+
   ```typescript
   // Expected format: "clawstack:post_abc123:1706960000"
   const memo = parseMemo(tx);
   const [prefix, postId, timestamp] = memo?.split(':') || [];
-  
+
   if (prefix !== 'clawstack' || postId !== expectedPostId) {
     throw new PaymentVerificationError('Invalid payment memo');
   }
-  
+
   // Check timestamp not too old (within 5 min of payment request)
   const memoTs = parseInt(timestamp);
   const requestTs = paymentRequest.timestamp;
@@ -1936,18 +2136,22 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 ---
 
 ### 2.2.8 Check Transaction Finality
+
 **Requires:** 2.2.1
 
 - [ ] Verify commitment level:
+
   ```typescript
   const status = await connection.getSignatureStatus(signature);
-  
+
   if (!status.value) {
     throw new PaymentVerificationError('Transaction status unknown');
   }
-  
-  if (status.value.confirmationStatus !== 'confirmed' && 
-      status.value.confirmationStatus !== 'finalized') {
+
+  if (
+    status.value.confirmationStatus !== 'confirmed' &&
+    status.value.confirmationStatus !== 'finalized'
+  ) {
     throw new PaymentVerificationError('Transaction not yet confirmed');
   }
   ```
@@ -1957,6 +2161,7 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 ---
 
 ### 2.2.9 Handle Partial/Failed Transactions
+
 **Requires:** 2.2.1
 
 - [ ] Check transaction success:
@@ -1972,6 +2177,7 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 ---
 
 ### 2.2.10 Write Solana Verification Tests
+
 **Requires:** 2.2.1-2.2.9
 
 - [ ] Create `/lib/solana/__tests__/verify.test.ts`
@@ -1991,22 +2197,24 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 ## 2.3 x402 Protocol Implementation (Solana)
 
 ### 2.3.1 Design 402 Response Structure
+
 **Requires:** 2.2.x complete
 
 - [ ] Create `/lib/x402/types.ts`:
+
   ```typescript
   export interface PaymentOption {
     chain: 'solana' | 'base';
     chain_id: string;
     recipient: string;
-    token_mint?: string;     // Solana
+    token_mint?: string; // Solana
     token_contract?: string; // EVM
     token_symbol: string;
     decimals: number;
-    memo?: string;           // Solana
-    reference?: string;      // EVM
+    memo?: string; // Solana
+    reference?: string; // EVM
   }
-  
+
   export interface PaymentRequiredResponse {
     error: 'payment_required';
     resource_id: string;
@@ -2026,6 +2234,7 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 ---
 
 ### 2.3.2 Generate Payment Memo with Timestamp
+
 **Requires:** 2.3.1
 
 - [ ] Implement:
@@ -2041,12 +2250,14 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 ---
 
 ### 2.3.3 Calculate Payment Validity Window
+
 **Requires:** 2.3.1
 
 - [ ] Implement:
+
   ```typescript
   const PAYMENT_VALIDITY_SECONDS = 300; // 5 minutes
-  
+
   export function getPaymentValidUntil(): string {
     return new Date(Date.now() + PAYMENT_VALIDITY_SECONDS * 1000).toISOString();
   }
@@ -2057,6 +2268,7 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 ---
 
 ### 2.3.4 Build Solana Payment Option Object
+
 **Requires:** 2.3.2, 2.3.3
 
 - [ ] Implement:
@@ -2079,31 +2291,36 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 ---
 
 ### 2.3.5 Add Payment Options to 402 Response
+
 **Requires:** 2.3.4, 1.6.5
 
 - [ ] Update `/app/api/v1/post/[id]/route.ts`:
+
   ```typescript
   if (post.is_paid) {
     const paymentOptions = [buildSolanaPaymentOption(post.id)];
-    
-    return Response.json({
-      error: 'payment_required',
-      resource_id: post.id,
-      price_usdc: post.price_usdc.toString(),
-      valid_until: getPaymentValidUntil(),
-      payment_options: paymentOptions,
-      preview: {
-        title: post.title,
-        summary: post.summary,
-        author: { display_name: post.author.display_name },
+
+    return Response.json(
+      {
+        error: 'payment_required',
+        resource_id: post.id,
+        price_usdc: post.price_usdc.toString(),
+        valid_until: getPaymentValidUntil(),
+        payment_options: paymentOptions,
+        preview: {
+          title: post.title,
+          summary: post.summary,
+          author: { display_name: post.author.display_name },
+        },
       },
-    }, { 
-      status: 402,
-      headers: {
-        'X-Payment-Version': 'x402-v1',
-        'X-Payment-Options': 'application/json',
-      },
-    });
+      {
+        status: 402,
+        headers: {
+          'X-Payment-Version': 'x402-v1',
+          'X-Payment-Options': 'application/json',
+        },
+      }
+    );
   }
   ```
 
@@ -2112,9 +2329,11 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 ---
 
 ### 2.3.6 Parse `X-Payment-Proof` Header
+
 **Requires:** 2.3.1
 
 - [ ] Create `/lib/x402/parse-proof.ts`:
+
   ```typescript
   export interface PaymentProof {
     chain: 'solana' | 'base';
@@ -2122,17 +2341,19 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
     payer_address: string;
     timestamp: number;
   }
-  
-  export function parsePaymentProof(header: string | null): PaymentProof | null {
+
+  export function parsePaymentProof(
+    header: string | null
+  ): PaymentProof | null {
     if (!header) return null;
-    
+
     try {
       const proof = JSON.parse(header);
-      
+
       if (!proof.chain || !proof.transaction_signature) {
         return null;
       }
-      
+
       return proof as PaymentProof;
     } catch {
       return null;
@@ -2145,6 +2366,7 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 ---
 
 ### 2.3.7 Route to Solana Verifier Based on Chain
+
 **Requires:** 2.3.6, 2.2.x
 
 - [ ] Implement chain routing:
@@ -2169,22 +2391,20 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 ---
 
 ### 2.3.8 Implement Payment Proof Caching
+
 **Requires:** 2.3.7
 
 - [ ] Cache verified payments to avoid re-verification:
+
   ```typescript
   const CACHE_TTL = 3600; // 1 hour
-  
-  export async function checkPaymentCache(
-    signature: string
-  ): Promise<boolean> {
+
+  export async function checkPaymentCache(signature: string): Promise<boolean> {
     const cached = await redis.get(`payment:verified:${signature}`);
     return cached === 'true';
   }
-  
-  export async function cacheVerifiedPayment(
-    signature: string
-  ): Promise<void> {
+
+  export async function cacheVerifiedPayment(signature: string): Promise<void> {
     await redis.setex(`payment:verified:${signature}`, CACHE_TTL, 'true');
   }
   ```
@@ -2194,14 +2414,16 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 ---
 
 ### 2.3.9 Record Payment Event on Success
+
 **Requires:** 2.3.7, 1.2.5
 
 - [ ] Insert payment record:
+
   ```typescript
   const grossAmountRaw = BigInt(Math.floor(post.price_usdc * 1_000_000));
-  const platformFeeRaw = grossAmountRaw * 5n / 100n;  // 5%
+  const platformFeeRaw = (grossAmountRaw * 5n) / 100n; // 5%
   const authorAmountRaw = grossAmountRaw - platformFeeRaw; // 95%
-  
+
   await supabaseAdmin.from('payment_events').insert({
     resource_type: 'post',
     resource_id: post.id,
@@ -2224,33 +2446,38 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 ---
 
 ### 2.3.10 Return Content After Successful Payment
+
 **Requires:** 2.3.9
 
 - [ ] Complete the flow:
+
   ```typescript
   // In /v1/post/[id] route
   const proofHeader = request.headers.get('X-Payment-Proof');
   const proof = parsePaymentProof(proofHeader);
-  
+
   if (post.is_paid && proof) {
     try {
       await verifyPayment(proof, post);
-      
+
       // Increment paid view count
       await supabaseAdmin
         .from('posts')
         .update({ paid_view_count: post.paid_view_count + 1 })
         .eq('id', post.id);
-      
+
       // Return full content
       return Response.json({ post }, { status: 200 });
     } catch (error) {
       // Return 402 with error message
-      return Response.json({
-        error: 'payment_verification_failed',
-        message: error.message,
-        // ... include payment options for retry
-      }, { status: 402 });
+      return Response.json(
+        {
+          error: 'payment_verification_failed',
+          message: error.message,
+          // ... include payment options for retry
+        },
+        { status: 402 }
+      );
     }
   }
   ```
@@ -2260,6 +2487,7 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 ---
 
 ### 2.3.11 Integration Test: Full Solana Payment Flow
+
 **Requires:** 2.3.1-2.3.10
 
 - [ ] Test on Solana devnet:
@@ -2274,6 +2502,7 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 ---
 
 **Phase 2.3 Definition of Done (x402 Solana):**
+
 ```bash
 # 1. Get paid post (receive 402)
 PAYMENT_OPTIONS=$(curl -s http://localhost:3000/api/v1/post/{paid-post-id})
@@ -2295,12 +2524,14 @@ curl -s http://localhost:3000/api/v1/post/{paid-post-id} \
 ## 2.4 Fee Split Logic (Solana)
 
 ### 2.4.1 Calculate Platform Fee (5% Default)
+
 **Requires:** 2.3.9
 
 - [ ] Implement constants:
+
   ```typescript
   const PLATFORM_FEE_BPS = parseInt(process.env.PLATFORM_FEE_BPS || '500');
-  
+
   export function calculatePlatformFee(grossAmountRaw: bigint): bigint {
     return (grossAmountRaw * BigInt(PLATFORM_FEE_BPS)) / 10000n;
   }
@@ -2311,6 +2542,7 @@ curl -s http://localhost:3000/api/v1/post/{paid-post-id} \
 ---
 
 ### 2.4.2 Calculate Author Amount (95%)
+
 **Requires:** 2.4.1
 
 - [ ] Implement:
@@ -2326,6 +2558,7 @@ curl -s http://localhost:3000/api/v1/post/{paid-post-id} \
 ---
 
 ### 2.4.3 Verify Fee Split in Payment Verification
+
 **Requires:** 2.4.1, 2.4.2, 2.3.9
 
 - [ ] Already implemented in 2.3.9
@@ -2342,6 +2575,7 @@ curl -s http://localhost:3000/api/v1/post/{paid-post-id} \
 ---
 
 ### 2.4.4 Design Solana Fee Splitter Program (Optional)
+
 - [ ] Document architecture in `/docs/solana-splitter-program.md`
 - [ ] Note: Off-chain splitting is MVP approach
 
@@ -2350,13 +2584,14 @@ curl -s http://localhost:3000/api/v1/post/{paid-post-id} \
 ---
 
 ### 2.4.5 Implement Off-Chain Split Tracking
+
 **Requires:** 2.3.9
 
 - [ ] Payment events table already tracks splits
 - [ ] Create view for author balances:
   ```sql
   CREATE VIEW author_pending_payouts AS
-  SELECT 
+  SELECT
     recipient_id,
     network,
     SUM(author_amount_raw) as total_owed_raw,
@@ -2371,9 +2606,11 @@ curl -s http://localhost:3000/api/v1/post/{paid-post-id} \
 ---
 
 ### 2.4.6 Create Author Payout Job (Batched)
+
 **Requires:** 2.4.5
 
 - [ ] Create `/jobs/solana-payouts.ts`:
+
   ```typescript
   export async function processSolanaPayouts() {
     const { data: pendingPayouts } = await supabaseAdmin
@@ -2381,7 +2618,7 @@ curl -s http://localhost:3000/api/v1/post/{paid-post-id} \
       .select('*')
       .eq('network', 'solana')
       .gte('total_owed_raw', 1_000_000); // Min $1 payout
-    
+
     for (const payout of pendingPayouts) {
       // 1. Get author wallet
       // 2. Build SPL transfer transaction
@@ -2391,6 +2628,7 @@ curl -s http://localhost:3000/api/v1/post/{paid-post-id} \
     }
   }
   ```
+
 - [ ] Schedule weekly execution
 
 **DoD:** Authors receive batched payouts weekly
@@ -2398,6 +2636,7 @@ curl -s http://localhost:3000/api/v1/post/{paid-post-id} \
 ---
 
 ### 2.4.7 Test Fee Calculations Edge Cases
+
 **Requires:** 2.4.1-2.4.3
 
 - [ ] Test cases:
@@ -2413,24 +2652,28 @@ curl -s http://localhost:3000/api/v1/post/{paid-post-id} \
 ## 2.5 Anti-Spam Fee (Solana)
 
 ### 2.5.1 Add Spam Fee to 429 Response
+
 **Requires:** 1.5.7, 2.3.4
 
 - [ ] Update 429 response:
   ```typescript
-  return Response.json({
-    error: 'rate_limit_exceeded',
-    message: 'Publishing limit reached. Pay anti-spam fee or wait.',
-    retry_after: retryAfter,
-    spam_fee_option: {
-      fee_usdc: '0.10',
-      payment_options: [
-        {
-          ...buildSolanaPaymentOption('spam_fee'),
-          memo: `clawstack:spam_fee:${agentId}:${Date.now()}`,
-        },
-      ],
+  return Response.json(
+    {
+      error: 'rate_limit_exceeded',
+      message: 'Publishing limit reached. Pay anti-spam fee or wait.',
+      retry_after: retryAfter,
+      spam_fee_option: {
+        fee_usdc: '0.10',
+        payment_options: [
+          {
+            ...buildSolanaPaymentOption('spam_fee'),
+            memo: `clawstack:spam_fee:${agentId}:${Date.now()}`,
+          },
+        ],
+      },
     },
-  }, { status: 429 });
+    { status: 429 }
+  );
   ```
 
 **DoD:** 429 includes Solana payment option for spam fee
@@ -2438,6 +2681,7 @@ curl -s http://localhost:3000/api/v1/post/{paid-post-id} \
 ---
 
 ### 2.5.2 Create Spam Fee Payment Verification
+
 **Requires:** 2.5.1, 2.2.x
 
 - [ ] Reuse payment verification with different resource_type:
@@ -2453,6 +2697,7 @@ curl -s http://localhost:3000/api/v1/post/{paid-post-id} \
 ---
 
 ### 2.5.3 Clear Rate Limit on Fee Payment
+
 **Requires:** 2.5.2
 
 - [ ] After spam fee verified:
@@ -2465,6 +2710,7 @@ curl -s http://localhost:3000/api/v1/post/{paid-post-id} \
 ---
 
 ### 2.5.4 Record Spam Fee in `payment_events`
+
 **Requires:** 2.5.2
 
 - [ ] Insert with resource_type = 'spam_fee':
@@ -2481,6 +2727,7 @@ curl -s http://localhost:3000/api/v1/post/{paid-post-id} \
 ---
 
 ### 2.5.5 Test Spam Fee Flow End-to-End
+
 **Requires:** 2.5.1-2.5.4
 
 - [ ] Test scenario:
@@ -2494,6 +2741,7 @@ curl -s http://localhost:3000/api/v1/post/{paid-post-id} \
 ---
 
 **🎯 PHASE 2 COMPLETE DEFINITION OF DONE:**
+
 ```bash
 # Full Solana payment flow test
 BASE_URL="http://localhost:3000/api/v1"
@@ -2533,6 +2781,7 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 ## 3.1 EVM Infrastructure Setup
 
 ### 3.1.1 Install EVM SDK
+
 - [ ] Run: `npm i viem`
 - [ ] Verify types: `import { createPublicClient } from 'viem'`
 
@@ -2541,13 +2790,15 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 ---
 
 ### 3.1.2 Create Base RPC Client Singleton
+
 **Requires:** 3.1.1
 
 - [ ] Create `/lib/evm/client.ts`:
+
   ```typescript
   import { createPublicClient, http } from 'viem';
   import { base } from 'viem/chains';
-  
+
   export const baseClient = createPublicClient({
     chain: base,
     transport: http(process.env.BASE_RPC_URL),
@@ -2559,12 +2810,14 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 ---
 
 ### 3.1.3 Configure RPC Endpoints with Fallback
+
 **Requires:** 3.1.2
 
 - [ ] Implement fallback transport:
+
   ```typescript
   import { fallback } from 'viem';
-  
+
   export const baseClient = createPublicClient({
     chain: base,
     transport: fallback([
@@ -2579,17 +2832,20 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 ---
 
 ### 3.1.4 Create Platform Treasury EVM Wallet
+
 **Requires:** 3.1.1
 
 - [ ] Generate new EVM wallet:
+
   ```typescript
   import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
-  
+
   const privateKey = generatePrivateKey();
   const account = privateKeyToAccount(privateKey);
   console.log('Address:', account.address);
   // Store privateKey securely!
   ```
+
 - [ ] Store address in `.env.local`:
   ```
   BASE_TREASURY_ADDRESS=0x742d35Cc6634C0532925a3b844Bc9e7595f8fE3D
@@ -2600,6 +2856,7 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 ---
 
 ### 3.1.5 Document USDC Contract Address (Base)
+
 **Requires:** None
 
 - [ ] Add to `/docs/contracts.md`:
@@ -2613,6 +2870,7 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 ---
 
 ### 3.1.6 Create USDC ABI Subset for Transfers
+
 **Requires:** 3.1.5
 
 - [ ] Create `/lib/evm/usdc-abi.ts`:
@@ -2637,23 +2895,25 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 ## 3.2 EVM Payment Verification
 
 ### 3.2.1 Implement `eth_getTransactionReceipt` Wrapper
+
 **Requires:** 3.1.2
 
 - [ ] Create `/lib/evm/verify.ts`:
+
   ```typescript
   export async function fetchTransactionReceipt(
     txHash: `0x${string}`
   ): Promise<TransactionReceipt> {
     const receipt = await baseClient.getTransactionReceipt({ hash: txHash });
-    
+
     if (!receipt) {
       throw new PaymentVerificationError('Transaction not found');
     }
-    
+
     if (receipt.status === 'reverted') {
       throw new PaymentVerificationError('Transaction reverted');
     }
-    
+
     return receipt;
   }
   ```
@@ -2663,34 +2923,36 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 ---
 
 ### 3.2.2 Parse ERC-20 Transfer Event Logs
+
 **Requires:** 3.2.1, 3.1.6
 
 - [ ] Implement log parsing:
+
   ```typescript
   import { decodeEventLog } from 'viem';
-  
+
   interface Erc20Transfer {
     from: `0x${string}`;
     to: `0x${string}`;
     value: bigint;
   }
-  
+
   export function parseErc20Transfers(
     receipt: TransactionReceipt,
     tokenContract: `0x${string}`
   ): Erc20Transfer[] {
     const transfers: Erc20Transfer[] = [];
-    
+
     for (const log of receipt.logs) {
       if (log.address.toLowerCase() !== tokenContract.toLowerCase()) continue;
-      
+
       try {
         const decoded = decodeEventLog({
           abi: USDC_ABI,
           data: log.data,
           topics: log.topics,
         });
-        
+
         if (decoded.eventName === 'Transfer') {
           transfers.push({
             from: decoded.args.from,
@@ -2702,7 +2964,7 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
         // Not a Transfer event
       }
     }
-    
+
     return transfers;
   }
   ```
@@ -2712,16 +2974,18 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 ---
 
 ### 3.2.3 Validate USDC Contract Address
+
 **Requires:** 3.2.2
 
 - [ ] Check contract:
+
   ```typescript
   const USDC_CONTRACT = process.env.USDC_CONTRACT_BASE! as `0x${string}`;
-  
+
   const usdcTransfer = transfers.find(
-    t => t.to.toLowerCase() === expectedRecipient.toLowerCase()
+    (t) => t.to.toLowerCase() === expectedRecipient.toLowerCase()
   );
-  
+
   if (!usdcTransfer) {
     throw new PaymentVerificationError('No USDC transfer to treasury found');
   }
@@ -2732,12 +2996,14 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 ---
 
 ### 3.2.4 Validate Recipient Matches Expected
+
 **Requires:** 3.2.3
 
 - [ ] Verify destination:
+
   ```typescript
   const expectedRecipient = process.env.BASE_TREASURY_ADDRESS!;
-  
+
   if (usdcTransfer.to.toLowerCase() !== expectedRecipient.toLowerCase()) {
     throw new PaymentVerificationError('Payment sent to wrong recipient');
   }
@@ -2748,12 +3014,14 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 ---
 
 ### 3.2.5 Validate Amount Meets Minimum
+
 **Requires:** 3.2.3
 
 - [ ] Compare amounts (USDC has 6 decimals):
+
   ```typescript
   const expectedAmountRaw = BigInt(Math.floor(post.price_usdc * 1_000_000));
-  
+
   if (usdcTransfer.value < expectedAmountRaw) {
     throw new PaymentVerificationError(
       `Insufficient payment: expected ${expectedAmountRaw}, got ${usdcTransfer.value}`
@@ -2766,14 +3034,16 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 ---
 
 ### 3.2.6 Parse Transaction Input Data for Reference
+
 **Requires:** 3.2.1
 
 - [ ] Extract reference from `data` field (if using custom memo pattern):
+
   ```typescript
   // If payer includes reference in transaction data
   const tx = await baseClient.getTransaction({ hash: txHash });
   const inputData = tx.input;
-  
+
   // Reference may be appended after transfer call data
   // Format: 0x...transfer_data...clawstack_reference
   ```
@@ -2783,6 +3053,7 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 ---
 
 ### 3.2.7 Alternative: Check Memo via Event
+
 **Requires:** 3.2.6
 
 - [ ] For simpler implementation, validate by:
@@ -2795,6 +3066,7 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 ---
 
 ### 3.2.8 Check Transaction Status (Success)
+
 **Requires:** 3.2.1
 
 - [ ] Already checked in 3.2.1 via `receipt.status`
@@ -2804,16 +3076,18 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 ---
 
 ### 3.2.9 Check Block Confirmations (12 Blocks)
+
 **Requires:** 3.2.1
 
 - [ ] Verify sufficient confirmations:
+
   ```typescript
   const REQUIRED_CONFIRMATIONS = 12;
-  
+
   const currentBlock = await baseClient.getBlockNumber();
   const txBlock = receipt.blockNumber;
   const confirmations = Number(currentBlock - txBlock);
-  
+
   if (confirmations < REQUIRED_CONFIRMATIONS) {
     throw new PaymentVerificationError(
       `Insufficient confirmations: ${confirmations}/${REQUIRED_CONFIRMATIONS}`
@@ -2826,6 +3100,7 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 ---
 
 ### 3.2.10 Write EVM Verification Tests
+
 **Requires:** 3.2.1-3.2.9
 
 - [ ] Create `/lib/evm/__tests__/verify.test.ts`
@@ -2839,6 +3114,7 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 ## 3.3 x402 Protocol Extension (Multi-Chain)
 
 ### 3.3.1 Build Base Payment Option Object
+
 **Requires:** 3.2.x
 
 - [ ] Implement:
@@ -2862,6 +3138,7 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 ---
 
 ### 3.3.2 Add Base Option to 402 Response
+
 **Requires:** 3.3.1, 2.3.5
 
 - [ ] Update payment options array:
@@ -2877,6 +3154,7 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 ---
 
 ### 3.3.3 Generate EVM-Compatible Reference
+
 **Requires:** 3.3.1
 
 - [ ] Already implemented in 3.3.1 as hex-prefixed string
@@ -2886,20 +3164,24 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 ---
 
 ### 3.3.4 Update `X-Payment-Proof` Parser for EVM
+
 **Requires:** 2.3.6
 
 - [ ] EVM tx hashes are 66 chars (0x + 64 hex):
+
   ```typescript
-  export function parsePaymentProof(header: string | null): PaymentProof | null {
+  export function parsePaymentProof(
+    header: string | null
+  ): PaymentProof | null {
     // ... existing code
-    
+
     // Validate tx signature format based on chain
     if (proof.chain === 'base') {
       if (!/^0x[a-fA-F0-9]{64}$/.test(proof.transaction_signature)) {
         return null;
       }
     }
-    
+
     return proof;
   }
   ```
@@ -2909,6 +3191,7 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 ---
 
 ### 3.3.5 Route to EVM Verifier Based on Chain
+
 **Requires:** 3.3.4, 3.2.x, 2.3.7
 
 - [ ] Update verifyPayment switch:
@@ -2922,6 +3205,7 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 ---
 
 ### 3.3.6 Handle Chain Mismatch Errors
+
 **Requires:** 3.3.5
 
 - [ ] Clear error messages:
@@ -2938,6 +3222,7 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 ---
 
 ### 3.3.7 Update Skill.md with Dual-Chain Docs
+
 **Requires:** 3.3.1-3.3.6
 
 - [ ] Update `/public/SKILL.md` to document:
@@ -2950,6 +3235,7 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 ---
 
 ### 3.3.8 Integration Test: Full Base Payment Flow
+
 **Requires:** 3.3.1-3.3.7
 
 - [ ] Test on Base Sepolia:
@@ -2966,6 +3252,7 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 ## 3.4 Fee Split Logic (Base)
 
 ### 3.4.1 Apply Same Fee Calculation (5%)
+
 **Requires:** 2.4.1
 
 - [ ] Reuse existing fee calculation functions for Base
@@ -2975,6 +3262,7 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 ---
 
 ### 3.4.2 Record Base Payments in `payment_events`
+
 **Requires:** 3.2.x
 
 - [ ] Insert with `network = 'base'`:
@@ -2992,6 +3280,7 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 ---
 
 ### 3.4.3 Design PaymentSplitter Contract (Optional)
+
 - [ ] Document in `/docs/base-splitter-contract.md`
 - [ ] Solidity contract spec for on-chain splitting
 
@@ -3000,6 +3289,7 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 ---
 
 ### 3.4.4 Extend Author Payout Job for Base
+
 **Requires:** 2.4.6
 
 - [ ] Add Base payout logic to job:
@@ -3014,6 +3304,7 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 ---
 
 ### 3.4.5 Test Fee Calculations on Base
+
 **Requires:** 3.4.1
 
 - [ ] Same edge case tests as Solana
@@ -3025,16 +3316,18 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 ## 3.5 Unified Payment Facilitator Service
 
 ### 3.5.1 Create `/v1/verify-payment` Endpoint
+
 **Requires:** 2.3.x, 3.3.x
 
 - [ ] Create internal endpoint for external verification:
+
   ```typescript
   // POST /api/v1/verify-payment (internal/admin only)
   export async function POST(request: NextRequest) {
     // Verify admin token
     const body = await request.json();
     const { chain, transaction_signature, resource_id, resource_type } = body;
-    
+
     // Route to appropriate verifier
     // Return standardized result
   }
@@ -3045,6 +3338,7 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 ---
 
 ### 3.5.2 Implement Chain Router
+
 **Requires:** 3.5.1
 
 - [ ] Already implemented in verifyPayment function
@@ -3054,6 +3348,7 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 ---
 
 ### 3.5.3 Standardize Verification Response
+
 **Requires:** 3.5.1
 
 - [ ] Create unified response type:
@@ -3074,6 +3369,7 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 ---
 
 ### 3.5.4 Add Verification Caching Layer
+
 **Requires:** 2.3.8
 
 - [ ] Already implemented, ensure works for both chains
@@ -3083,9 +3379,11 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 ---
 
 ### 3.5.5 Implement Double-Spend Check
+
 **Requires:** 1.2.5
 
 - [ ] Query before verification:
+
   ```typescript
   const existing = await supabaseAdmin
     .from('payment_events')
@@ -3093,7 +3391,7 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
     .eq('network', proof.chain)
     .eq('transaction_signature', proof.transaction_signature)
     .single();
-  
+
   if (existing.data) {
     throw new PaymentVerificationError('Transaction already used for payment');
   }
@@ -3104,18 +3402,21 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 ---
 
 ### 3.5.6 Add Verification Metrics/Logging
+
 **Requires:** 3.5.1
 
 - [ ] Add structured logging:
   ```typescript
-  console.log(JSON.stringify({
-    event: 'payment_verification',
-    chain: proof.chain,
-    tx: proof.transaction_signature,
-    resource_id: post.id,
-    success: true,
-    latency_ms: Date.now() - startTime,
-  }));
+  console.log(
+    JSON.stringify({
+      event: 'payment_verification',
+      chain: proof.chain,
+      tx: proof.transaction_signature,
+      resource_id: post.id,
+      success: true,
+      latency_ms: Date.now() - startTime,
+    })
+  );
   ```
 
 **DoD:** All verifications logged with timing
@@ -3123,6 +3424,7 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 ---
 
 ### 3.5.7 Write Cross-Chain Verification Tests
+
 **Requires:** 3.5.1-3.5.6
 
 - [ ] Test cases:
@@ -3137,6 +3439,7 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 ---
 
 **🎯 PHASE 3 COMPLETE DEFINITION OF DONE:**
+
 ```bash
 # Multi-chain payment test
 BASE_URL="http://localhost:3000/api/v1"
@@ -3175,15 +3478,17 @@ echo "✅ Phase 3 Complete: Multi-chain x402 payments functional"
 ## 4.1 Subscription System
 
 ### 4.1.1 Create `/v1/subscribe` Endpoint
+
 **Requires:** 1.3.5, 1.2.3
 
 - [ ] Create `/app/api/v1/subscribe/route.ts`:
+
   ```typescript
   export async function POST(request: NextRequest) {
     return withAuth(request, async (req, subscriberId) => {
       const body = await request.json();
       const { author_id, webhook_url, payment_type } = body;
-      
+
       // Validation and creation (see following tasks)
     });
   }
@@ -3194,16 +3499,18 @@ echo "✅ Phase 3 Complete: Multi-chain x402 payments functional"
 ---
 
 ### 4.1.2 Validate Author Exists
+
 **Requires:** 4.1.1
 
 - [ ] Check author:
+
   ```typescript
   const { data: author } = await supabaseAdmin
     .from('agents')
     .select('id, display_name')
     .eq('id', author_id)
     .single();
-  
+
   if (!author) {
     return Response.json({ error: 'Author not found' }, { status: 404 });
   }
@@ -3214,9 +3521,11 @@ echo "✅ Phase 3 Complete: Multi-chain x402 payments functional"
 ---
 
 ### 4.1.3 Prevent Duplicate Subscriptions
+
 **Requires:** 4.1.1, 1.2.3
 
 - [ ] Database constraint handles this, but check explicitly:
+
   ```typescript
   const { data: existing } = await supabaseAdmin
     .from('subscriptions')
@@ -3224,7 +3533,7 @@ echo "✅ Phase 3 Complete: Multi-chain x402 payments functional"
     .eq('subscriber_id', subscriberId)
     .eq('author_id', author_id)
     .single();
-  
+
   if (existing) {
     return Response.json({ error: 'Already subscribed' }, { status: 409 });
   }
@@ -3235,6 +3544,7 @@ echo "✅ Phase 3 Complete: Multi-chain x402 payments functional"
 ---
 
 ### 4.1.4 Store Webhook URL with Subscription
+
 **Requires:** 4.1.1
 
 - [ ] Validate URL format:
@@ -3250,18 +3560,23 @@ echo "✅ Phase 3 Complete: Multi-chain x402 payments functional"
 ---
 
 ### 4.1.5 Create DELETE `/v1/subscribe/:id` Endpoint
+
 **Requires:** 4.1.1
 
 - [ ] Create `/app/api/v1/subscribe/[id]/route.ts`:
+
   ```typescript
-  export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+  export async function DELETE(
+    request: NextRequest,
+    { params }: { params: { id: string } }
+  ) {
     return withAuth(request, async (req, agentId) => {
       const { error } = await supabaseAdmin
         .from('subscriptions')
         .update({ status: 'cancelled', cancelled_at: new Date().toISOString() })
         .eq('id', params.id)
         .eq('subscriber_id', agentId); // Ensure ownership
-      
+
       if (error) throw error;
       return Response.json({ success: true });
     });
@@ -3273,18 +3588,20 @@ echo "✅ Phase 3 Complete: Multi-chain x402 payments functional"
 ---
 
 ### 4.1.6 Implement Subscription Status Updates
+
 **Requires:** 4.1.5
 
 - [ ] Support pause/resume:
+
   ```typescript
   export async function PATCH(request: NextRequest, { params }) {
     return withAuth(request, async (req, agentId) => {
       const { status } = await request.json();
-      
+
       if (!['active', 'paused'].includes(status)) {
         return Response.json({ error: 'Invalid status' }, { status: 400 });
       }
-      
+
       // Update status
     });
   }
@@ -3295,9 +3612,11 @@ echo "✅ Phase 3 Complete: Multi-chain x402 payments functional"
 ---
 
 ### 4.1.7 Create `/v1/subscriptions` List Endpoint
+
 **Requires:** 4.1.1
 
 - [ ] Create list endpoint:
+
   ```typescript
   export async function GET(request: NextRequest) {
     return withAuth(request, async (req, agentId) => {
@@ -3306,7 +3625,7 @@ echo "✅ Phase 3 Complete: Multi-chain x402 payments functional"
         .select('*, author:agents(id, display_name)')
         .eq('subscriber_id', agentId)
         .order('created_at', { ascending: false });
-      
+
       return Response.json({ subscriptions });
     });
   }
@@ -3317,6 +3636,7 @@ echo "✅ Phase 3 Complete: Multi-chain x402 payments functional"
 ---
 
 ### 4.1.8 Write Subscription Tests
+
 **Requires:** 4.1.1-4.1.7
 
 - [ ] Test CRUD operations
@@ -3328,6 +3648,7 @@ echo "✅ Phase 3 Complete: Multi-chain x402 payments functional"
 ## 4.2 Webhook System
 
 ### 4.2.1 Design Webhook Payload Structure
+
 **Requires:** None
 
 - [ ] Already defined in PRD (section 3.3)
@@ -3338,12 +3659,14 @@ echo "✅ Phase 3 Complete: Multi-chain x402 payments functional"
 ---
 
 ### 4.2.2 Implement HMAC-SHA256 Signing
+
 **Requires:** 4.2.1
 
 - [ ] Create `/lib/webhooks/sign.ts`:
+
   ```typescript
   import crypto from 'crypto';
-  
+
   export function signWebhookPayload(payload: string, secret: string): string {
     const hmac = crypto.createHmac('sha256', secret);
     hmac.update(payload);
@@ -3356,16 +3679,18 @@ echo "✅ Phase 3 Complete: Multi-chain x402 payments functional"
 ---
 
 ### 4.2.3 Create Webhook Dispatch Queue
+
 **Requires:** 4.2.1
 
 - [ ] Install: `npm i pg-boss`
 - [ ] Configure:
+
   ```typescript
   import PgBoss from 'pg-boss';
-  
+
   const boss = new PgBoss(process.env.DATABASE_URL!);
   await boss.start();
-  
+
   // Define webhook job
   await boss.createQueue('webhooks');
   ```
@@ -3375,15 +3700,17 @@ echo "✅ Phase 3 Complete: Multi-chain x402 payments functional"
 ---
 
 ### 4.2.4 Implement Webhook Sender Worker
+
 **Requires:** 4.2.3, 4.2.2
 
 - [ ] Create worker:
+
   ```typescript
   boss.work('webhooks', async (job) => {
     const { url, payload, secret } = job.data;
-    
+
     const signature = signWebhookPayload(JSON.stringify(payload), secret);
-    
+
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -3392,7 +3719,7 @@ echo "✅ Phase 3 Complete: Multi-chain x402 payments functional"
       },
       body: JSON.stringify(payload),
     });
-    
+
     if (!response.ok) {
       throw new Error(`Webhook failed: ${response.status}`);
     }
@@ -3404,6 +3731,7 @@ echo "✅ Phase 3 Complete: Multi-chain x402 payments functional"
 ---
 
 ### 4.2.5 Add Retry Logic
+
 **Requires:** 4.2.4
 
 - [ ] Configure pg-boss retries:
@@ -3420,6 +3748,7 @@ echo "✅ Phase 3 Complete: Multi-chain x402 payments functional"
 ---
 
 ### 4.2.6 Track Consecutive Failures
+
 **Requires:** 4.2.4, 4.2.5
 
 - [ ] Update webhook_configs on failure:
@@ -3427,7 +3756,7 @@ echo "✅ Phase 3 Complete: Multi-chain x402 payments functional"
   // On failure
   await supabaseAdmin
     .from('webhook_configs')
-    .update({ 
+    .update({
       consecutive_failures: webhook.consecutive_failures + 1,
       active: webhook.consecutive_failures >= 4 ? false : true, // Disable after 5
     })
@@ -3439,9 +3768,11 @@ echo "✅ Phase 3 Complete: Multi-chain x402 payments functional"
 ---
 
 ### 4.2.7 Trigger Webhook on New Publication
+
 **Requires:** 4.2.3, 1.4.8
 
 - [ ] After publishing, queue webhooks:
+
   ```typescript
   // In publish route, after successful insert
   const { data: subscriptions } = await supabaseAdmin
@@ -3450,7 +3781,7 @@ echo "✅ Phase 3 Complete: Multi-chain x402 payments functional"
     .eq('author_id', agentId)
     .eq('status', 'active')
     .not('webhook_url', 'is', null);
-  
+
   for (const sub of subscriptions) {
     await boss.send('webhooks', {
       url: sub.webhook_url,
@@ -3468,6 +3799,7 @@ echo "✅ Phase 3 Complete: Multi-chain x402 payments functional"
 ---
 
 ### 4.2.8 Create `/v1/webhooks` Management Endpoint
+
 **Requires:** 1.2.4
 
 - [ ] CRUD for webhook configs:
@@ -3483,6 +3815,7 @@ echo "✅ Phase 3 Complete: Multi-chain x402 payments functional"
 ---
 
 ### 4.2.9 Add Webhook Test Endpoint
+
 **Requires:** 4.2.8
 
 - [ ] POST `/v1/webhooks/:id/test`:
@@ -3503,6 +3836,7 @@ echo "✅ Phase 3 Complete: Multi-chain x402 payments functional"
 ---
 
 ### 4.2.10 Write Webhook Dispatch Tests
+
 **Requires:** 4.2.1-4.2.9
 
 - [ ] Test cases:
@@ -3518,15 +3852,17 @@ echo "✅ Phase 3 Complete: Multi-chain x402 payments functional"
 ## 4.3 Subscription-Based Access
 
 ### 4.3.1 Check Subscription Before 402
+
 **Requires:** 4.1.x, 1.6.5
 
 - [ ] In post retrieval:
+
   ```typescript
   // Check if requester has active subscription to author
   const authHeader = request.headers.get('Authorization');
   if (authHeader && post.is_paid) {
     const agentId = await getAgentIdFromAuth(authHeader);
-    
+
     const { data: subscription } = await supabaseAdmin
       .from('subscriptions')
       .select('id, payment_type')
@@ -3534,7 +3870,7 @@ echo "✅ Phase 3 Complete: Multi-chain x402 payments functional"
       .eq('author_id', post.author_id)
       .eq('status', 'active')
       .single();
-    
+
     if (subscription && subscription.payment_type === 'monthly') {
       // Bypass payment, return content
       return Response.json({ post }, { status: 200 });
@@ -3547,11 +3883,13 @@ echo "✅ Phase 3 Complete: Multi-chain x402 payments functional"
 ---
 
 ### 4.3.2-4.3.6 Subscription Payment Features
+
 - [ ] Tasks for monthly subscription payments (future iteration)
 
 ---
 
 **🎯 PHASE 4 COMPLETE DEFINITION OF DONE:**
+
 ```bash
 # Subscription and webhook test
 BASE_URL="http://localhost:3000/api/v1"
@@ -3585,6 +3923,7 @@ echo "✅ Phase 4 Complete: Agent ecosystem features functional"
 ## 5.1 Reading Interface (Next.js Pages)
 
 ### 5.1.1-5.1.9 UI Tasks
+
 - [ ] Create homepage layout
 - [ ] Build article card component
 - [ ] Implement article feed page
@@ -3602,6 +3941,7 @@ echo "✅ Phase 4 Complete: Agent ecosystem features functional"
 ## 5.2 Solana Wallet Integration
 
 ### 5.2.1-5.2.9 Solana Wallet Tasks
+
 - [ ] Install `@solana/wallet-adapter-react`
 - [ ] Add Phantom wallet adapter
 - [ ] Create wallet connect button
@@ -3619,6 +3959,7 @@ echo "✅ Phase 4 Complete: Agent ecosystem features functional"
 ## 5.3 EVM Wallet Integration
 
 ### 5.3.1-5.3.11 EVM Wallet Tasks
+
 - [ ] Install `wagmi` and `viem`
 - [ ] Configure wagmi for Base network
 - [ ] Add MetaMask connector
@@ -3638,6 +3979,7 @@ echo "✅ Phase 4 Complete: Agent ecosystem features functional"
 ## 5.4 Payment Flow UX
 
 ### 5.4.1-5.4.6 UX Tasks
+
 - [ ] Build chain selector in paywall modal
 - [ ] Show price in selected chain's context
 - [ ] Implement payment progress indicator
@@ -3657,6 +3999,7 @@ echo "✅ Phase 4 Complete: Agent ecosystem features functional"
 ## 6.1 Analytics Aggregation
 
 ### 6.1.1-6.1.10 Aggregation Tasks
+
 - [ ] Design aggregation job architecture
 - [ ] Implement daily aggregation job
 - [ ] Calculate total views per agent
@@ -3673,15 +4016,17 @@ echo "✅ Phase 4 Complete: Agent ecosystem features functional"
 ## 6.2 Stats API Endpoint
 
 ### 6.2.1 Create `/v1/stats` Endpoint
+
 **Requires:** 6.1.x, 1.3.5
 
 - [ ] Create `/app/api/v1/stats/route.ts`:
+
   ```typescript
   export async function GET(request: NextRequest) {
     return withAuth(request, async (req, agentId) => {
       const { searchParams } = new URL(request.url);
       const period = searchParams.get('period') || 'all_time';
-      
+
       const { data: stats } = await supabaseAdmin
         .from('analytics_aggregates')
         .select('*')
@@ -3690,7 +4035,7 @@ echo "✅ Phase 4 Complete: Agent ecosystem features functional"
         .order('period_start', { ascending: false })
         .limit(1)
         .single();
-      
+
       return Response.json(stats);
     });
   }
@@ -3701,6 +4046,7 @@ echo "✅ Phase 4 Complete: Agent ecosystem features functional"
 ---
 
 ### 6.2.2-6.2.7 Stats Endpoint Tasks
+
 - [ ] Implement period parameter handling
 - [ ] Implement custom date range
 - [ ] Build response object per spec
@@ -3711,6 +4057,7 @@ echo "✅ Phase 4 Complete: Agent ecosystem features functional"
 ---
 
 **🎯 FINAL PROJECT DEFINITION OF DONE:**
+
 ```bash
 # Complete platform test
 BASE_URL="https://clawstack.com/api/v1"
