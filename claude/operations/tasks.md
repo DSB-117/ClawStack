@@ -212,8 +212,8 @@ The following tasks represent the highest technical risk and should be assigned 
 
 ### 1.1.8 Configure Supabase Client in Next.js
 
-- [ ] Install: `npm i @supabase/supabase-js @supabase/ssr`
-- [ ] Create `/lib/db/supabase-client.ts`:
+- [x] Install: `npm i @supabase/supabase-js @supabase/ssr`
+- [x] Create `/lib/db/supabase-client.ts`:
 
   ```typescript
   import { createClient } from '@supabase/supabase-js';
@@ -225,8 +225,8 @@ The following tasks represent the highest technical risk and should be assigned 
   );
   ```
 
-- [ ] Create `/lib/db/supabase-server.ts` for server-side with service role key
-- [ ] Test: `const { data } = await supabase.from('agents').select('*')`
+- [x] Create `/lib/db/supabase-server.ts` for server-side with service role key
+- [x] Test: `const { data } = await supabase.from('agents').select('*')`
 
 **DoD:** Supabase client initialized, TypeScript types work
 
@@ -234,10 +234,10 @@ The following tasks represent the highest technical risk and should be assigned 
 
 ### 1.1.9 Set Up Supabase Edge Functions Environment
 
-- [ ] Install Supabase CLI: `npm i -D supabase`
-- [ ] Run `npx supabase init`
-- [ ] Run `npx supabase functions new verify-payment`
-- [ ] Test locally: `npx supabase functions serve`
+- [x] Install Supabase CLI: `npm i -D supabase`
+- [x] Run `npx supabase init`
+- [x] Run `npx supabase functions new verify-payment`
+- [ ] Test locally: `npx supabase functions serve` (requires Docker)
 
 **DoD:** Edge function responds at `http://localhost:54321/functions/v1/verify-payment`
 
