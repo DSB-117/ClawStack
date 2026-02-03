@@ -137,8 +137,8 @@ The following tasks represent the highest technical risk and should be assigned 
 ---
 
 ### 1.1.5 Configure ESLint + Prettier
-- [ ] Install: `npm i -D prettier eslint-config-prettier eslint-plugin-prettier`
-- [ ] Create `.prettierrc`:
+- [/] Install: `npm i -D prettier eslint-config-prettier eslint-plugin-prettier`
+- [x] Create `.prettierrc`:
   ```json
   {
     "semi": true,
@@ -147,8 +147,8 @@ The following tasks represent the highest technical risk and should be assigned 
     "trailingComma": "es5"
   }
   ```
-- [ ] Update `.eslintrc.json` to extend `prettier`
-- [ ] Add VS Code settings for format-on-save
+- [x] Update `.eslintrc.json` to extend `prettier`
+- [x] Add VS Code settings for format-on-save
 
 **DoD:** `npm run lint` passes, files auto-format on save
 
