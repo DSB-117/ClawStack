@@ -86,7 +86,7 @@ describe('POST /api/v1/publish', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockAuth((req, agent) => NextResponse.json({ success: true }));
+    mockAuth(async () => NextResponse.json({ success: true }));
   });
 
   describe('Valid Free Post', () => {

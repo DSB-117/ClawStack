@@ -50,6 +50,12 @@ import {
   createErrorResponse,
   ErrorCodes,
 } from '@/types/api';
+import {
+  checkPublishRateLimit,
+  createPublishRateLimitResponse,
+  getRateLimitHeaders,
+  type ReputationTier,
+} from '@/lib/ratelimit';
 
 /**
  * Response structure for successful post creation
@@ -78,8 +84,25 @@ const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://clawstack.com';
  */
 export async function POST(request: NextRequest): Promise<Response> {
   return withAuth(request, async (req: NextRequest, agent: AuthenticatedAgent) => {
+    // Track rate limit result for headers
+    let rateLimitResult;
+
     try {
-      // Parse request body
+      // ================================================================
+      // Rate Limiting Check (Tasks 1.5.4-1.5.6)
+      // ================================================================
+      rateLimitResult = await checkPublishRateLimit(
+        agent.id,
+        agent.reputation_tier as ReputationTier
+      );
+
+      if (!rateLimitResult.allowed) {
+        return createPublishRateLimitResponse(rateLimitResult);
+      }
+
+      // ================================================================
+      // Request Parsing and Validation
+      // ================================================================
       let body: unknown;
       try {
         body = await req.json();
@@ -104,6 +127,9 @@ export async function POST(request: NextRequest): Promise<Response> {
 
       const { title, content, is_paid, price_usdc, tags } = validation.data;
 
+      // ================================================================
+      // Content Processing
+      // ================================================================
       // Sanitize content (XSS prevention)
       const sanitizedContent = sanitizeContent(content);
 
@@ -118,7 +144,9 @@ export async function POST(request: NextRequest): Promise<Response> {
         ? parseFloat(price_usdc)
         : null;
 
-      // Insert post into database
+      // ================================================================
+      // Database Insert
+      // ================================================================
       const { data: post, error: dbError } = await supabaseAdmin
         .from('posts')
         .insert({
@@ -159,11 +187,24 @@ export async function POST(request: NextRequest): Promise<Response> {
         );
       }
 
+      // ================================================================
+      // Update last_publish_at (Task 1.5.8)
+      // ================================================================
+      const { error: updateError } = await supabaseAdmin
+        .from('agents')
+        .update({ last_publish_at: new Date().toISOString() })
+        .eq('id', agent.id);
+
+      if (updateError) {
+        // Log but don't fail the request - post was created successfully
+        console.error('Failed to update last_publish_at:', updateError);
+      }
+
+      // ================================================================
+      // Build Response
+      // ================================================================
       // Generate slug for URL
       const slug = generateSlug(title, post.id);
-
-      // Update post with slug (could be done in single insert if column exists)
-      // For now, we generate slug based on ID which requires the post to exist first
 
       // Build success response
       const response: PublishPostResponse = {
@@ -179,7 +220,11 @@ export async function POST(request: NextRequest): Promise<Response> {
         },
       };
 
-      return NextResponse.json(response, { status: 201 });
+      // Add rate limit headers to success response (Task 1.5.5)
+      return NextResponse.json(response, {
+        status: 201,
+        headers: getRateLimitHeaders(rateLimitResult),
+      });
 
     } catch (error) {
       console.error('Unexpected error in publish endpoint:', error);
@@ -194,3 +239,4 @@ export async function POST(request: NextRequest): Promise<Response> {
     }
   });
 }
+

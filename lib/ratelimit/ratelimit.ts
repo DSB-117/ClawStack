@@ -174,3 +174,163 @@ export function createRateLimitResponse(retryAfterSeconds: number): NextResponse
     }
   );
 }
+
+// ============================================================================
+// Publish Endpoint Rate Limiting (Tasks 1.5.2-1.5.7)
+// ============================================================================
+
+import {
+  RATE_LIMITS,
+  getRateLimitForTier,
+  isTierSuspended,
+  type ReputationTier,
+  type TierRateLimit,
+} from '@/lib/config/rate-limits';
+
+/**
+ * Extended rate limit result with tier information
+ */
+export interface PublishRateLimitResult {
+  allowed: boolean;
+  remaining: number;
+  limit: number;
+  reset: number; // Unix timestamp
+  tier: ReputationTier;
+  tierConfig: TierRateLimit;
+}
+
+/**
+ * Check rate limit for publish endpoint based on agent tier
+ *
+ * @param agentId - Agent's UUID
+ * @param tier - Agent's reputation tier
+ * @returns Rate limit result with tier context
+ *
+ * @see /docs/rate-limiting.md
+ * @see claude/operations/tasks.md Tasks 1.5.2, 1.5.4
+ */
+export async function checkPublishRateLimit(
+  agentId: string,
+  tier: ReputationTier
+): Promise<PublishRateLimitResult> {
+  const tierConfig = getRateLimitForTier(tier);
+
+  // Suspended agents are always blocked
+  if (isTierSuspended(tier)) {
+    return {
+      allowed: false,
+      remaining: 0,
+      limit: 0,
+      reset: Infinity,
+      tier,
+      tierConfig,
+    };
+  }
+
+  // Check rate limit using Upstash
+  const result = await checkRateLimit(
+    'publish',
+    agentId,
+    tierConfig.maxRequests,
+    tierConfig.windowString
+  );
+
+  // If Redis unavailable, allow request (graceful degradation)
+  if (result === null) {
+    return {
+      allowed: true,
+      remaining: tierConfig.maxRequests - 1,
+      limit: tierConfig.maxRequests,
+      reset: Date.now() + tierConfig.windowMs,
+      tier,
+      tierConfig,
+    };
+  }
+
+  return {
+    allowed: result.success,
+    remaining: result.remaining,
+    limit: result.limit,
+    reset: result.reset,
+    tier,
+    tierConfig,
+  };
+}
+
+/**
+ * Anti-spam fee option structure for 429 response
+ *
+ * @see PRD Section 2.4.2 - Anti-Spam Fee Flow
+ */
+export interface SpamFeeOption {
+  fee_usdc: string;
+  payment_options: unknown[]; // Populated in Phase 2
+}
+
+/**
+ * Create 429 response for publish rate limit with anti-spam fee option
+ *
+ * @param result - Rate limit check result
+ * @returns NextResponse with rate limit headers and optional spam fee
+ *
+ * @see claude/operations/tasks.md Tasks 1.5.5-1.5.7
+ */
+export function createPublishRateLimitResponse(
+  result: PublishRateLimitResult
+): NextResponse {
+  const retryAfterSeconds = Math.max(
+    0,
+    Math.ceil((result.reset - Date.now()) / 1000)
+  );
+
+  // Build spam fee option if available for this tier
+  const spamFeeOption: SpamFeeOption | null = result.tierConfig.spamFeeUsdc
+    ? {
+        fee_usdc: result.tierConfig.spamFeeUsdc,
+        payment_options: [], // Populated in Phase 2 with x402 options
+      }
+    : null;
+
+  const responseBody: Record<string, unknown> = {
+    error: ErrorCodes.RATE_LIMIT_EXCEEDED,
+    message: spamFeeOption
+      ? 'Publishing limit reached. Pay anti-spam fee or wait.'
+      : 'Publishing limit reached. Wait for the window to expire.',
+    retry_after: retryAfterSeconds,
+  };
+
+  if (spamFeeOption) {
+    responseBody.spam_fee_option = spamFeeOption;
+  }
+
+  return NextResponse.json(responseBody, {
+    status: 429,
+    headers: {
+      'Retry-After': String(retryAfterSeconds),
+      'X-RateLimit-Limit': String(result.limit),
+      'X-RateLimit-Remaining': '0',
+      'X-RateLimit-Reset': String(Math.ceil(result.reset / 1000)),
+    },
+  });
+}
+
+/**
+ * Create rate limit headers for successful responses
+ *
+ * @param result - Rate limit check result
+ * @returns Headers object to spread into response
+ *
+ * @see claude/operations/tasks.md Task 1.5.5
+ */
+export function getRateLimitHeaders(
+  result: PublishRateLimitResult
+): Record<string, string> {
+  return {
+    'X-RateLimit-Limit': String(result.limit),
+    'X-RateLimit-Remaining': String(result.remaining),
+    'X-RateLimit-Reset': String(Math.ceil(result.reset / 1000)),
+  };
+}
+
+// Re-export tier types for convenience
+export { type ReputationTier } from '@/lib/config/rate-limits';

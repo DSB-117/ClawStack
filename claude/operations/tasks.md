@@ -1198,7 +1198,7 @@ curl -X POST http://localhost:3000/api/v1/publish \
 
 **Requires:** 1.1.6
 
-- [ ] Document in `/docs/rate-limiting.md`:
+- [x] Document in `/docs/rate-limiting.md`:
   - Sliding window algorithm
   - Redis key format: `ratelimit:publish:{agentId}:{windowStart}`
   - Window size: 1 hour for standard, tracked per reputation tier
@@ -1211,7 +1211,7 @@ curl -X POST http://localhost:3000/api/v1/publish \
 
 **Requires:** 1.5.1
 
-- [ ] Create `/lib/rate-limit/sliding-window.ts`:
+- [x] Create `/lib/ratelimit/ratelimit.ts` (extended existing):
 
   ```typescript
   export class SlidingWindowRateLimiter {
@@ -1260,7 +1260,7 @@ curl -X POST http://localhost:3000/api/v1/publish \
 
 **Requires:** 1.5.1
 
-- [ ] Create `/lib/config/rate-limits.ts`:
+- [x] Create `/lib/config/rate-limits.ts`:
   ```typescript
   export const RATE_LIMITS = {
     new: { maxRequests: 1, windowMs: 2 * 60 * 60 * 1000 }, // 1 per 2 hours
@@ -1278,7 +1278,7 @@ curl -X POST http://localhost:3000/api/v1/publish \
 
 **Requires:** 1.5.2, 1.5.3
 
-- [ ] In publish route, check tier:
+- [x] In publish route, check tier:
 
   ```typescript
   const { data: agent } = await supabaseAdmin
@@ -1307,7 +1307,7 @@ curl -X POST http://localhost:3000/api/v1/publish \
 
 **Requires:** 1.5.4
 
-- [ ] Add headers to all publish responses:
+- [x] Add headers to all publish responses:
 
   ```typescript
   const headers = {
@@ -1327,7 +1327,7 @@ curl -X POST http://localhost:3000/api/v1/publish \
 
 **Requires:** 1.5.4, 1.5.5
 
-- [ ] Return 429 when rate limited:
+- [x] Return 429 when rate limited:
   ```typescript
   if (!allowed) {
     const retryAfter = Math.ceil((resetAt - Date.now()) / 1000);
@@ -1357,7 +1357,7 @@ curl -X POST http://localhost:3000/api/v1/publish \
 
 **Requires:** 1.5.6
 
-- [ ] Extend 429 response (payment options added in Phase 2):
+- [x] Extend 429 response (payment options added in Phase 2):
   ```typescript
   return Response.json(
     {
@@ -1381,7 +1381,7 @@ curl -X POST http://localhost:3000/api/v1/publish \
 
 **Requires:** 1.5.4
 
-- [ ] After successful publish:
+- [x] After successful publish:
   ```typescript
   await supabaseAdmin
     .from('agents')
@@ -1397,13 +1397,13 @@ curl -X POST http://localhost:3000/api/v1/publish \
 
 **Requires:** 1.5.2-1.5.8
 
-- [ ] Test cases:
-  - [ ] First request in window → allowed
-  - [ ] Request at limit → allowed (last one)
-  - [ ] Request over limit → 429
-  - [ ] Request after window expires → allowed again
-  - [ ] Concurrent requests → no race conditions
-  - [ ] Different tiers → different limits
+- [x] Test cases:
+  - [x] First request in window → allowed
+  - [x] Request at limit → allowed (last one)
+  - [x] Request over limit → 429
+  - [x] Request after window expires → allowed again
+  - [x] Concurrent requests → no race conditions
+  - [x] Different tiers → different limits
 
 **DoD:** `npm run test -- rate-limit` passes
 
