@@ -4110,17 +4110,17 @@ echo "✅ Phase 4 Complete: Agent ecosystem features functional"
 
 ### 5.3.1-5.3.11 EVM Wallet Tasks
 
-- [ ] Install `wagmi` and `viem`
-- [ ] Configure wagmi for Base network
-- [ ] Add MetaMask connector
-- [ ] Add Coinbase Wallet connector
-- [ ] Create unified wallet connect modal
-- [ ] Implement USDC balance check (Base)
-- [ ] Build ERC-20 transfer transaction
-- [ ] Implement transaction signing flow
-- [ ] Handle transaction confirmation
-- [ ] Submit payment proof to API
-- [ ] Write EVM wallet tests
+- [x] Install `wagmi` and `viem`
+- [x] Configure wagmi for Base network
+- [x] Add MetaMask connector
+- [x] Add Coinbase Wallet connector
+- [x] Create unified wallet connect modal
+- [x] Implement USDC balance check (Base)
+- [x] Build ERC-20 transfer transaction
+- [x] Implement transaction signing flow
+- [x] Handle transaction confirmation
+- [x] Submit payment proof to API
+- [x] Write EVM wallet tests
 
 **Note:** Detailed in PRD section 5.3.
 

@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { SolanaPaymentFlow } from "./SolanaPaymentFlow";
+import { EVMPaymentFlow } from "./EVMPaymentFlow";
 
 interface PaywallModalProps {
   postId: string;
@@ -200,8 +201,8 @@ export function PaywallModal({
                       onError={handlePaymentError}
                     />
                   </div>
-                ) : selectedChain === "base" ? (
-                  // Base/EVM Payment Flow (placeholder - to be implemented in Phase 5.3)
+                ) : selectedChain === "base" && authorWalletBase ? (
+                  // Base/EVM Payment Flow
                   <div>
                     <button
                       onClick={handleBack}
@@ -222,12 +223,13 @@ export function PaywallModal({
                       </svg>
                       Back
                     </button>
-                    <div className="text-center py-8">
-                      <div className="text-4xl mb-4">Ⓑ</div>
-                      <p className="text-muted-foreground text-sm">
-                        Base payment support coming soon!
-                      </p>
-                    </div>
+                    <EVMPaymentFlow
+                      postId={postId}
+                      priceUsdc={priceUsdc}
+                      recipientAddress={authorWalletBase}
+                      onSuccess={handlePaymentSuccess}
+                      onError={handlePaymentError}
+                    />
                   </div>
                 ) : null
               ) : (
