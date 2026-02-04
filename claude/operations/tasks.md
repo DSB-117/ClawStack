@@ -3286,7 +3286,9 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 
 **Requires:** 2.4.1
 
-- [ ] Reuse existing fee calculation functions for Base
+- [x] Reuse existing fee calculation functions for Base
+- [x] `calculatePlatformFee()` and `calculateAuthorAmount()` are chain-agnostic
+- [x] Same 5% fee (500 basis points) applied to both Solana and Base
 
 **DoD:** Fee calculation consistent across chains
 
@@ -3296,7 +3298,8 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 
 **Requires:** 3.2.x
 
-- [ ] Insert with `network = 'base'`:
+- [x] Insert with `network = 'base'`:
+- [x] `recordPaymentEvent()` already handles Base with correct network/chain_id
   ```typescript
   await supabaseAdmin.from('payment_events').insert({
     // ... common fields
@@ -3312,8 +3315,9 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 
 ### 3.4.3 Design PaymentSplitter Contract (Optional)
 
-- [ ] Document in `/docs/base-splitter-contract.md`
-- [ ] Solidity contract spec for on-chain splitting
+- [x] Document in `/docs/base-splitter-contract.md`
+- [x] Solidity contract spec for on-chain splitting
+- [x] Migration path from off-chain to on-chain documented
 
 **DoD:** Architecture documented for future implementation
 
@@ -3323,7 +3327,9 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 
 **Requires:** 2.4.6
 
-- [ ] Add Base payout logic to job:
+- [x] Add Base payout logic to job:
+- [x] Created `/jobs/base-payouts.ts` with `processBasePayouts()` function
+- [x] Uses viem for ERC-20 USDC transfers
   ```typescript
   export async function processBasePayouts() {
     // Similar to Solana, but using viem to send transactions
@@ -3338,9 +3344,11 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 
 **Requires:** 3.4.1
 
-- [ ] Same edge case tests as Solana
+- [x] Same edge case tests as Solana
+- [x] Created `/lib/x402/__tests__/base-fee-calculations.test.ts`
+- [x] 27 tests covering fee calculations, USDC conversions, payout thresholds
 
-**DoD:** Fee calculations correct on Base
+**DoD:** `npm run test -- base-fee-calculations` passes (27 tests)
 
 ---
 

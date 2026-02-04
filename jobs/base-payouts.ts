@@ -1,0 +1,504 @@
+/**
+ * Base (EVM) Author Payout Job
+ *
+ * Processes batched USDC payouts to authors on Base L2.
+ * Runs weekly (or on-demand) to aggregate small payments into larger batches.
+ *
+ * @see claude/operations/tasks.md Task 3.4.4
+ * @see docs/contracts.md
+ */
+
+import {
+  createWalletClient,
+  http,
+  type WalletClient,
+  type Account,
+  encodeFunctionData,
+  parseUnits,
+} from 'viem';
+import { privateKeyToAccount } from 'viem/accounts';
+import { base } from 'viem/chains';
+import { getBaseClient } from '@/lib/evm/client';
+import { USDC_ABI, USDC_CONTRACT_BASE, USDC_DECIMALS } from '@/lib/evm/usdc-abi';
+import { supabaseAdmin } from '@/lib/db/supabase-server';
+
+// ============================================
+// Configuration
+// ============================================
+
+/** Minimum payout threshold in raw units ($1 = 1,000,000) */
+const MIN_PAYOUT_RAW = BigInt(1_000_000);
+
+/** Maximum payouts per batch (to avoid gas issues) */
+const MAX_PAYOUTS_PER_BATCH = 50;
+
+/** USDC contract address on Base mainnet */
+const USDC_CONTRACT = (process.env.USDC_CONTRACT_BASE ||
+  USDC_CONTRACT_BASE) as `0x${string}`;
+
+// ============================================
+// Types
+// ============================================
+
+interface PendingPayout {
+  author_id: string;
+  author_wallet: string;
+  total_owed_raw: number;
+  payment_count: number;
+}
+
+interface PayoutResult {
+  author_id: string;
+  success: boolean;
+  transaction_hash?: string;
+  error?: string;
+}
+
+interface BatchResult {
+  batch_id: string;
+  network: 'base';
+  total_authors: number;
+  total_amount_raw: bigint;
+  successful: number;
+  failed: number;
+  results: PayoutResult[];
+}
+
+// ============================================
+// Treasury Wallet Loading
+// ============================================
+
+/**
+ * Load the treasury wallet from environment.
+ * In production, this should come from a secure secret manager.
+ */
+function loadTreasuryAccount(): Account {
+  const privateKey = process.env.BASE_TREASURY_PRIVATE_KEY;
+
+  if (!privateKey) {
+    throw new Error(
+      'BASE_TREASURY_PRIVATE_KEY environment variable is required for payouts'
+    );
+  }
+
+  // Ensure proper hex format
+  const formattedKey = privateKey.startsWith('0x')
+    ? (privateKey as `0x${string}`)
+    : (`0x${privateKey}` as `0x${string}`);
+
+  return privateKeyToAccount(formattedKey);
+}
+
+/**
+ * Create a wallet client for sending transactions.
+ */
+function createTreasuryWalletClient(account: Account): WalletClient {
+  const rpcUrl = process.env.BASE_RPC_URL || 'https://mainnet.base.org';
+
+  return createWalletClient({
+    account,
+    chain: base,
+    transport: http(rpcUrl),
+  });
+}
+
+// ============================================
+// Payout Processing
+// ============================================
+
+/**
+ * Get pending payouts from the database for Base network.
+ */
+async function getPendingPayouts(): Promise<PendingPayout[]> {
+  // Query confirmed payments grouped by recipient
+  const { data, error } = await supabaseAdmin
+    .from('payment_events')
+    .select(`
+      recipient_id,
+      author_amount_raw,
+      agents!payment_events_recipient_id_fkey(wallet_base)
+    `)
+    .eq('network', 'base')
+    .eq('status', 'confirmed')
+    .in('resource_type', ['post', 'subscription']);
+
+  if (error) {
+    throw new Error(`Failed to fetch pending payouts: ${error.message}`);
+  }
+
+  if (!data || data.length === 0) {
+    return [];
+  }
+
+  // Aggregate by recipient
+  const payoutMap = new Map<string, PendingPayout>();
+
+  for (const row of data) {
+    const agent = row.agents as unknown as { wallet_base: string | null };
+    if (!agent?.wallet_base) continue;
+
+    const existing = payoutMap.get(row.recipient_id);
+    if (existing) {
+      existing.total_owed_raw += row.author_amount_raw;
+      existing.payment_count += 1;
+    } else {
+      payoutMap.set(row.recipient_id, {
+        author_id: row.recipient_id,
+        author_wallet: agent.wallet_base,
+        total_owed_raw: row.author_amount_raw,
+        payment_count: 1,
+      });
+    }
+  }
+
+  // Filter by minimum payout and limit
+  return Array.from(payoutMap.values())
+    .filter((p) => BigInt(p.total_owed_raw) >= MIN_PAYOUT_RAW)
+    .slice(0, MAX_PAYOUTS_PER_BATCH);
+}
+
+/**
+ * Get unpaid payment event IDs for an author on Base.
+ */
+async function getUnpaidPaymentEvents(authorId: string): Promise<string[]> {
+  const { data, error } = await supabaseAdmin
+    .from('payment_events')
+    .select('id')
+    .eq('recipient_id', authorId)
+    .eq('network', 'base')
+    .eq('status', 'confirmed')
+    .in('resource_type', ['post', 'subscription']);
+
+  if (error) {
+    console.error(`Failed to get payment events for ${authorId}:`, error);
+    return [];
+  }
+
+  return (data || []).map((row) => row.id);
+}
+
+/**
+ * Create a payout batch record.
+ */
+async function createPayoutBatch(payouts: PendingPayout[]): Promise<string> {
+  const totalAmountRaw = payouts.reduce(
+    (sum, p) => sum + BigInt(p.total_owed_raw),
+    BigInt(0)
+  );
+
+  const { data, error } = await supabaseAdmin
+    .from('payout_batches')
+    .insert({
+      network: 'base',
+      status: 'processing',
+      total_authors: payouts.length,
+      total_amount_raw: Number(totalAmountRaw),
+      started_at: new Date().toISOString(),
+      created_by: 'system',
+    })
+    .select('id')
+    .single();
+
+  if (error) {
+    throw new Error(`Failed to create payout batch: ${error.message}`);
+  }
+
+  return data.id;
+}
+
+/**
+ * Create payout batch item records.
+ */
+async function createPayoutItems(
+  batchId: string,
+  payouts: PendingPayout[]
+): Promise<void> {
+  const items = await Promise.all(
+    payouts.map(async (payout) => {
+      const paymentEventIds = await getUnpaidPaymentEvents(payout.author_id);
+
+      return {
+        batch_id: batchId,
+        author_id: payout.author_id,
+        author_wallet: payout.author_wallet,
+        amount_raw: payout.total_owed_raw,
+        payment_event_ids: paymentEventIds,
+        status: 'pending' as const,
+      };
+    })
+  );
+
+  const { error } = await supabaseAdmin
+    .from('payout_batch_items')
+    .insert(items);
+
+  if (error) {
+    throw new Error(`Failed to create payout items: ${error.message}`);
+  }
+}
+
+/**
+ * Process a single USDC transfer on Base.
+ */
+async function processPayoutTransaction(
+  walletClient: WalletClient,
+  authorWallet: string,
+  amountRaw: bigint
+): Promise<{ hash: string }> {
+  const publicClient = getBaseClient();
+
+  // Verify treasury has sufficient USDC balance
+  const treasuryBalance = await publicClient.readContract({
+    address: USDC_CONTRACT,
+    abi: USDC_ABI,
+    functionName: 'balanceOf',
+    args: [walletClient.account!.address],
+  });
+
+  if ((treasuryBalance as bigint) < amountRaw) {
+    throw new Error(
+      `Insufficient treasury balance: ${treasuryBalance} < ${amountRaw}`
+    );
+  }
+
+  // Encode the transfer function call
+  const data = encodeFunctionData({
+    abi: [
+      {
+        type: 'function',
+        name: 'transfer',
+        inputs: [
+          { name: 'to', type: 'address' },
+          { name: 'amount', type: 'uint256' },
+        ],
+        outputs: [{ name: '', type: 'bool' }],
+        stateMutability: 'nonpayable',
+      },
+    ],
+    functionName: 'transfer',
+    args: [authorWallet as `0x${string}`, amountRaw],
+  });
+
+  // Send the transaction
+  const hash = await walletClient.sendTransaction({
+    account: walletClient.account!,
+    to: USDC_CONTRACT,
+    data,
+    chain: base,
+  });
+
+  // Wait for confirmation
+  const receipt = await publicClient.waitForTransactionReceipt({
+    hash,
+    confirmations: 1,
+  });
+
+  if (receipt.status === 'reverted') {
+    throw new Error('Transaction reverted');
+  }
+
+  return { hash };
+}
+
+/**
+ * Update payout item status after processing.
+ */
+async function updatePayoutItemStatus(
+  itemId: string,
+  result: PayoutResult
+): Promise<void> {
+  const { error } = await supabaseAdmin
+    .from('payout_batch_items')
+    .update({
+      status: result.success ? 'completed' : 'failed',
+      transaction_signature: result.transaction_hash,
+      error_message: result.error,
+      processed_at: new Date().toISOString(),
+    })
+    .eq('id', itemId);
+
+  if (error) {
+    console.error(`Failed to update payout item ${itemId}:`, error);
+  }
+}
+
+/**
+ * Update payout batch status after completion.
+ */
+async function updatePayoutBatchStatus(
+  batchId: string,
+  successful: number,
+  failed: number,
+  error?: string
+): Promise<void> {
+  const status =
+    failed === 0 ? 'completed' : successful === 0 ? 'failed' : 'partial';
+
+  const { error: updateError } = await supabaseAdmin
+    .from('payout_batches')
+    .update({
+      status,
+      successful_payouts: successful,
+      failed_payouts: failed,
+      completed_at: new Date().toISOString(),
+      error_message: error,
+    })
+    .eq('id', batchId);
+
+  if (updateError) {
+    console.error(`Failed to update batch ${batchId}:`, updateError);
+  }
+}
+
+// ============================================
+// Main Entry Point
+// ============================================
+
+/**
+ * Process all pending Base payouts.
+ *
+ * This function:
+ * 1. Fetches all authors with pending payouts >= $1
+ * 2. Creates a payout batch record
+ * 3. Processes each payout as a separate transaction
+ * 4. Records results in the database
+ *
+ * @returns BatchResult with summary of the payout run
+ */
+export async function processBasePayouts(): Promise<BatchResult | null> {
+  console.log('Starting Base payout job...');
+
+  // Fetch pending payouts
+  const pendingPayouts = await getPendingPayouts();
+
+  if (pendingPayouts.length === 0) {
+    console.log('No pending payouts found');
+    return null;
+  }
+
+  console.log(`Found ${pendingPayouts.length} authors with pending payouts`);
+
+  // Create batch record
+  const batchId = await createPayoutBatch(pendingPayouts);
+  console.log(`Created payout batch: ${batchId}`);
+
+  // Create batch items
+  await createPayoutItems(batchId, pendingPayouts);
+
+  // Get batch items with IDs
+  const { data: batchItems } = await supabaseAdmin
+    .from('payout_batch_items')
+    .select('id, author_id, author_wallet, amount_raw')
+    .eq('batch_id', batchId);
+
+  if (!batchItems || batchItems.length === 0) {
+    throw new Error('Failed to retrieve batch items');
+  }
+
+  // Load treasury wallet
+  const treasuryAccount = loadTreasuryAccount();
+  const walletClient = createTreasuryWalletClient(treasuryAccount);
+  console.log(`Treasury address: ${treasuryAccount.address}`);
+
+  // Process each payout
+  const results: PayoutResult[] = [];
+  let successful = 0;
+  let failed = 0;
+
+  for (const item of batchItems) {
+    console.log(
+      `Processing payout to ${item.author_wallet}: ${item.amount_raw} raw units`
+    );
+
+    try {
+      const { hash } = await processPayoutTransaction(
+        walletClient,
+        item.author_wallet,
+        BigInt(item.amount_raw)
+      );
+
+      const result: PayoutResult = {
+        author_id: item.author_id,
+        success: true,
+        transaction_hash: hash,
+      };
+
+      results.push(result);
+      await updatePayoutItemStatus(item.id, result);
+      successful++;
+
+      console.log(`  ✓ Payout successful: ${hash}`);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
+      const result: PayoutResult = {
+        author_id: item.author_id,
+        success: false,
+        error: errorMessage,
+      };
+
+      results.push(result);
+      await updatePayoutItemStatus(item.id, result);
+      failed++;
+
+      console.error(`  ✗ Payout failed: ${errorMessage}`);
+    }
+  }
+
+  // Update batch status
+  await updatePayoutBatchStatus(batchId, successful, failed);
+
+  const totalAmountRaw = pendingPayouts.reduce(
+    (sum, p) => sum + BigInt(p.total_owed_raw),
+    BigInt(0)
+  );
+
+  const batchResult: BatchResult = {
+    batch_id: batchId,
+    network: 'base',
+    total_authors: pendingPayouts.length,
+    total_amount_raw: totalAmountRaw,
+    successful,
+    failed,
+    results,
+  };
+
+  console.log(`\nPayout batch complete:`);
+  console.log(`  Batch ID: ${batchId}`);
+  console.log(`  Total: ${pendingPayouts.length} authors`);
+  console.log(`  Successful: ${successful}`);
+  console.log(`  Failed: ${failed}`);
+  console.log(`  Total amount: ${Number(totalAmountRaw) / 1_000_000} USDC`);
+
+  return batchResult;
+}
+
+/**
+ * Dry run - preview what would be paid out without executing transactions.
+ */
+export async function previewBasePayouts(): Promise<PendingPayout[]> {
+  const pendingPayouts = await getPendingPayouts();
+
+  console.log('Pending Base Payouts Preview:');
+  console.log('=============================');
+
+  let totalRaw = BigInt(0);
+
+  for (const payout of pendingPayouts) {
+    const amountUsdc = Number(payout.total_owed_raw) / 1_000_000;
+    console.log(
+      `  ${payout.author_wallet.slice(0, 10)}... : $${amountUsdc.toFixed(2)} (${payout.payment_count} payments)`
+    );
+    totalRaw += BigInt(payout.total_owed_raw);
+  }
+
+  console.log('-----------------------------');
+  console.log(`Total: $${(Number(totalRaw) / 1_000_000).toFixed(2)} USDC`);
+  console.log(`Authors: ${pendingPayouts.length}`);
+
+  return pendingPayouts;
+}
+
+// Export for CLI usage
+export { getPendingPayouts, MIN_PAYOUT_RAW, MAX_PAYOUTS_PER_BATCH };
