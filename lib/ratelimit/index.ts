@@ -8,10 +8,11 @@ export {
   checkRateLimit,
   getClientIp,
   createRateLimitResponse,
-  // Publish-specific rate limiting (Tasks 1.5.x)
+  // Publish-specific rate limiting (Tasks 1.5.x, 2.5.x)
   checkPublishRateLimit,
   createPublishRateLimitResponse,
   getRateLimitHeaders,
+  clearPublishRateLimit,
   type RateLimitResult,
   type PublishRateLimitResult,
   type SpamFeeOption,

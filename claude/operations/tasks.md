@@ -2676,7 +2676,7 @@ curl -s http://localhost:3000/api/v1/post/{paid-post-id} \
 
 **Requires:** 1.5.7, 2.3.4
 
-- [ ] Update 429 response:
+- [x] Update 429 response:
   ```typescript
   return Response.json(
     {
@@ -2705,7 +2705,7 @@ curl -s http://localhost:3000/api/v1/post/{paid-post-id} \
 
 **Requires:** 2.5.1, 2.2.x
 
-- [ ] Reuse payment verification with different resource_type:
+- [x] Reuse payment verification with different resource_type:
   ```typescript
   if (proof.memo?.includes('spam_fee')) {
     // Verify as spam fee payment
@@ -2721,7 +2721,7 @@ curl -s http://localhost:3000/api/v1/post/{paid-post-id} \
 
 **Requires:** 2.5.2
 
-- [ ] After spam fee verified:
+- [x] After spam fee verified:
   ```typescript
   await redis.del(`ratelimit:publish:${agentId}`);
   ```
@@ -2734,7 +2734,7 @@ curl -s http://localhost:3000/api/v1/post/{paid-post-id} \
 
 **Requires:** 2.5.2
 
-- [ ] Insert with resource_type = 'spam_fee':
+- [x] Insert with resource_type = 'spam_fee':
   ```typescript
   await supabaseAdmin.from('payment_events').insert({
     resource_type: 'spam_fee',
@@ -2751,7 +2751,7 @@ curl -s http://localhost:3000/api/v1/post/{paid-post-id} \
 
 **Requires:** 2.5.1-2.5.4
 
-- [ ] Test scenario:
+- [x] Test scenario:
   1. Hit rate limit → 429 with payment options
   2. Pay spam fee on devnet
   3. Include payment proof in next publish request

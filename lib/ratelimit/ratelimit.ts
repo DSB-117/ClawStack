@@ -264,32 +264,49 @@ export async function checkPublishRateLimit(
  */
 export interface SpamFeeOption {
   fee_usdc: string;
-  payment_options: unknown[]; // Populated in Phase 2
+  payment_options: unknown[];
 }
 
 /**
  * Create 429 response for publish rate limit with anti-spam fee option
  *
  * @param result - Rate limit check result
+ * @param agentId - Agent ID for spam fee memo generation
  * @returns NextResponse with rate limit headers and optional spam fee
  *
- * @see claude/operations/tasks.md Tasks 1.5.5-1.5.7
+ * @see claude/operations/tasks.md Tasks 1.5.5-1.5.7, 2.5.1
  */
 export function createPublishRateLimitResponse(
-  result: PublishRateLimitResult
+  result: PublishRateLimitResult,
+  agentId?: string
 ): NextResponse {
   const retryAfterSeconds = Math.max(
     0,
     Math.ceil((result.reset - Date.now()) / 1000)
   );
 
-  // Build spam fee option if available for this tier
-  const spamFeeOption: SpamFeeOption | null = result.tierConfig.spamFeeUsdc
-    ? {
+  // Build spam fee option if available for this tier (Task 2.5.1)
+  let spamFeeOption: SpamFeeOption | null = null;
+  
+  if (result.tierConfig.spamFeeUsdc && agentId) {
+    // Import payment option builder dynamically to avoid circular deps
+    const { buildSpamFeePaymentOptions } = require('@/lib/x402/helpers');
+    
+    try {
+      const paymentOptions = buildSpamFeePaymentOptions(agentId);
+      spamFeeOption = {
         fee_usdc: result.tierConfig.spamFeeUsdc,
-        payment_options: [], // Populated in Phase 2 with x402 options
-      }
-    : null;
+        payment_options: paymentOptions,
+      };
+    } catch (error) {
+      console.error('Failed to build spam fee payment options:', error);
+      // Fallback to empty array if payment options fail
+      spamFeeOption = {
+        fee_usdc: result.tierConfig.spamFeeUsdc,
+        payment_options: [],
+      };
+    }
+  }
 
   const responseBody: Record<string, unknown> = {
     error: ErrorCodes.RATE_LIMIT_EXCEEDED,
@@ -330,6 +347,40 @@ export function getRateLimitHeaders(
     'X-RateLimit-Remaining': String(result.remaining),
     'X-RateLimit-Reset': String(Math.ceil(result.reset / 1000)),
   };
+}
+
+/**
+ * Clear the publish rate limit for an agent.
+ * Used after spam fee payment to reset the rate limit window.
+ *
+ * @param agentId - Agent's UUID
+ * @returns True if rate limit was cleared, false if Redis unavailable
+ *
+ * @see claude/operations/tasks.md Task 2.5.3
+ */
+export async function clearPublishRateLimit(agentId: string): Promise<boolean> {
+  const redisClient = getRedis();
+  if (!redisClient) {
+    console.warn('Cannot clear rate limit: Redis not configured');
+    return false;
+  }
+
+  try {
+    // Delete all rate limit keys for this agent
+    // The key format is: clawstack:ratelimit:publish:{agentId}
+    const pattern = `clawstack:ratelimit:publish:*:${agentId}`;
+    
+    // Use direct Redis DEL command
+    // Note: Upstash Redis uses a different key format, so we delete the exact key
+    const key = `clawstack:ratelimit:publish:${agentId}`;
+    await redisClient.del(key);
+    
+    console.log(`Cleared publish rate limit for agent ${agentId}`);
+    return true;
+  } catch (error) {
+    console.error('Failed to clear rate limit:', error);
+    return false;
+  }
 }
 
 // Re-export tier types for convenience

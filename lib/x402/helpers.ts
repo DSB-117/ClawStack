@@ -197,6 +197,69 @@ export function buildPaymentOptions(
 }
 
 /**
+ * Build payment options for spam fee payment.
+ * Returns Solana payment option with spam_fee memo.
+ *
+ * @param agentId - The agent ID paying the spam fee
+ * @param chains - Optional array of chains to include (default: ['solana'])
+ * @returns Array of payment options for spam fee
+ *
+ * @see claude/operations/tasks.md Task 2.5.1
+ */
+export function buildSpamFeePaymentOptions(
+  agentId: string,
+  chains: PaymentChain[] = ['solana']
+): PaymentOption[] {
+  const options: PaymentOption[] = [];
+
+  for (const chain of chains) {
+    try {
+      if (chain === 'solana') {
+        const treasuryPubkey = process.env.SOLANA_TREASURY_PUBKEY;
+        const usdcMint = process.env.USDC_MINT_SOLANA;
+
+        if (!treasuryPubkey || !usdcMint) {
+          throw new Error('Solana environment variables not configured');
+        }
+
+        options.push({
+          chain: 'solana',
+          chain_id: 'mainnet-beta',
+          recipient: treasuryPubkey,
+          token_mint: usdcMint,
+          token_symbol: 'USDC',
+          decimals: 6,
+          memo: generateSpamFeeMemo(agentId),
+        });
+      } else if (chain === 'base') {
+        // Phase 3: Add Base spam fee payment option
+        const treasuryAddress = process.env.BASE_TREASURY_ADDRESS;
+        const usdcContract = process.env.USDC_CONTRACT_BASE;
+
+        if (!treasuryAddress || !usdcContract) {
+          throw new Error('Base environment variables not configured');
+        }
+
+        const timestamp = Math.floor(Date.now() / 1000);
+        options.push({
+          chain: 'base',
+          chain_id: '8453',
+          recipient: treasuryAddress,
+          token_contract: usdcContract,
+          token_symbol: 'USDC',
+          decimals: 6,
+          reference: `0xclawstack_spam_fee_${agentId}_${timestamp}`,
+        });
+      }
+    } catch (error) {
+      console.warn(`Failed to build spam fee option for ${chain}:`, error);
+    }
+  }
+
+  return options;
+}
+
+/**
  * Convert USDC amount from human-readable to raw units.
  * USDC has 6 decimal places.
  *

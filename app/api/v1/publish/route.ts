@@ -54,8 +54,15 @@ import {
   checkPublishRateLimit,
   createPublishRateLimitResponse,
   getRateLimitHeaders,
+  clearPublishRateLimit,
   type ReputationTier,
 } from '@/lib/ratelimit';
+import {
+  parsePaymentProof,
+  verifySpamFeePayment,
+  recordSpamFeePayment,
+} from '@/lib/x402/verify';
+import { getRateLimitForTier } from '@/lib/config/rate-limits';
 
 /**
  * Response structure for successful post creation
@@ -89,6 +96,48 @@ export async function POST(request: NextRequest): Promise<Response> {
 
     try {
       // ================================================================
+      // Spam Fee Payment Verification (Tasks 2.5.2-2.5.4)
+      // ================================================================
+      // Check if agent is providing payment proof for spam fee bypass
+      const paymentProofHeader = req.headers.get('X-Payment-Proof');
+      const paymentProof = parsePaymentProof(paymentProofHeader);
+
+      if (paymentProof) {
+        // Agent is attempting to bypass rate limit with spam fee payment
+        const tierConfig = getRateLimitForTier(agent.reputation_tier as ReputationTier);
+        
+        if (tierConfig.spamFeeUsdc) {
+          // Verify the spam fee payment
+          const verificationResult = await verifySpamFeePayment(
+            paymentProof,
+            agent.id,
+            tierConfig.spamFeeUsdc
+          );
+
+          if (verificationResult.success) {
+            // Record the spam fee payment (Task 2.5.4)
+            await recordSpamFeePayment(paymentProof, agent.id, verificationResult);
+
+            // Clear the rate limit for this agent (Task 2.5.3)
+            await clearPublishRateLimit(agent.id);
+
+            console.log(`Spam fee paid by agent ${agent.id}, rate limit cleared`);
+          } else {
+            // Payment verification failed
+            return NextResponse.json(
+              createErrorResponse(
+                ErrorCodes.PAYMENT_VERIFICATION_FAILED,
+                `Spam fee payment verification failed: ${verificationResult.error}`,
+                undefined,
+                { error_code: verificationResult.error_code }
+              ),
+              { status: 402 }
+            );
+          }
+        }
+      }
+
+      // ================================================================
       // Rate Limiting Check (Tasks 1.5.4-1.5.6)
       // ================================================================
       rateLimitResult = await checkPublishRateLimit(
@@ -97,7 +146,7 @@ export async function POST(request: NextRequest): Promise<Response> {
       );
 
       if (!rateLimitResult.allowed) {
-        return createPublishRateLimitResponse(rateLimitResult);
+        return createPublishRateLimitResponse(rateLimitResult, agent.id);
       }
 
       // ================================================================

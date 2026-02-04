@@ -411,3 +411,188 @@ export async function incrementPaidViewCount(
     console.error('Failed to increment paid view count:', error);
   }
 }
+
+// ============================================
+// 2.5.2: Spam Fee Payment Verification
+// ============================================
+
+/**
+ * Verify a spam fee payment proof.
+ * Similar to content payment verification but for anti-spam fees.
+ *
+ * @param proof - The payment proof
+ * @param agentId - The agent ID paying the spam fee
+ * @param expectedFeeUsdc - Expected spam fee amount in USDC
+ * @returns Verification result
+ *
+ * @see claude/operations/tasks.md Task 2.5.2
+ */
+export async function verifySpamFeePayment(
+  proof: PaymentProof,
+  agentId: string,
+  expectedFeeUsdc: string
+): Promise<VerificationResult> {
+  // Check cache first
+  const isCached = await checkPaymentCache(proof.chain, proof.transaction_signature);
+  if (isCached) {
+    return {
+      success: true,
+      payment: {
+        signature: proof.transaction_signature,
+        payer: proof.payer_address,
+        recipient: proof.chain === 'solana'
+          ? process.env.SOLANA_TREASURY_PUBKEY || ''
+          : process.env.BASE_TREASURY_ADDRESS || '',
+        amount_raw: usdcToRaw(parseFloat(expectedFeeUsdc)),
+        amount_usdc: expectedFeeUsdc,
+        network: proof.chain,
+        chain_id: proof.chain === 'solana' ? 'mainnet-beta' : '8453',
+      },
+    };
+  }
+
+  // Route to appropriate verifier
+  switch (proof.chain) {
+    case 'solana':
+      return verifySolanaSpamFeePayment(proof, agentId, expectedFeeUsdc);
+    case 'base':
+      // Phase 3: Implement Base spam fee verification
+      return {
+        success: false,
+        error: 'Base spam fee verification not yet implemented',
+        error_code: 'NOT_IMPLEMENTED',
+      };
+    default:
+      return {
+        success: false,
+        error: `Unsupported payment chain: ${proof.chain}`,
+        error_code: 'UNSUPPORTED_CHAIN',
+      };
+  }
+}
+
+/**
+ * Verify a Solana spam fee payment.
+ */
+async function verifySolanaSpamFeePayment(
+  proof: PaymentProof,
+  agentId: string,
+  expectedFeeUsdc: string
+): Promise<VerificationResult> {
+  try {
+    const expectedAmountRaw = usdcToRaw(parseFloat(expectedFeeUsdc));
+
+    // Verify the payment with spam_fee memo
+    const verifiedPayment = await verifySolanaPayment({
+      signature: proof.transaction_signature,
+      expectedPostId: `spam_fee:${agentId}`,
+      expectedAmountRaw,
+      requestTimestamp: proof.timestamp,
+      memoExpirationSeconds: X402_CONFIG.PAYMENT_VALIDITY_SECONDS,
+    });
+
+    // Cache the verified payment
+    await cacheVerifiedPayment('solana', proof.transaction_signature);
+
+    return {
+      success: true,
+      payment: {
+        signature: verifiedPayment.signature,
+        payer: verifiedPayment.payer,
+        recipient: verifiedPayment.recipient,
+        amount_raw: verifiedPayment.amount,
+        amount_usdc: rawToUsdc(verifiedPayment.amount),
+        network: 'solana',
+        chain_id: 'mainnet-beta',
+      },
+    };
+  } catch (error) {
+    if (error instanceof PaymentVerificationError) {
+      return {
+        success: false,
+        error: error.message,
+        error_code: error.code,
+      };
+    }
+
+    console.error('Unexpected error verifying Solana spam fee payment:', error);
+    return {
+      success: false,
+      error: 'Unexpected verification error',
+      error_code: 'INTERNAL_ERROR',
+    };
+  }
+}
+
+/**
+ * Record a spam fee payment event in the database.
+ * Spam fees go 100% to platform treasury (no author split).
+ *
+ * @param proof - The payment proof
+ * @param agentId - The agent ID paying the spam fee
+ * @param verificationResult - The verification result with payment details
+ * @returns The inserted payment event ID or null on error
+ *
+ * @see claude/operations/tasks.md Task 2.5.4
+ */
+export async function recordSpamFeePayment(
+  proof: PaymentProof,
+  agentId: string,
+  verificationResult: VerificationResult
+): Promise<string | null> {
+  if (!verificationResult.success || !verificationResult.payment) {
+    console.error('Cannot record failed spam fee payment');
+    return null;
+  }
+
+  const payment = verificationResult.payment;
+  const grossAmountRaw = payment.amount_raw;
+
+  // Spam fees go 100% to platform (no author split)
+  const platformFeeRaw = grossAmountRaw;
+  const authorAmountRaw = BigInt(0);
+
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('payment_events')
+      .insert({
+        resource_type: 'spam_fee' as const,
+        resource_id: agentId, // Agent paying the fee
+        network: payment.network,
+        chain_id: payment.chain_id,
+        transaction_signature: payment.signature,
+        payer_address: payment.payer,
+        recipient_id: null as any, // No author recipient for spam fees (nullable after migration)
+        recipient_address: payment.recipient, // Platform treasury
+        gross_amount_raw: Number(grossAmountRaw),
+        platform_fee_raw: Number(platformFeeRaw),
+        author_amount_raw: Number(authorAmountRaw),
+        status: 'confirmed' as const,
+        verified_at: new Date().toISOString(),
+      } as any)
+      .select('id')
+      .single();
+
+    if (error) {
+      // Check for unique constraint violation (double-spend attempt)
+      if (error.code === '23505') {
+        console.warn(
+          `Spam fee payment already recorded: ${payment.network}:${payment.signature}`
+        );
+        return 'already_recorded';
+      }
+
+      console.error('Failed to record spam fee payment:', error);
+      return null;
+    }
+
+    console.log(
+      `Spam fee recorded: ${data.id} - ${rawToUsdc(grossAmountRaw)} USDC (100% platform)`
+    );
+
+    return data.id;
+  } catch (error) {
+    console.error('Unexpected error recording spam fee payment:', error);
+    return null;
+  }
+}

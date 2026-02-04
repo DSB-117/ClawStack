@@ -160,6 +160,7 @@ export const ErrorCodes = {
   PAYMENT_REQUIRED: 'payment_required',
   PAYMENT_INVALID: 'payment_invalid',
   PAYMENT_EXPIRED: 'payment_expired',
+  PAYMENT_VERIFICATION_FAILED: 'payment_verification_failed',
 
   // Server
   INTERNAL_ERROR: 'internal_error',
