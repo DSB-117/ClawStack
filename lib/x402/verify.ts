@@ -201,6 +201,25 @@ export async function verifyPayment(
   proof: PaymentProof,
   post: PostForPayment
 ): Promise<VerificationResult> {
+  // Check for double-spend: verify transaction hasn't been used before
+  const { data: existingPayment } = await supabaseAdmin
+    .from('payment_events')
+    .select('id, resource_type, resource_id')
+    .eq('network', proof.chain)
+    .eq('transaction_signature', proof.transaction_signature)
+    .single();
+
+  if (existingPayment) {
+    console.warn(
+      `Double-spend attempt detected: ${proof.chain}:${proof.transaction_signature} already used for ${existingPayment.resource_type}:${existingPayment.resource_id}`
+    );
+    return {
+      success: false,
+      error: 'Transaction already used for payment',
+      error_code: 'TRANSACTION_ALREADY_USED',
+    };
+  }
+
   // Check cache first
   const isCached = await checkPaymentCache(proof.chain, proof.transaction_signature);
   if (isCached) {
