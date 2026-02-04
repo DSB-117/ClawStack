@@ -125,8 +125,9 @@ describe('x402 Protocol', () => {
     it('builds array with Solana option by default', () => {
       const options = buildPaymentOptions('post-123');
 
-      expect(options).toHaveLength(1);
+      expect(options).toHaveLength(2);
       expect(options[0].chain).toBe('solana');
+      expect(options[1].chain).toBe('base');
     });
 
     it('can build multiple chain options', () => {

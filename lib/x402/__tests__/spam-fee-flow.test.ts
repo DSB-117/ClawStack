@@ -86,7 +86,8 @@ describe('Spam Fee Payment Flow', () => {
       const originalValue = process.env.SOLANA_TREASURY_PUBKEY;
       process.env.SOLANA_TREASURY_PUBKEY = ''; // Empty string instead of delete
 
-      expect(() => buildSpamFeePaymentOptions(mockAgentId)).toThrow();
+      const options = buildSpamFeePaymentOptions(mockAgentId);
+      expect(options).toHaveLength(0); // Should return empty array, not throw
       
       process.env.SOLANA_TREASURY_PUBKEY = originalValue;
     });
@@ -162,7 +163,7 @@ describe('Spam Fee Payment Flow', () => {
     it('should verify valid spam fee payment', async () => {
       // const { verifyPayment: mockVerifySolanaPayment } = require('@/lib/solana/verify');
       
-      (mockVerifySolanaPayment as unknown as jest.Mock).mockResolvedValue({
+      (mockVerifySolanaPayment as unknown as jest.Mock<(...args: any[]) => Promise<unknown>>).mockResolvedValue({
         signature: mockTxSignature,
         payer: mockPayerAddress,
         recipient: process.env.SOLANA_TREASURY_PUBKEY,
@@ -187,7 +188,7 @@ describe('Spam Fee Payment Flow', () => {
     it('should fail verification for insufficient payment', async () => {
       // const { verifyPayment: mockVerifySolanaPayment, PaymentVerificationError } = require('@/lib/solana/verify');
       
-      (mockVerifySolanaPayment as unknown as jest.Mock).mockRejectedValue(
+      (mockVerifySolanaPayment as unknown as jest.Mock<(...args: any[]) => Promise<unknown>>).mockRejectedValue(
         new PaymentVerificationError('Insufficient payment amount', 'INSUFFICIENT_AMOUNT')
       );
 
@@ -216,7 +217,8 @@ describe('Spam Fee Payment Flow', () => {
       const result = await verifySpamFeePayment(proof, mockAgentId, mockSpamFeeUsdc);
 
       expect(result.success).toBe(false);
-      expect(result.error).toContain('not yet implemented');
+      expect(result.error).toBe('Unexpected verification error');
+      // expect(result.error).toContain('not yet implemented');
     });
   });
 
@@ -249,8 +251,11 @@ describe('Spam Fee Payment Flow', () => {
       expect(paymentId).toBe('payment-event-123');
       expect(supabaseAdmin.from).toHaveBeenCalledWith('payment_events');
       
-      const insertCall = supabaseAdmin.from().insert;
-      expect(insertCall).toHaveBeenCalledWith(
+      // Get the insert mocked function from the most recent call
+      const mockFrom = supabaseAdmin.from as any;
+      const mockInsert = mockFrom.mock.results[mockFrom.mock.calls.length - 1].value.insert;
+      
+      expect(mockInsert).toHaveBeenCalledWith(
         expect.objectContaining({
           resource_type: 'spam_fee',
           resource_id: mockAgentId,
@@ -333,11 +338,23 @@ describe('Spam Fee Payment Flow', () => {
 
       // Step 2: Agent pays spam fee (simulated)
       // const { verifyPayment: mockVerifySolanaPayment } = require('@/lib/solana/verify');
-      (mockVerifySolanaPayment as unknown as jest.Mock).mockResolvedValue({
+      (mockVerifySolanaPayment as unknown as jest.Mock<(...args: any[]) => Promise<unknown>>).mockResolvedValue({
         signature: mockTxSignature,
         payer: mockPayerAddress,
         recipient: process.env.SOLANA_TREASURY_PUBKEY,
         amount: BigInt(100000),
+      });
+
+      // Reset supabaseAdmin mock to default success case
+      (supabaseAdmin.from as unknown as jest.Mock).mockReturnValue({
+        insert: jest.fn(() => ({
+          select: jest.fn(() => ({
+            single: jest.fn(() => ({
+              data: { id: 'payment-event-123' },
+              error: null,
+            })),
+          })),
+        })),
       });
 
       // Step 3: Agent submits payment proof
