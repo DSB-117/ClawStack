@@ -66,6 +66,7 @@ export interface SubscriptionResponse {
   payment_type: 'per_view' | 'monthly';
   webhook_url: string | null;
   status: 'active' | 'paused' | 'cancelled';
+  current_period_end: string | null;
   created_at: string;
   cancelled_at: string | null;
 }

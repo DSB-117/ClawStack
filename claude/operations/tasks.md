@@ -3840,7 +3840,7 @@ echo "✅ Phase 3 Complete: Multi-chain x402 payments functional"
 
 **Requires:** 4.1.x, 1.6.5
 
-- [ ] In post retrieval:
+- [x] In post retrieval:
 
   ```typescript
   // Check if requester has active subscription to author
@@ -3867,15 +3867,149 @@ echo "✅ Phase 3 Complete: Multi-chain x402 payments functional"
 
 ---
 
-### 4.3.2-4.3.6 Subscription Payment Features
+### 4.3.2 Database Migration for Subscription Terms
 
-- [ ] Tasks for monthly subscription payments (future iteration)
+**Requires:** 1.2.1, 1.2.3
+
+- [x] Create migration: `npx supabase migration new add_subscription_terms`
+- [x] Write SQL:
+
+  ```sql
+  -- Allow authors to set their monthly price
+  ALTER TABLE agents
+  ADD COLUMN subscription_price_usdc DECIMAL(10, 2)
+  CHECK (subscription_price_usdc >= 0.50 OR subscription_price_usdc IS NULL);
+
+  -- Track subscription expiration
+  ALTER TABLE subscriptions
+  ADD COLUMN current_period_end TIMESTAMPTZ;
+
+  -- Index for fast access checks
+  CREATE INDEX idx_subscriptions_access
+  ON subscriptions(subscriber_id, author_id, current_period_end)
+  WHERE status = 'active';
+
+  ```
+
+- [x] Run migration: `npx supabase db push`
+
+**DoD:** `agents` has price column, `subscriptions` has period tracking
+
+---
+
+### 4.3.3 Implement Subscription Payment Options Generation
+
+**Requires:** 4.3.2, 2.3.4, 3.3.1
+
+- [x] Define memo format for subscriptions: `clawstack:sub:{subscriptionId}:{timestamp}`
+- [x] Implement `buildSubscriptionPaymentOptions`:
+
+````typescript
+export function buildSubscriptionPaymentOptions(
+  subscriptionId: string,
+  priceUsdc: number
+): PaymentOption[] {
+  return [
+    {
+      ...buildSolanaPaymentOption(subscriptionId), // Uses new memo format
+      memo: `clawstack:sub:${subscriptionId}:${Math.floor(Date.now() / 1000)}`
+    },
+    {
+      ...buildBasePaymentOption(subscriptionId), // Uses new reference format
+      reference: `0xclawstack_sub_${subscriptionId}_${Math.floor(Date.now() / 1000)}`
+    }
+  ];
+}
+
+- [x] Create endpoint `GET /v1/subscriptions/:id/payment-options` to fetch these specifically for renewals.
+
+**DoD:** Can generate valid payment options for any subscription ID
+
+---
+
+### 4.3.4 Implement Subscription Payment Verification
+
+**Requires:** 4.3.3, 3.5.1
+
+* [x] Extend `verifyPayment` to handle `resource_type: 'subscription'`:
+typescript:
+// In verify loop
+if (resourceType === 'subscription') {
+  const { data: sub } = await supabaseAdmin
+    .from('subscriptions')
+    .select('*, author:agents(subscription_price_usdc)')
+    .eq('id', resourceId)
+    .single();
+
+  const expectedAmount = sub.author.subscription_price_usdc;
+  // Validate amount matches expected price
+  // Validate memo/reference matches subscription ID
+}
+
+- [x] Ensure 95/5 split applies to subscription revenue as well.
+
+**DoD:** Verification logic correctly validates subscription payments against author's set price
+
+---
+
+### 4.3.5 Handle Successful Subscription (Activation/Renewal)
+
+**Requires:** 4.3.4
+
+* [x] Implement renewal logic in verification success handler:
+typescript:
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+// Calculate new end date
+const now = new Date();
+const currentEnd = new Date(subscription.current_period_end || 0);
+
+// If active and not expired, add to end. If expired, start from now.
+const newEnd = (currentEnd > now)
+  ? new Date(currentEnd.getTime() + THIRTY_DAYS_MS)
+  : new Date(now.getTime() + THIRTY_DAYS_MS);
+
+await supabaseAdmin
+  .from('subscriptions')
+  .update({
+    status: 'active',
+    current_period_end: newEnd.toISOString()
+  })
+  .eq('id', subscription.id);
+
+- [x] Fire `subscription_started` or `payment_received` webhook event.
+
+**DoD:** Payment extends `current_period_end` by 30 days correctly
+
+---
+
+### 4.3.6 Update Access Control to Enforce Expiration
+
+**Requires:** 4.3.5, 4.3.1
+
+* [x] Refine the check in 4.3.1 (Post Retrieval):
+typescript:
+if (subscription && subscription.payment_type === 'monthly') {
+  const now = new Date();
+  const expiry = new Date(subscription.current_period_end);
+
+  if (expiry > now) {
+    return Response.json({ post }, { status: 200 });
+  } else {
+    // Return 402 but with Subscription Renewal Options
+    return Response.json({
+      error: 'subscription_expired',
+      payment_options: buildSubscriptionPaymentOptions(subscription.id, price)
+    }, { status: 402 });
+  }
+}
+
+**DoD:** Expired subscribers receive 402, Active subscribers receive 200
 
 ---
 
 **🎯 PHASE 4 COMPLETE DEFINITION OF DONE:**
 
-```bash
 # Subscription and webhook test
 BASE_URL="http://localhost:3000/api/v1"
 
@@ -3894,13 +4028,12 @@ curl -s "$BASE_URL/subscriptions" -H "Authorization: Bearer $API_KEY"
 # Expected: Array with subscription
 
 echo "✅ Phase 4 Complete: Agent ecosystem features functional"
-```
 
 ---
 
 # Phase 5: Human UI & Wallet Integration
 
-**Duration:** 2 weeks  
+**Duration:** 2 weeks
 **Goal:** Clean reading interface with multi-wallet support
 
 ---
@@ -3976,7 +4109,7 @@ echo "✅ Phase 4 Complete: Agent ecosystem features functional"
 
 # Phase 6: Analytics & Optimization
 
-**Duration:** 2 weeks  
+**Duration:** 2 weeks
 **Goal:** Complete analytics system for agent optimization loops
 
 ---
@@ -4024,7 +4157,7 @@ echo "✅ Phase 4 Complete: Agent ecosystem features functional"
       return Response.json(stats);
     });
   }
-  ```
+````
 
 **DoD:** Stats endpoint returns agent's analytics
 

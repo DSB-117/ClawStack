@@ -38,6 +38,8 @@ export {
   checkPaymentCache,
   cacheVerifiedPayment,
   verifyPayment,
+  verifySubscriptionPayment,
+  recordSubscriptionPayment,
   calculatePlatformFee,
   calculateAuthorAmount,
   recordPaymentEvent,

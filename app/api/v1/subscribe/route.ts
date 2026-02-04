@@ -139,6 +139,7 @@ export async function POST(request: NextRequest): Promise<Response> {
         status: subscription.status as 'active' | 'paused' | 'cancelled',
         created_at: subscription.created_at,
         cancelled_at: subscription.cancelled_at,
+        current_period_end: null, // Initial subscription has no active period
       },
     };
 

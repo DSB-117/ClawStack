@@ -2,43 +2,10 @@
 -- Task: 2.4.5 Implement Off-Chain Split Tracking
 --
 -- Creates:
--- 1. author_pending_payouts VIEW - Aggregates unpaid author earnings
--- 2. payout_batches TABLE - Tracks batched payout transactions
--- 3. Indexes for efficient querying
-
--- ============================================
--- View: author_pending_payouts
--- ============================================
--- Aggregates confirmed payments to show total owed to each author by network.
--- Used by the payout job to determine which authors are ready for payout.
-
-CREATE OR REPLACE VIEW author_pending_payouts AS
-SELECT
-    pe.recipient_id,
-    a.display_name as author_name,
-    a.wallet_solana,
-    a.wallet_base,
-    pe.network,
-    SUM(pe.author_amount_raw) as total_owed_raw,
-    -- Convert to USDC for display (6 decimals)
-    ROUND(SUM(pe.author_amount_raw) / 1000000.0, 2) as total_owed_usdc,
-    COUNT(*) as payment_count,
-    MIN(pe.created_at) as oldest_payment_at,
-    MAX(pe.created_at) as newest_payment_at
-FROM payment_events pe
-JOIN agents a ON a.id = pe.recipient_id
-WHERE pe.status = 'confirmed'
-  AND pe.resource_type IN ('post', 'subscription')  -- Exclude spam_fee (100% platform)
-  -- Exclude already paid out payments (will be marked with payout_batch_id)
-  AND NOT EXISTS (
-    SELECT 1 FROM payout_batch_items pbi
-    WHERE pbi.payment_event_id = pe.id
-      AND pbi.status = 'completed'
-  )
-GROUP BY pe.recipient_id, a.display_name, a.wallet_solana, a.wallet_base, pe.network;
-
-COMMENT ON VIEW author_pending_payouts IS
-'Aggregates unpaid author earnings by network. Used by payout job to batch payments.';
+-- 1. payout_batches TABLE - Tracks batched payout transactions
+-- 2. payout_batch_items TABLE - Individual payout items within a batch
+-- 3. author_pending_payouts VIEW - Aggregates unpaid author earnings
+-- 4. Indexes for efficient querying
 
 -- ============================================
 -- Table: payout_batches
@@ -118,6 +85,40 @@ CREATE INDEX idx_payout_items_payment_events ON payout_batch_items USING GIN (pa
 
 COMMENT ON TABLE payout_batch_items IS
 'Individual payout items within a batch. Links to payment_events that are being paid out.';
+
+-- ============================================
+-- View: author_pending_payouts
+-- ============================================
+-- Aggregates confirmed payments to show total owed to each author by network.
+-- Used by the payout job to determine which authors are ready for payout.
+
+CREATE OR REPLACE VIEW author_pending_payouts AS
+SELECT
+    pe.recipient_id,
+    a.display_name as author_name,
+    a.wallet_solana,
+    a.wallet_base,
+    pe.network,
+    SUM(pe.author_amount_raw) as total_owed_raw,
+    -- Convert to USDC for display (6 decimals)
+    ROUND(SUM(pe.author_amount_raw) / 1000000.0, 2) as total_owed_usdc,
+    COUNT(*) as payment_count,
+    MIN(pe.created_at) as oldest_payment_at,
+    MAX(pe.created_at) as newest_payment_at
+FROM payment_events pe
+JOIN agents a ON a.id = pe.recipient_id
+WHERE pe.status = 'confirmed'
+  AND pe.resource_type IN ('post', 'subscription')  -- Exclude spam_fee (100% platform)
+  -- Exclude already paid out payments (will be marked with payout_batch_id)
+  AND NOT EXISTS (
+    SELECT 1 FROM payout_batch_items pbi
+    WHERE pe.id = ANY(pbi.payment_event_ids)
+      AND pbi.status = 'completed'
+  )
+GROUP BY pe.recipient_id, a.display_name, a.wallet_solana, a.wallet_base, pe.network;
+
+COMMENT ON VIEW author_pending_payouts IS
+'Aggregates unpaid author earnings by network. Used by payout job to batch payments.';
 
 -- ============================================
 -- Helper function: Get pending payouts for a network
