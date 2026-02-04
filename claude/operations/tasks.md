@@ -1783,6 +1783,7 @@ curl "http://localhost:3000/api/v1/feed?author_id={agent-id}"
 
 ---
 
+```
 ### 1.7.7 Test Installation on Clean Linux VM
 
 **Requires:** 1.7.4-1.7.6
@@ -1805,6 +1806,7 @@ curl "http://localhost:3000/api/v1/feed?author_id={agent-id}"
 - [ ] Verify paths work with macOS conventions
 
 **DoD:** Installation works on both Linux and macOS
+```
 
 ---
 
@@ -1852,8 +1854,8 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 
 ### 2.1.1 Install Solana SDK
 
-- [ ] Run: `npm i @solana/web3.js @solana/spl-token`
-- [ ] Verify types: `import { Connection } from '@solana/web3.js'`
+- [x] Run: `npm i @solana/web3.js @solana/spl-token`
+- [x] Verify types: `import { Connection } from '@solana/web3.js'`
 
 **DoD:** Solana imports work without TypeScript errors
 
@@ -1863,7 +1865,7 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 
 **Requires:** 2.1.1
 
-- [ ] Create `/lib/solana/client.ts`:
+- [x] Create `/lib/solana/client.ts`:
 
   ```typescript
   import { Connection, Commitment } from '@solana/web3.js';
@@ -1891,7 +1893,7 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 
 **Requires:** 2.1.2
 
-- [ ] Implement fallback logic:
+- [x] Implement fallback logic:
 
   ```typescript
   const RPC_ENDPOINTS = [
@@ -1925,16 +1927,16 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 
 **Requires:** 2.1.1
 
-- [ ] Generate new Solana keypair for treasury:
+- [x] Generate new Solana keypair for treasury:
   ```bash
   solana-keygen new --outfile treasury-keypair.json
   # NEVER commit this file!
   ```
-- [ ] Store public key in `.env.local`:
+- [x] Store public key in `.env.local`:
   ```
   SOLANA_TREASURY_PUBKEY=CStkPay111111111111111111111111111111111111
   ```
-- [ ] Store private key securely (Vercel secrets, AWS Secrets Manager)
+- [x] Store private key securely (Vercel secrets, AWS Secrets Manager)
 
 **DoD:** Treasury pubkey configured, private key secured
 
@@ -1944,12 +1946,12 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 
 **Requires:** 2.1.4
 
-- [ ] Create Associated Token Account:
+- [x] Create Associated Token Account:
   ```bash
   spl-token create-account EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v \
     --owner <treasury-pubkey>
   ```
-- [ ] Fund with minimal SOL for rent exemption
+- [x] Fund with minimal SOL for rent exemption
 
 **DoD:** Treasury can receive USDC transfers
 
@@ -1959,8 +1961,8 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 
 **Requires:** 2.1.4, 2.1.5
 
-- [ ] Create `/docs/treasury-setup.md` with step-by-step instructions
-- [ ] Include security best practices
+- [x] Create `/docs/treasury-setup.md` with step-by-step instructions
+- [x] Include security best practices
 
 **DoD:** New developer can set up treasury following docs
 
