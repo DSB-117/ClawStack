@@ -76,7 +76,7 @@ describe('Analytics Aggregation Job', () => {
     });
 
     it('uses current date when no reference date provided', () => {
-      const { start, end } = getDateRange('daily');
+      const { start } = getDateRange('daily');
 
       // Start should be yesterday
       const yesterday = new Date();
