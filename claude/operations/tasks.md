@@ -3518,11 +3518,11 @@ echo "✅ Phase 3 Complete: Multi-chain x402 payments functional"
 
 ## 4.1 Subscription System
 
-### 4.1.1 Create `/v1/subscribe` Endpoint
+### 4.1.1 Create `/v1/subscribe` Endpoint ✅
 
 **Requires:** 1.3.5, 1.2.3
 
-- [ ] Create `/app/api/v1/subscribe/route.ts`:
+- [x] Create `/app/api/v1/subscribe/route.ts`:
 
   ```typescript
   export async function POST(request: NextRequest) {
@@ -3536,14 +3536,15 @@ echo "✅ Phase 3 Complete: Multi-chain x402 payments functional"
   ```
 
 **DoD:** Endpoint accepts POST requests
+**Implemented:** `app/api/v1/subscribe/route.ts`, `types/subscription.ts`
 
 ---
 
-### 4.1.2 Validate Author Exists
+### 4.1.2 Validate Author Exists ✅
 
 **Requires:** 4.1.1
 
-- [ ] Check author:
+- [x] Check author:
 
   ```typescript
   const { data: author } = await supabaseAdmin
@@ -3558,14 +3559,15 @@ echo "✅ Phase 3 Complete: Multi-chain x402 payments functional"
   ```
 
 **DoD:** Non-existent author returns 404
+**Implemented:** Verification in `app/api/v1/subscribe/route.ts`
 
 ---
 
-### 4.1.3 Prevent Duplicate Subscriptions
+### 4.1.3 Prevent Duplicate Subscriptions ✅
 
 **Requires:** 4.1.1, 1.2.3
 
-- [ ] Database constraint handles this, but check explicitly:
+- [x] Database constraint handles this, but check explicitly:
 
   ```typescript
   const { data: existing } = await supabaseAdmin
@@ -3581,30 +3583,32 @@ echo "✅ Phase 3 Complete: Multi-chain x402 payments functional"
   ```
 
 **DoD:** Duplicate subscription returns 409
+**Implemented:** Explicit check in `app/api/v1/subscribe/route.ts`
 
 ---
 
-### 4.1.4 Store Webhook URL with Subscription
+### 4.1.4 Store Webhook URL with Subscription ✅
 
 **Requires:** 4.1.1
 
-- [ ] Validate URL format:
+- [x] Validate URL format:
   ```typescript
   if (webhook_url && !isValidUrl(webhook_url)) {
     return Response.json({ error: 'Invalid webhook_url' }, { status: 400 });
   }
   ```
-- [ ] Store in subscription record
+- [x] Store in subscription record
 
 **DoD:** Webhook URL stored and validated
+**Implemented:** Zod URL validation in `types/subscription.ts`
 
 ---
 
-### 4.1.5 Create DELETE `/v1/subscribe/:id` Endpoint
+### 4.1.5 Create DELETE `/v1/subscribe/:id` Endpoint ✅
 
 **Requires:** 4.1.1
 
-- [ ] Create `/app/api/v1/subscribe/[id]/route.ts`:
+- [x] Create `/app/api/v1/subscribe/[id]/route.ts`:
 
   ```typescript
   export async function DELETE(
@@ -3625,14 +3629,15 @@ echo "✅ Phase 3 Complete: Multi-chain x402 payments functional"
   ```
 
 **DoD:** Subscribers can cancel their own subscriptions
+**Implemented:** `app/api/v1/subscribe/[id]/route.ts`
 
 ---
 
-### 4.1.6 Implement Subscription Status Updates
+### 4.1.6 Implement Subscription Status Updates ✅
 
 **Requires:** 4.1.5
 
-- [ ] Support pause/resume:
+- [x] Support pause/resume:
 
   ```typescript
   export async function PATCH(request: NextRequest, { params }) {
@@ -3649,14 +3654,15 @@ echo "✅ Phase 3 Complete: Multi-chain x402 payments functional"
   ```
 
 **DoD:** Subscriptions can be paused and resumed
+**Implemented:** PATCH handler in `app/api/v1/subscribe/[id]/route.ts`
 
 ---
 
-### 4.1.7 Create `/v1/subscriptions` List Endpoint
+### 4.1.7 Create `/v1/subscriptions` List Endpoint ✅
 
 **Requires:** 4.1.1
 
-- [ ] Create list endpoint:
+- [x] Create list endpoint:
 
   ```typescript
   export async function GET(request: NextRequest) {
@@ -3673,16 +3679,18 @@ echo "✅ Phase 3 Complete: Multi-chain x402 payments functional"
   ```
 
 **DoD:** Agent can list their subscriptions
+**Implemented:** `app/api/v1/subscriptions/route.ts`
 
 ---
 
-### 4.1.8 Write Subscription Tests
+### 4.1.8 Write Subscription Tests ✅
 
 **Requires:** 4.1.1-4.1.7
 
-- [ ] Test CRUD operations
+- [x] Test CRUD operations
 
-**DoD:** `npm run test -- subscriptions` passes
+**DoD:** `npm run test -- subscribe` passes (15 tests)
+**Implemented:** `app/api/v1/subscribe/__tests__/route.test.ts`
 
 ---
 
