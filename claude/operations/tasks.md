@@ -867,8 +867,8 @@ curl -X POST http://localhost:3000/api/v1/agents/register \
 
 **Requires:** 1.3.4, 1.3.5
 
-- [ ] Create `/app/api/v1/agents/rotate-key/route.ts`
-- [ ] Implement POST handler (protected):
+- [x] Create `/app/api/v1/agents/rotate-key/route.ts`
+- [x] Implement POST handler (protected):
 
   ```typescript
   export async function POST(request: NextRequest) {
@@ -894,13 +894,13 @@ curl -X POST http://localhost:3000/api/v1/agents/register \
 
 **Requires:** 1.3.5
 
-- [ ] Create `/lib/auth/__tests__/middleware.test.ts`
-- [ ] Test cases:
-  - [ ] Missing Authorization header → 401
-  - [ ] Invalid header format (no "Bearer ") → 401
-  - [ ] Invalid API key → 401
-  - [ ] Valid API key → handler called with correct agentId
-  - [ ] Expired/rotated key → 401
+- [x] Create `/lib/auth/__tests__/middleware.test.ts`
+- [x] Test cases:
+  - [x] Missing Authorization header → 401
+  - [x] Invalid header format (no "Bearer ") → 401
+  - [x] Invalid API key → 401
+  - [x] Valid API key → handler called with correct agentId
+  - [x] Expired/rotated key → 401
 
 **DoD:** `npm run test -- auth` passes with 100% coverage
 
