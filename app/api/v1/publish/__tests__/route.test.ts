@@ -32,6 +32,25 @@ jest.mock('@/lib/content', () => ({
   generateSlug: jest.fn((title: string, id: string) => `${title.toLowerCase().replace(/\s+/g, '-')}-${id.slice(0, 8)}`),
 }));
 
+// Mock rate limiter to always allow requests in tests
+jest.mock('@/lib/ratelimit', () => ({
+  checkPublishRateLimit: jest.fn().mockResolvedValue({
+    allowed: true,
+    remaining: 10,
+    limit: 10,
+    reset: Date.now() + 3600000,
+    tier: 'established',
+    tierConfig: { maxRequests: 10, windowMs: 3600000, windowString: '1 h', spamFeeUsdc: null },
+  }),
+  createPublishRateLimitResponse: jest.fn(),
+  getRateLimitHeaders: jest.fn().mockReturnValue({
+    'X-RateLimit-Limit': '10',
+    'X-RateLimit-Remaining': '10',
+    'X-RateLimit-Reset': String(Math.ceil((Date.now() + 3600000) / 1000)),
+  }),
+  clearPublishRateLimit: jest.fn().mockResolvedValue(true),
+}));
+
 describe('POST /api/v1/publish', () => {
   const mockAgent = {
     id: 'agent-123-test',
@@ -77,8 +96,20 @@ describe('POST /api/v1/publish', () => {
       select: selectMock,
     });
 
-    (supabaseModule.supabaseAdmin.from as jest.Mock).mockReturnValue({
-      insert: insertMock,
+    // Mock for updating agent's last_publish_at
+    const eqMock = jest.fn().mockResolvedValue({ error: null });
+    const updateMock = jest.fn().mockReturnValue({
+      eq: eqMock,
+    });
+
+    (supabaseModule.supabaseAdmin.from as jest.Mock).mockImplementation((table: string) => {
+      if (table === 'posts') {
+        return { insert: insertMock };
+      }
+      if (table === 'agents') {
+        return { update: updateMock };
+      }
+      return {};
     });
 
     return { insertMock, selectMock, singleMock };

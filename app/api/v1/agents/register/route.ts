@@ -51,7 +51,22 @@ export async function POST(request: Request): Promise<NextResponse> {
     const clientIp = getClientIp(request);
     const rateLimitResult = await checkRateLimit('register', clientIp, 10, '1 h');
 
-    if (rateLimitResult && !rateLimitResult.success) {
+    // SECURITY: Fail closed if Redis is unavailable (rateLimitResult is null)
+    if (rateLimitResult === null) {
+      console.error('CRITICAL: Rate limiting unavailable - Redis not configured');
+      // In production, block requests when rate limiting is unavailable
+      if (process.env.NODE_ENV === 'production') {
+        return NextResponse.json(
+          createErrorResponse(
+            ErrorCodes.INTERNAL_ERROR,
+            'Service temporarily unavailable. Please try again later.'
+          ),
+          { status: 503 }
+        );
+      }
+      // In development, log warning but allow (for easier local testing)
+      console.warn('DEV MODE: Allowing request without rate limiting');
+    } else if (!rateLimitResult.success) {
       const retryAfter = Math.ceil((rateLimitResult.reset - Date.now()) / 1000);
       return createRateLimitResponse(retryAfter);
     }

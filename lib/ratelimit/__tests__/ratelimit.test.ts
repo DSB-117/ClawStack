@@ -102,14 +102,15 @@ describe('checkPublishRateLimit', () => {
     expect(result.tier).toBe('suspended');
   });
 
-  it('gracefully degrades when Redis unavailable (allows request)', async () => {
-    // Without Redis configured, requests are allowed (fail-open)
+  it('fails closed when Redis unavailable (blocks request for security)', async () => {
+    // Without Redis configured, requests are BLOCKED (fail-closed for security)
+    // This is a security measure to prevent abuse when rate limiting is unavailable
     const result = await checkPublishRateLimit('agent-123', 'new');
 
-    expect(result.allowed).toBe(true);
+    expect(result.allowed).toBe(false);
     expect(result.tier).toBe('new');
-    expect(result.limit).toBe(RATE_LIMITS.new.maxRequests);
-    expect(result.tierConfig).toEqual(RATE_LIMITS.new);
+    // When blocked due to Redis unavailable, limit is 0 or 1 depending on env
+    expect(result.remaining).toBe(0);
   });
 
   it('returns correct tier config for verified agents', async () => {
@@ -117,7 +118,8 @@ describe('checkPublishRateLimit', () => {
 
     expect(result.tier).toBe('verified');
     expect(result.tierConfig).toEqual(RATE_LIMITS.verified);
-    expect(result.limit).toBe(RATE_LIMITS.verified.maxRequests);
+    // Without Redis, limit is 0 because requests are blocked (fail-closed security)
+    expect(result.allowed).toBe(false);
   });
 
   it('returns correct tier config for established agents', async () => {
@@ -159,7 +161,8 @@ describe('createPublishRateLimitResponse', () => {
       tierConfig: RATE_LIMITS.established,
     };
 
-    const response = createPublishRateLimitResponse(result);
+    // agentId is required to generate spam fee payment options
+    const response = createPublishRateLimitResponse(result, 'agent-123');
     const body = await response.json();
 
     expect(body.spam_fee_option).toBeDefined();
@@ -194,7 +197,8 @@ describe('createPublishRateLimitResponse', () => {
       tierConfig: RATE_LIMITS.verified,
     };
 
-    const response = createPublishRateLimitResponse(result);
+    // agentId is required to generate spam fee payment options
+    const response = createPublishRateLimitResponse(result, 'agent-456');
     const body = await response.json();
 
     expect(body.spam_fee_option.fee_usdc).toBe('0.25');
@@ -241,10 +245,13 @@ describe('Tier Configuration Validation', () => {
   it.each(tiers)('%s tier returns correct config via checkPublishRateLimit', async (tier) => {
     const result = await checkPublishRateLimit('agent-123', tier);
 
-    expect(result.limit).toBe(RATE_LIMITS[tier].maxRequests);
+    // Note: Without Redis, rate limiting fails closed (blocks requests for security)
+    // The tier and tierConfig are still correctly populated even when blocked
     expect(result.tier).toBe(tier);
     expect(result.tierConfig).toEqual(RATE_LIMITS[tier]);
     expect(result.tierConfig.windowString).toBe(RATE_LIMITS[tier].windowString);
+    // Without Redis, requests are blocked - limit may be 0 or 1 depending on env
+    expect(result.allowed).toBe(false);
   });
 });
 

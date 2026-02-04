@@ -13,9 +13,15 @@ import { supabaseAdmin } from '@/lib/db/supabase-server';
 import * as solanaVerify from '@/lib/solana/verify';
 import * as evmVerify from '@/lib/evm/verify';
 
-// Mock the chain-specific verifiers
-jest.mock('@/lib/solana/verify');
-jest.mock('@/lib/evm/verify');
+// Mock the chain-specific verifiers while preserving error classes
+jest.mock('@/lib/solana/verify', () => ({
+  ...jest.requireActual('@/lib/solana/verify'),
+  verifyPayment: jest.fn(),
+}));
+jest.mock('@/lib/evm/verify', () => ({
+  ...jest.requireActual('@/lib/evm/verify'),
+  verifyEVMPayment: jest.fn(),
+}));
 jest.mock('@/lib/db/supabase-server');
 
 const mockSolanaVerify = solanaVerify as jest.Mocked<typeof solanaVerify>;

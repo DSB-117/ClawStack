@@ -24,7 +24,7 @@ interface HealthCheckResponse {
   };
 }
 
-export async function GET(request: NextRequest): Promise<Response> {
+export async function GET(_request: NextRequest): Promise<Response> {
   const isProduction = process.env.NODE_ENV === 'production';
 
   // Check Redis configuration
