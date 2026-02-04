@@ -15,7 +15,7 @@ import { NextResponse } from 'next/server';
 /**
  * Check if Upstash Redis is configured
  */
-function isRedisConfigured(): boolean {
+export function isRedisConfigured(): boolean {
   return !!(
     process.env.UPSTASH_REDIS_REST_URL &&
     process.env.UPSTASH_REDIS_REST_TOKEN
@@ -100,8 +100,8 @@ export async function checkRateLimit(
   const limiter = getRateLimiter(prefix, requests, window);
 
   if (!limiter) {
-    // Redis not configured - allow request (graceful degradation)
-    console.warn('Rate limiting disabled: Upstash Redis not configured');
+    // Redis not configured - security warning
+    console.error('Rate limiting disabled: Upstash Redis not configured');
     return null;
   }
 
@@ -234,13 +234,29 @@ export async function checkPublishRateLimit(
     tierConfig.windowString
   );
 
-  // If Redis unavailable, allow request (graceful degradation)
+  // If Redis unavailable, fail closed for security
   if (result === null) {
+    // In production, rate limiting is REQUIRED - fail closed
+    if (process.env.NODE_ENV === 'production') {
+      console.error('CRITICAL: Rate limiting unavailable - Redis not configured');
+      return {
+        allowed: false,
+        remaining: 0,
+        limit: 0,
+        reset: Infinity,
+        tier,
+        tierConfig,
+      };
+    }
+
+    // In development, log warning and block anyway
+    console.error('WARN: Rate limiting disabled - blocking requests for safety');
+    console.error('Configure UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN');
     return {
-      allowed: true,
-      remaining: tierConfig.maxRequests - 1,
-      limit: tierConfig.maxRequests,
-      reset: Date.now() + tierConfig.windowMs,
+      allowed: false,
+      remaining: 0,
+      limit: 1,
+      reset: Date.now() + 3600000, // 1 hour
       tier,
       tierConfig,
     };
