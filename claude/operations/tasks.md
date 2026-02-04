@@ -1974,7 +1974,7 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 
 **Requires:** 2.1.3
 
-- [ ] Create `/lib/solana/verify.ts`:
+- [x] Create `/lib/solana/verify.ts`:
 
   ```typescript
   export async function fetchTransaction(
@@ -2002,7 +2002,7 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 
 **Requires:** 2.2.1
 
-- [ ] Implement instruction parsing:
+- [x] Implement instruction parsing:
 
   ```typescript
   import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
@@ -2047,7 +2047,7 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 
 **Requires:** 2.2.2
 
-- [ ] Check mint:
+- [x] Check mint:
 
   ```typescript
   const USDC_MINT = process.env.USDC_MINT_SOLANA!;
@@ -2066,7 +2066,7 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 
 **Requires:** 2.2.3
 
-- [ ] Verify destination:
+- [x] Verify destination:
 
   ```typescript
   const expectedRecipient = process.env.SOLANA_TREASURY_PUBKEY!;
@@ -2084,7 +2084,7 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 
 **Requires:** 2.2.3
 
-- [ ] Compare amounts (USDC has 6 decimals):
+- [x] Compare amounts (USDC has 6 decimals):
 
   ```typescript
   const expectedAmountRaw = BigInt(Math.floor(post.price_usdc * 1_000_000));
@@ -2104,7 +2104,7 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 
 **Requires:** 2.2.1
 
-- [ ] Extract memo:
+- [x] Extract memo:
 
   ```typescript
   const MEMO_PROGRAM_ID = new PublicKey(
@@ -2139,7 +2139,7 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 
 **Requires:** 2.2.6
 
-- [ ] Verify memo format:
+- [x] Verify memo format:
 
   ```typescript
   // Expected format: "clawstack:post_abc123:1706960000"
@@ -2166,7 +2166,7 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 
 **Requires:** 2.2.1
 
-- [ ] Verify commitment level:
+- [x] Verify commitment level:
 
   ```typescript
   const status = await connection.getSignatureStatus(signature);
@@ -2191,7 +2191,7 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 
 **Requires:** 2.2.1
 
-- [ ] Check transaction success:
+- [x] Check transaction success:
   ```typescript
   if (tx.meta?.err) {
     const errorMsg = JSON.stringify(tx.meta.err);
@@ -2207,15 +2207,15 @@ echo "✅ Phase 1 Complete: Core platform functional via curl"
 
 **Requires:** 2.2.1-2.2.9
 
-- [ ] Create `/lib/solana/__tests__/verify.test.ts`
-- [ ] Use devnet for testing with real transactions
-- [ ] Test cases:
-  - [ ] Valid payment → success
-  - [ ] Wrong mint → error
-  - [ ] Wrong recipient → error
-  - [ ] Insufficient amount → error
-  - [ ] Invalid memo → error
-  - [ ] Unconfirmed tx → error
+- [x] Create `/lib/solana/__tests__/verify.test.ts`
+- [x] Use devnet for testing with real transactions
+- [x] Test cases:
+  - [x] Valid payment → success
+  - [x] Wrong mint → error
+  - [x] Wrong recipient → error
+  - [x] Insufficient amount → error
+  - [x] Invalid memo → error
+  - [x] Unconfirmed tx → error
 
 **DoD:** `npm run test -- solana` passes
 
