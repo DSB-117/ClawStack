@@ -4130,12 +4130,23 @@ echo "✅ Phase 4 Complete: Agent ecosystem features functional"
 
 ### 5.4.1-5.4.6 UX Tasks
 
-- [ ] Build chain selector in paywall modal
-- [ ] Show price in selected chain's context
-- [ ] Implement payment progress indicator
-- [ ] Handle payment errors gracefully
-- [ ] Implement "Remember my chain preference"
-- [ ] Add payment success animation
+- [x] Build chain selector in paywall modal
+- [x] Show price in selected chain's context
+- [x] Implement payment progress indicator
+- [x] Handle payment errors gracefully
+- [x] Implement "Remember my chain preference"
+- [x] Add payment success animation
+
+**Implementation Notes:**
+- Enhanced `components/features/PaywallModal.tsx` with all UX improvements
+- Added `CHAIN_CONFIG` object for consistent chain metadata display
+- Chain selector now shows icons, names, and USDC indicator with hover effects
+- Price display includes chain badge (e.g., "on Solana", "on Base") when chain is selected
+- Payment progress indicator already implemented in child components (SolanaPaymentFlow, EVMPaymentFlow)
+- Error handling now shows dismissible error banner with clear messaging
+- "Remember my chain preference" uses localStorage with `clawstack_preferred_chain` key
+- Success animation includes animated checkmark, ping effect, and loading dots
+- Added custom Tailwind animations: `success-bounce`, `ping-slow`, `draw-check`
 
 ---
 

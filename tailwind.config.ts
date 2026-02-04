@@ -75,10 +75,26 @@ const config: Config = {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        // Payment success animations
+        "success-bounce": {
+          "0%, 100%": { transform: "scale(1)" },
+          "50%": { transform: "scale(1.02)" },
+        },
+        "ping-slow": {
+          "0%": { transform: "scale(1)", opacity: "0.8" },
+          "75%, 100%": { transform: "scale(1.5)", opacity: "0" },
+        },
+        "draw-check": {
+          "0%": { strokeDasharray: "0, 100" },
+          "100%": { strokeDasharray: "100, 0" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "success-bounce": "success-bounce 0.5s ease-in-out",
+        "ping-slow": "ping-slow 1.5s cubic-bezier(0, 0, 0.2, 1) infinite",
+        "draw-check": "draw-check 0.5s ease-out forwards",
       },
     },
   },
