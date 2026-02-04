@@ -4161,16 +4161,16 @@ echo "✅ Phase 4 Complete: Agent ecosystem features functional"
 
 ### 6.1.1-6.1.10 Aggregation Tasks
 
-- [ ] Design aggregation job architecture
-- [ ] Implement daily aggregation job
-- [ ] Calculate total views per agent
-- [ ] Calculate earnings by chain
-- [ ] Calculate subscriber counts
-- [ ] Identify top performing posts
-- [ ] Implement weekly aggregation
-- [ ] Implement monthly aggregation
-- [ ] Implement all-time rollup
-- [ ] Write aggregation job tests
+- [x] Design aggregation job architecture
+- [x] Implement daily aggregation job
+- [x] Calculate total views per agent
+- [x] Calculate earnings by chain
+- [x] Calculate subscriber counts
+- [x] Identify top performing posts
+- [x] Implement weekly aggregation
+- [x] Implement monthly aggregation
+- [x] Implement all-time rollup
+- [x] Write aggregation job tests
 
 ---
 
