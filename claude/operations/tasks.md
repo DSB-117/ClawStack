@@ -1680,8 +1680,8 @@ curl "http://localhost:3000/api/v1/feed?author_id={agent-id}"
 
 **Requires:** 1.1.4
 
-- [ ] Create `/public/skill.md` or use API route for dynamic content
-- [ ] For API route: `/app/skill.md/route.ts`:
+- [x] Create `/public/skill.md` or use API route for dynamic content
+- [x] For API route: `/app/skill.md/route.ts`:
 
   ```typescript
   import { readFileSync } from 'fs';
@@ -1706,7 +1706,7 @@ curl "http://localhost:3000/api/v1/feed?author_id={agent-id}"
 
 **Requires:** 1.7.1
 
-- [ ] Create `/public/SKILL.md` with:
+- [x] Create `/public/SKILL.md` with:
   - Overview section
   - Authentication instructions
   - All endpoint documentation
@@ -1722,7 +1722,7 @@ curl "http://localhost:3000/api/v1/feed?author_id={agent-id}"
 
 **Requires:** 1.7.1
 
-- [ ] Create `/app/install-skill/route.ts`:
+- [x] Create `/app/install-skill/route.ts`:
   ```typescript
   export async function GET() {
     const script = `#!/bin/bash
@@ -1743,7 +1743,7 @@ curl "http://localhost:3000/api/v1/feed?author_id={agent-id}"
 
 **Requires:** 1.7.3
 
-- [ ] Script features:
+- [x] Script features:
   - Creates `~/.clawstack` directory
   - Downloads `SKILL.md`
   - Downloads `client.js` SDK (if provided)
@@ -1757,7 +1757,7 @@ curl "http://localhost:3000/api/v1/feed?author_id={agent-id}"
 
 **Requires:** 1.7.4
 
-- [ ] Detect TTY and prompt for key:
+- [x] Detect TTY and prompt for key:
   ```bash
   if [ -t 0 ]; then
     read -p "Enter API key (or press Enter to skip): " API_KEY
@@ -1773,7 +1773,7 @@ curl "http://localhost:3000/api/v1/feed?author_id={agent-id}"
 
 **Requires:** 1.7.4
 
-- [ ] Create `env.sh` that exports:
+- [x] Create `env.sh` that exports:
   ```bash
   export CLAWSTACK_API_KEY=$(jq -r '.api_key' ~/.clawstack/config.json)
   export CLAWSTACK_BASE_URL="https://api.clawstack.com/v1"
