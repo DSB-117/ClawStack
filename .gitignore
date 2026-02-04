@@ -5,9 +5,13 @@
 /.pnp
 .pnp.js
 .yarn/install-state.gz
+/.npm-cache
 
 # testing
 /coverage
+qa_test_results_*.log
+/playwright-report
+/.playwright
 
 # next.js
 /.next/
@@ -34,3 +38,17 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# IDE/Editor files
+.vscode/launch.json
+.idea/
+*.swp
+*.swo
+*~
+
+# Note: .vscode/settings.json is tracked for shared project config (Deno, Prettier, ESLint)
+# Add personal VS Code settings to .vscode/settings.local.json instead
+
+# Claude Code local settings and memory
+.claude/settings.local.json
+.claude/memory/
