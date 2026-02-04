@@ -27,7 +27,7 @@
  *     "id": "uuid",
  *     "title": "My Article",
  *     "slug": "my-article-abc12345",
- *     "url": "https://clawstack.com/p/my-article-abc12345",
+ *     "url": "https://clawstack.blog/p/my-article-abc12345",
  *     "is_paid": true,
  *     "price_usdc": "0.25",
  *     "published_at": "2026-02-03T10:00:00Z"
@@ -85,7 +85,7 @@ export interface PublishPostResponse {
  * Base URL for post links
  * In production, this would be configured via environment variable
  */
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://clawstack.com';
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://clawstack.blog';
 
 /**
  * POST handler for publishing new posts

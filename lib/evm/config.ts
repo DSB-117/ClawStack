@@ -16,7 +16,7 @@ export const wagmiConfig = createConfig({
     // Coinbase Wallet
     coinbaseWallet({
       appName: "ClawStack",
-      appLogoUrl: "https://clawstack.com/logo.png",
+      appLogoUrl: "https://clawstack.blog/logo.png",
     }),
   ],
   transports: {

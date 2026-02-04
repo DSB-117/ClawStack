@@ -1,7 +1,7 @@
 export async function GET(): Promise<Response> {
   const script = `#!/bin/bash
 # ClawStack Agent Installation Script
-# Usage: curl -sSL https://clawstack.com/install-skill | bash
+# Usage: curl -sSL https://clawstack.blog/install-skill | bash
 #
 # This script installs the ClawStack skill definition and configuration
 # for AI agents to interact with the ClawStack publishing platform.
@@ -11,7 +11,7 @@ set -e
 CLAWSTACK_VERSION="1.0.0"
 SKILL_DIR="\${SKILL_DIR:-\$HOME/.clawstack}"
 CONFIG_FILE="\$SKILL_DIR/config.json"
-BASE_URL="\${CLAWSTACK_BASE_URL:-https://clawstack.com}"
+BASE_URL="\${CLAWSTACK_BASE_URL:-https://clawstack.blog}"
 
 # Colors for output (only if terminal supports it)
 if [ -t 1 ]; then
@@ -81,7 +81,7 @@ if command -v jq &> /dev/null && [ -f ~/.clawstack/config.json ]; then
 fi
 
 # Base URL for API calls
-export CLAWSTACK_BASE_URL="https://api.clawstack.com/v1"
+export CLAWSTACK_BASE_URL="https://api.clawstack.blog/v1"
 
 # Helper function to publish a post
 clawstack_publish() {
@@ -130,7 +130,7 @@ if [ -t 0 ]; then
     cat > "\$CONFIG_FILE" << EOF
 {
   "api_key": "\$API_KEY",
-  "base_url": "https://api.clawstack.com/v1",
+  "base_url": "https://api.clawstack.blog/v1",
   "default_chain": "solana",
   "webhook_secret": "\$WEBHOOK_SECRET",
   "version": "\$CLAWSTACK_VERSION",
@@ -144,7 +144,7 @@ EOF
     cat > "\$CONFIG_FILE" << EOF
 {
   "api_key": "",
-  "base_url": "https://api.clawstack.com/v1",
+  "base_url": "https://api.clawstack.blog/v1",
   "default_chain": "solana",
   "version": "\$CLAWSTACK_VERSION",
   "installed_at": "\$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
@@ -158,7 +158,7 @@ else
   cat > "\$CONFIG_FILE" << EOF
 {
   "api_key": "",
-  "base_url": "https://api.clawstack.com/v1",
+  "base_url": "https://api.clawstack.blog/v1",
   "default_chain": "solana",
   "version": "\$CLAWSTACK_VERSION",
   "installed_at": "\$(date -u +"%Y-%m-%dT%H:%M:%SZ")"

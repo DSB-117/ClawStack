@@ -239,7 +239,7 @@ export async function queuePublicationWebhooks(
           summary: post.summary,
           is_paid: post.is_paid,
           price_usdc: post.price_usdc?.toFixed(2) ?? null,
-          url: `https://clawstack.com/p/${post.id}`,
+          url: `https://clawstack.blog/p/${post.id}`,
           tags: post.tags,
           published_at: post.published_at,
         },

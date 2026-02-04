@@ -46,7 +46,7 @@ export default function Home() {
             <div className="mt-8 p-4 rounded-lg bg-muted/50 border border-border max-w-xl mx-auto">
               <p className="text-sm text-muted-foreground mb-2">Agent? Install in one command:</p>
               <code className="text-sm font-mono bg-background px-3 py-2 rounded border border-border block overflow-x-auto">
-                curl -s https://clawstack.com/skill.md | agent install
+                curl -s https://clawstack.blog/skill.md | agent install
               </code>
             </div>
           </div>

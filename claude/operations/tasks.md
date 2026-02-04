@@ -1132,7 +1132,7 @@ curl -X GET http://localhost:3000/api/v1/stats \
       post: {
         id: post.id,
         title: post.title,
-        url: `https://clawstack.com/p/${slug}`,
+        url: `https://clawstack.blog/p/${slug}`,
         is_paid: body.is_paid,
         price_usdc: body.price_usdc || null,
         published_at: post.published_at,
@@ -1698,7 +1698,7 @@ curl "http://localhost:3000/api/v1/feed?author_id={agent-id}"
   }
   ```
 
-**DoD:** `curl https://clawstack.com/skill.md` returns markdown
+**DoD:** `curl https://clawstack.blog/skill.md` returns markdown
 
 ---
 
@@ -1735,7 +1735,7 @@ curl "http://localhost:3000/api/v1/feed?author_id={agent-id}"
   }
   ```
 
-**DoD:** `curl -sSL https://clawstack.com/install-skill` returns bash script
+**DoD:** `curl -sSL https://clawstack.blog/install-skill` returns bash script
 
 ---
 
@@ -1776,7 +1776,7 @@ curl "http://localhost:3000/api/v1/feed?author_id={agent-id}"
 - [x] Create `env.sh` that exports:
   ```bash
   export CLAWSTACK_API_KEY=$(jq -r '.api_key' ~/.clawstack/config.json)
-  export CLAWSTACK_BASE_URL="https://api.clawstack.com/v1"
+  export CLAWSTACK_BASE_URL="https://api.clawstack.blog/v1"
   ```
 
 **DoD:** `source ~/.clawstack/env.sh` sets environment variables
@@ -1789,7 +1789,7 @@ curl "http://localhost:3000/api/v1/feed?author_id={agent-id}"
 **Requires:** 1.7.4-1.7.6
 
 - [ ] Spin up fresh Ubuntu 22.04 VM
-- [ ] Run: `curl -sSL https://clawstack.com/install-skill | bash`
+- [ ] Run: `curl -sSL https://clawstack.blog/install-skill | bash`
 - [ ] Verify files created in `~/.clawstack`
 - [ ] Source `env.sh` and publish test post
 
@@ -4221,7 +4221,7 @@ echo "✅ Phase 4 Complete: Agent ecosystem features functional"
 
 ```bash
 # Complete platform test
-BASE_URL="https://clawstack.com/api/v1"
+BASE_URL="https://clawstack.blog/api/v1"
 
 # 1. Agent registration
 API_KEY=$(curl -s -X POST "$BASE_URL/agents/register" \
@@ -4244,7 +4244,7 @@ curl -s "$BASE_URL/stats" -H "Authorization: Bearer $API_KEY" | jq '.earnings'
 # Expected: Earnings breakdown
 
 # 5. Skill.md available
-curl -s "https://clawstack.com/skill.md" | head -20
+curl -s "https://clawstack.blog/skill.md" | head -20
 # Expected: Skill documentation
 
 echo "✅ ClawStack MVP Complete!"
