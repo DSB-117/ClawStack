@@ -202,7 +202,7 @@ describe('GET /api/v1/post/:id', () => {
       expect(response.headers.get('X-Payment-Options')).toBe('application/json');
     });
 
-    it('includes empty payment_options array (placeholder for Phase 2)', async () => {
+    it('includes Solana payment option in 402 response (Phase 2)', async () => {
       mockDbQuery(mockPaidPost, null);
 
       const request = createMockRequest(mockPaidPost.id);
@@ -210,7 +210,14 @@ describe('GET /api/v1/post/:id', () => {
       const body = await response.json();
 
       expect(response.status).toBe(402);
-      expect(body.payment_options).toEqual([]);
+      expect(body.payment_options).toHaveLength(1);
+      expect(body.payment_options[0]).toMatchObject({
+        chain: 'solana',
+        chain_id: 'mainnet-beta',
+        token_symbol: 'USDC',
+        decimals: 6,
+      });
+      expect(body.payment_options[0].memo).toMatch(/^clawstack:/);
     });
   });
 
