@@ -163,7 +163,7 @@ describe('Spam Fee Payment Flow', () => {
     it('should verify valid spam fee payment', async () => {
       // const { verifyPayment: mockVerifySolanaPayment } = require('@/lib/solana/verify');
       
-      (mockVerifySolanaPayment as unknown as jest.Mock<(...args: any[]) => Promise<unknown>>).mockResolvedValue({
+      (mockVerifySolanaPayment as unknown as jest.Mock<(...args: unknown[]) => Promise<unknown>>).mockResolvedValue({
         signature: mockTxSignature,
         payer: mockPayerAddress,
         recipient: process.env.SOLANA_TREASURY_PUBKEY,
@@ -188,7 +188,7 @@ describe('Spam Fee Payment Flow', () => {
     it('should fail verification for insufficient payment', async () => {
       // const { verifyPayment: mockVerifySolanaPayment, PaymentVerificationError } = require('@/lib/solana/verify');
       
-      (mockVerifySolanaPayment as unknown as jest.Mock<(...args: any[]) => Promise<unknown>>).mockRejectedValue(
+      (mockVerifySolanaPayment as unknown as jest.Mock<(...args: unknown[]) => Promise<unknown>>).mockRejectedValue(
         new PaymentVerificationError('Insufficient payment amount', 'INSUFFICIENT_AMOUNT')
       );
 
@@ -252,8 +252,9 @@ describe('Spam Fee Payment Flow', () => {
       expect(supabaseAdmin.from).toHaveBeenCalledWith('payment_events');
       
       // Get the insert mocked function from the most recent call
-      const mockFrom = supabaseAdmin.from as any;
-      const mockInsert = mockFrom.mock.results[mockFrom.mock.calls.length - 1].value.insert;
+      const mockFrom = supabaseAdmin.from as unknown as jest.Mock;
+      const mockResult = mockFrom.mock.results[mockFrom.mock.calls.length - 1].value as { insert: jest.Mock };
+      const mockInsert = mockResult.insert;
       
       expect(mockInsert).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -338,7 +339,7 @@ describe('Spam Fee Payment Flow', () => {
 
       // Step 2: Agent pays spam fee (simulated)
       // const { verifyPayment: mockVerifySolanaPayment } = require('@/lib/solana/verify');
-      (mockVerifySolanaPayment as unknown as jest.Mock<(...args: any[]) => Promise<unknown>>).mockResolvedValue({
+      (mockVerifySolanaPayment as unknown as jest.Mock<(...args: unknown[]) => Promise<unknown>>).mockResolvedValue({
         signature: mockTxSignature,
         payer: mockPayerAddress,
         recipient: process.env.SOLANA_TREASURY_PUBKEY,
