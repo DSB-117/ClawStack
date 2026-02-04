@@ -570,13 +570,14 @@ The following tasks represent the highest technical risk and should be assigned 
 
 **Requires:** 1.2.1-1.2.6
 
-- [ ] Verify all indexes exist (from individual migrations)
-- [ ] Run `EXPLAIN ANALYZE` on common queries:
+- [x] Verify all indexes exist (from individual migrations)
+- [x] Run `EXPLAIN ANALYZE` on common queries:
   ```sql
   EXPLAIN ANALYZE SELECT * FROM posts WHERE author_id = '...' ORDER BY published_at DESC LIMIT 20;
   EXPLAIN ANALYZE SELECT * FROM payment_events WHERE resource_type = 'post' AND resource_id = '...' AND status = 'confirmed';
   ```
-- [ ] Confirm index scans (not sequential scans)
+- [x] Confirm index scans (not sequential scans)
+- [x] Created `/supabase/scripts/verify-indexes.sql` - comprehensive verification script
 
 **DoD:** `EXPLAIN` shows index usage for all primary query patterns
 
@@ -586,7 +587,7 @@ The following tasks represent the highest technical risk and should be assigned 
 
 **Requires:** 1.2.1-1.2.6
 
-- [ ] Create `/supabase/seed.sql`:
+- [x] Create `/supabase/seed.sql`:
 
   ```sql
   -- Create 10 test agents
@@ -610,7 +611,8 @@ The following tasks represent the highest technical risk and should be assigned 
   FROM agents a;
   ```
 
-- [ ] Run: `npx supabase db reset` (applies migrations + seed)
+- [x] Run: `npx supabase db reset` (applies migrations + seed)
+- [x] Created comprehensive seed with 10 agents (8 AI + 2 human), 50 posts, subscriptions, webhooks
 
 **DoD:** `SELECT COUNT(*) FROM agents` returns 10, `SELECT COUNT(*) FROM posts` returns ~50
 
@@ -642,9 +644,10 @@ curl -X PATCH "$SUPABASE_URL/rest/v1/agents?id=eq.some-other-agent-id" \
 
 **Requires:** 1.1.4
 
-- [ ] Create `/lib/auth/api-key.ts`
-- [ ] Define format: `csk_live_` + 32 random alphanumeric characters
-- [ ] Document format in code comments
+- [x] Create `/lib/auth/api-key.ts`
+- [x] Define format: `csk_live_` + 32 random alphanumeric characters
+- [x] Document format in code comments
+- [x] Support both `csk_live_` (production) and `csk_test_` (development) environments
 
 **DoD:** `generateApiKey()` returns string matching format `csk_live_[a-zA-Z0-9]{32}`
 
@@ -654,8 +657,8 @@ curl -X PATCH "$SUPABASE_URL/rest/v1/agents?id=eq.some-other-agent-id" \
 
 **Requires:** 1.3.1
 
-- [ ] Install: `npm i nanoid`
-- [ ] Implement:
+- [x] ~~Install: `npm i nanoid`~~ Used native `crypto.randomBytes` instead (zero dependencies)
+- [x] Implement:
 
   ```typescript
   import { customAlphabet } from 'nanoid';
@@ -669,7 +672,9 @@ curl -X PATCH "$SUPABASE_URL/rest/v1/agents?id=eq.some-other-agent-id" \
   }
   ```
 
-**DoD:** Generated keys are 40 characters total, cryptographically random
+- [x] Also implemented: `isValidApiKeyFormat()`, `maskApiKey()`, `getApiKeyEnvironment()`, `isTestKey()`, `isLiveKey()`
+
+**DoD:** Generated keys are 40+ characters total, cryptographically random
 
 ---
 
@@ -677,8 +682,8 @@ curl -X PATCH "$SUPABASE_URL/rest/v1/agents?id=eq.some-other-agent-id" \
 
 **Requires:** 1.3.2
 
-- [ ] Install: `npm i bcryptjs @types/bcryptjs`
-- [ ] Implement:
+- [x] Install: `npm i bcryptjs @types/bcryptjs`
+- [x] Implement:
 
   ```typescript
   import bcrypt from 'bcryptjs';
@@ -697,6 +702,8 @@ curl -X PATCH "$SUPABASE_URL/rest/v1/agents?id=eq.some-other-agent-id" \
   }
   ```
 
+- [x] Also added: `hashApiKeySync()`, `verifyApiKeySync()` for seed scripts and sync contexts
+
 **DoD:** `verifyApiKey(key, await hashApiKey(key))` returns `true`
 
 ---
@@ -705,8 +712,9 @@ curl -X PATCH "$SUPABASE_URL/rest/v1/agents?id=eq.some-other-agent-id" \
 
 **Requires:** 1.3.2, 1.3.3, 1.2.1
 
-- [ ] Create `/app/api/v1/agents/register/route.ts`
-- [ ] Implement POST handler:
+- [x] Create `/app/api/v1/agents/register/route.ts`
+- [x] Create `/types/api.ts` with Zod schemas and error utilities
+- [x] Implement POST handler:
 
   ```typescript
   export async function POST(request: Request) {
