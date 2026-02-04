@@ -353,6 +353,108 @@ export interface Database {
           },
         ];
       };
+      payout_batches: {
+        Row: {
+          id: string;
+          network: 'solana' | 'base';
+          status: 'pending' | 'processing' | 'completed' | 'failed' | 'partial';
+          total_authors: number;
+          total_amount_raw: number;
+          total_amount_usdc: number;
+          successful_payouts: number;
+          failed_payouts: number;
+          started_at: string | null;
+          completed_at: string | null;
+          error_message: string | null;
+          created_at: string;
+          created_by: string | null;
+        };
+        Insert: {
+          id?: string;
+          network: 'solana' | 'base';
+          status?: 'pending' | 'processing' | 'completed' | 'failed' | 'partial';
+          total_authors?: number;
+          total_amount_raw?: number;
+          successful_payouts?: number;
+          failed_payouts?: number;
+          started_at?: string | null;
+          completed_at?: string | null;
+          error_message?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+        };
+        Update: {
+          id?: string;
+          network?: 'solana' | 'base';
+          status?: 'pending' | 'processing' | 'completed' | 'failed' | 'partial';
+          total_authors?: number;
+          total_amount_raw?: number;
+          successful_payouts?: number;
+          failed_payouts?: number;
+          started_at?: string | null;
+          completed_at?: string | null;
+          error_message?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+        };
+        Relationships: [];
+      };
+      payout_batch_items: {
+        Row: {
+          id: string;
+          batch_id: string;
+          author_id: string;
+          author_wallet: string;
+          amount_raw: number;
+          amount_usdc: number;
+          payment_event_ids: string[];
+          transaction_signature: string | null;
+          status: 'pending' | 'processing' | 'completed' | 'failed';
+          error_message: string | null;
+          processed_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          batch_id: string;
+          author_id: string;
+          author_wallet: string;
+          amount_raw: number;
+          payment_event_ids?: string[];
+          transaction_signature?: string | null;
+          status?: 'pending' | 'processing' | 'completed' | 'failed';
+          error_message?: string | null;
+          processed_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          batch_id?: string;
+          author_id?: string;
+          author_wallet?: string;
+          amount_raw?: number;
+          payment_event_ids?: string[];
+          transaction_signature?: string | null;
+          status?: 'pending' | 'processing' | 'completed' | 'failed';
+          error_message?: string | null;
+          processed_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'payout_batch_items_batch_id_fkey';
+            columns: ['batch_id'];
+            referencedRelation: 'payout_batches';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'payout_batch_items_author_id_fkey';
+            columns: ['author_id'];
+            referencedRelation: 'agents';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -396,3 +498,19 @@ export type AnalyticsAggregateInsert =
   Database['public']['Tables']['analytics_aggregates']['Insert'];
 export type AnalyticsAggregateUpdate =
   Database['public']['Tables']['analytics_aggregates']['Update'];
+
+export type PayoutBatch = Database['public']['Tables']['payout_batches']['Row'];
+export type PayoutBatchInsert =
+  Database['public']['Tables']['payout_batches']['Insert'];
+export type PayoutBatchUpdate =
+  Database['public']['Tables']['payout_batches']['Update'];
+
+export type PayoutBatchItem =
+  Database['public']['Tables']['payout_batch_items']['Row'];
+export type PayoutBatchItemInsert =
+  Database['public']['Tables']['payout_batch_items']['Insert'];
+export type PayoutBatchItemUpdate =
+  Database['public']['Tables']['payout_batch_items']['Update'];
+
+export type AuthorPendingPayout =
+  Database['public']['Views']['author_pending_payouts']['Row'];

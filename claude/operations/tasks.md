@@ -2555,7 +2555,7 @@ curl -s http://localhost:3000/api/v1/post/{paid-post-id} \
 
 **Requires:** 2.3.9
 
-- [ ] Implement constants:
+- [x] Implement constants (in `/lib/x402/verify.ts`):
 
   ```typescript
   const PLATFORM_FEE_BPS = parseInt(process.env.PLATFORM_FEE_BPS || '500');
@@ -2573,7 +2573,7 @@ curl -s http://localhost:3000/api/v1/post/{paid-post-id} \
 
 **Requires:** 2.4.1
 
-- [ ] Implement:
+- [x] Implement (in `/lib/x402/verify.ts`):
   ```typescript
   export function calculateAuthorAmount(grossAmountRaw: bigint): bigint {
     const platformFee = calculatePlatformFee(grossAmountRaw);
@@ -2589,8 +2589,8 @@ curl -s http://localhost:3000/api/v1/post/{paid-post-id} \
 
 **Requires:** 2.4.1, 2.4.2, 2.3.9
 
-- [ ] Already implemented in 2.3.9
-- [ ] Add verification test:
+- [x] Already implemented in 2.3.9
+- [x] Add verification test (in `/lib/x402/__tests__/x402-flow.test.ts`):
   ```typescript
   // For a $0.25 payment:
   // gross = 250000 (raw units)
@@ -2604,8 +2604,8 @@ curl -s http://localhost:3000/api/v1/post/{paid-post-id} \
 
 ### 2.4.4 Design Solana Fee Splitter Program (Optional)
 
-- [ ] Document architecture in `/docs/solana-splitter-program.md`
-- [ ] Note: Off-chain splitting is MVP approach
+- [x] Document architecture in `/docs/solana-splitter-program.md`
+- [x] Note: Off-chain splitting is MVP approach
 
 **DoD:** Architecture documented for future on-chain implementation
 
@@ -2615,8 +2615,12 @@ curl -s http://localhost:3000/api/v1/post/{paid-post-id} \
 
 **Requires:** 2.3.9
 
-- [ ] Payment events table already tracks splits
-- [ ] Create view for author balances:
+- [x] Payment events table already tracks splits
+- [x] Create migration `/supabase/migrations/20260203232300_create_payout_tracking.sql`:
+  - [x] `author_pending_payouts` VIEW for aggregating unpaid earnings
+  - [x] `payout_batches` TABLE for tracking batch jobs
+  - [x] `payout_batch_items` TABLE for individual payout records
+  - [x] Helper functions for querying pending payouts
   ```sql
   CREATE VIEW author_pending_payouts AS
   SELECT
@@ -2637,27 +2641,13 @@ curl -s http://localhost:3000/api/v1/post/{paid-post-id} \
 
 **Requires:** 2.4.5
 
-- [ ] Create `/jobs/solana-payouts.ts`:
-
-  ```typescript
-  export async function processSolanaPayouts() {
-    const { data: pendingPayouts } = await supabaseAdmin
-      .from('author_pending_payouts')
-      .select('*')
-      .eq('network', 'solana')
-      .gte('total_owed_raw', 1_000_000); // Min $1 payout
-
-    for (const payout of pendingPayouts) {
-      // 1. Get author wallet
-      // 2. Build SPL transfer transaction
-      // 3. Sign with treasury keypair
-      // 4. Submit transaction
-      // 5. Record payout event
-    }
-  }
-  ```
-
-- [ ] Schedule weekly execution
+- [x] Create `/jobs/solana-payouts.ts`:
+  - [x] `processSolanaPayouts()` - Main entry point for batch payouts
+  - [x] `previewSolanaPayouts()` - Dry run to preview pending payouts
+  - [x] Creates payout batch and item records
+  - [x] Processes SPL token transfers to author wallets
+  - [x] Records transaction signatures and status
+- [ ] Schedule weekly execution (requires cron job setup)
 
 **DoD:** Authors receive batched payouts weekly
 
@@ -2667,11 +2657,14 @@ curl -s http://localhost:3000/api/v1/post/{paid-post-id} \
 
 **Requires:** 2.4.1-2.4.3
 
-- [ ] Test cases:
-  - [ ] Minimum price ($0.05) → correct split
-  - [ ] Maximum price ($0.99) → correct split
-  - [ ] Rounding behavior → no lost/extra cents
-  - [ ] Multiple payments → totals correct
+- [x] Test cases in `/lib/x402/__tests__/fee-split.test.ts` (30 tests):
+  - [x] Minimum price ($0.05) → correct split
+  - [x] Maximum price ($0.99) → correct split
+  - [x] Rounding behavior → no lost/extra cents
+  - [x] Multiple payments → totals correct
+  - [x] Integer division edge cases
+  - [x] USDC conversion round-trips
+  - [x] Boundary values (zero, max safe integer)
 
 **DoD:** Edge cases pass without rounding errors
 
