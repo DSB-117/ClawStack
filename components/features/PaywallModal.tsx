@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { useState, useCallback } from "react";
+import { SolanaPaymentFlow } from "./SolanaPaymentFlow";
 
 interface PaywallModalProps {
   postId: string;
@@ -12,7 +12,7 @@ interface PaywallModalProps {
   authorWalletBase: string | null;
 }
 
-type PaymentChain = "solana" | "base";
+type PaymentChain = "solana" | "base" | null;
 
 export function PaywallModal({
   postId,
@@ -22,10 +22,16 @@ export function PaywallModal({
   authorWalletSolana,
   authorWalletBase,
 }: PaywallModalProps) {
-  const [selectedChain, setSelectedChain] = useState<PaymentChain | null>(null);
-  const [isConnecting, setIsConnecting] = useState(false);
+  const [selectedChain, setSelectedChain] = useState<PaymentChain>(null);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
 
-  const allChains: { id: PaymentChain; name: string; wallet: string | null; icon: string; color: string }[] = [
+  const allChains: {
+    id: "solana" | "base";
+    name: string;
+    wallet: string | null;
+    icon: string;
+    color: string;
+  }[] = [
     {
       id: "solana",
       name: "Solana",
@@ -44,20 +50,57 @@ export function PaywallModal({
 
   const availableChains = allChains.filter((chain) => chain.wallet !== null);
 
-  const handlePayment = async () => {
-    if (!selectedChain) return;
+  const handlePaymentSuccess = useCallback(() => {
+    setPaymentSuccess(true);
+    // Reload the page to show unlocked content
+    window.location.reload();
+  }, []);
 
-    setIsConnecting(true);
+  const handlePaymentError = useCallback((error: string) => {
+    console.error("Payment error:", error);
+  }, []);
 
-    // This will be implemented when wallet integration is added (Phase 5.2/5.3)
-    // For now, show a placeholder message
-    setTimeout(() => {
-      setIsConnecting(false);
-      alert(
-        `Wallet integration coming soon!\n\nSelected: ${selectedChain}\nPost: ${postId}\nPrice: $${priceUsdc} USDC`
-      );
-    }, 1000);
-  };
+  const handleBack = useCallback(() => {
+    setSelectedChain(null);
+  }, []);
+
+  // If payment successful, show success message (briefly before reload)
+  if (paymentSuccess) {
+    return (
+      <div className="relative">
+        <div className="relative overflow-hidden rounded-xl">
+          <div className="prose prose-slate dark:prose-invert max-w-none">
+            <p className="text-lg text-muted-foreground">{previewContent}</p>
+          </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/95 to-background/50 flex items-end justify-center pb-8">
+            <div className="w-full max-w-md">
+              <div className="bg-card border border-border rounded-xl p-6 shadow-lg text-center">
+                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-claw-secondary/10 text-claw-secondary mb-4">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="32"
+                    height="32"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M20 6 9 17l-5-5" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold mb-2">Content Unlocked!</h3>
+                <p className="text-muted-foreground text-sm">
+                  Loading full article...
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative">
@@ -72,6 +115,7 @@ export function PaywallModal({
           <div className="w-full max-w-md">
             {/* Paywall Card */}
             <div className="bg-card border border-border rounded-xl p-6 shadow-lg">
+              {/* Header - always show price */}
               <div className="text-center mb-6">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-claw-primary/10 mb-4">
                   <svg
@@ -92,16 +136,18 @@ export function PaywallModal({
                 </div>
                 <h3 className="text-xl font-bold mb-2">Premium Content</h3>
                 <p className="text-muted-foreground text-sm">
-                  Unlock "{title}" for just
+                  Unlock &ldquo;{title}&rdquo; for just
                 </p>
                 <p className="text-3xl font-bold text-claw-secondary mt-2">
-                  ${priceUsdc.toFixed(2)} <span className="text-lg font-normal">USDC</span>
+                  ${priceUsdc.toFixed(2)}{" "}
+                  <span className="text-lg font-normal">USDC</span>
                 </p>
               </div>
 
-              {/* Chain Selection */}
+              {/* Chain Selection or Payment Flow */}
               {availableChains.length > 0 ? (
-                <>
+                selectedChain === null ? (
+                  // Chain Selection
                   <div className="space-y-3 mb-6">
                     <p className="text-sm font-medium text-center">
                       Select payment method:
@@ -111,11 +157,7 @@ export function PaywallModal({
                         <button
                           key={chain.id}
                           onClick={() => setSelectedChain(chain.id)}
-                          className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-all ${
-                            selectedChain === chain.id
-                              ? "border-claw-primary bg-claw-primary/5"
-                              : "border-border hover:border-muted-foreground/50"
-                          }`}
+                          className="flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 border-border hover:border-claw-primary/50 hover:bg-claw-primary/5 transition-all"
                         >
                           <span
                             className="text-lg"
@@ -128,45 +170,66 @@ export function PaywallModal({
                       ))}
                     </div>
                   </div>
-
-                  <Button
-                    variant="claw"
-                    size="lg"
-                    className="w-full"
-                    disabled={!selectedChain || isConnecting}
-                    onClick={handlePayment}
-                  >
-                    {isConnecting ? (
-                      <span className="flex items-center gap-2">
-                        <svg
-                          className="animate-spin h-4 w-4"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          />
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          />
-                        </svg>
-                        Connecting...
-                      </span>
-                    ) : selectedChain ? (
-                      `Pay with ${selectedChain === "solana" ? "Solana" : "Base"}`
-                    ) : (
-                      "Select a chain to pay"
-                    )}
-                  </Button>
-                </>
+                ) : selectedChain === "solana" && authorWalletSolana ? (
+                  // Solana Payment Flow
+                  <div>
+                    <button
+                      onClick={handleBack}
+                      className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="m15 18-6-6 6-6" />
+                      </svg>
+                      Back
+                    </button>
+                    <SolanaPaymentFlow
+                      postId={postId}
+                      priceUsdc={priceUsdc}
+                      recipientAddress={authorWalletSolana}
+                      onSuccess={handlePaymentSuccess}
+                      onError={handlePaymentError}
+                    />
+                  </div>
+                ) : selectedChain === "base" ? (
+                  // Base/EVM Payment Flow (placeholder - to be implemented in Phase 5.3)
+                  <div>
+                    <button
+                      onClick={handleBack}
+                      className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="m15 18-6-6 6-6" />
+                      </svg>
+                      Back
+                    </button>
+                    <div className="text-center py-8">
+                      <div className="text-4xl mb-4">Ⓑ</div>
+                      <p className="text-muted-foreground text-sm">
+                        Base payment support coming soon!
+                      </p>
+                    </div>
+                  </div>
+                ) : null
               ) : (
                 <div className="text-center py-4">
                   <p className="text-sm text-muted-foreground">
