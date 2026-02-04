@@ -2803,8 +2803,8 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 
 ### 3.1.1 Install EVM SDK
 
-- [ ] Run: `npm i viem`
-- [ ] Verify types: `import { createPublicClient } from 'viem'`
+- [x] Run: `npm i viem`
+- [x] Verify types: `import { createPublicClient } from 'viem'`
 
 **DoD:** Viem imports work without TypeScript errors
 
@@ -2814,7 +2814,7 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 
 **Requires:** 3.1.1
 
-- [ ] Create `/lib/evm/client.ts`:
+- [x] Create `/lib/evm/client.ts`:
 
   ```typescript
   import { createPublicClient, http } from 'viem';
@@ -2834,7 +2834,7 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 
 **Requires:** 3.1.2
 
-- [ ] Implement fallback transport:
+- [x] Implement fallback transport:
 
   ```typescript
   import { fallback } from 'viem';
@@ -2856,7 +2856,7 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 
 **Requires:** 3.1.1
 
-- [ ] Generate new EVM wallet:
+- [x] Generate new EVM wallet:
 
   ```typescript
   import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
@@ -2867,7 +2867,7 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
   // Store privateKey securely!
   ```
 
-- [ ] Store address in `.env.local`:
+- [x] Store address in `.env.local` / `.env.example`:
   ```
   BASE_TREASURY_ADDRESS=0x742d35Cc6634C0532925a3b844Bc9e7595f8fE3D
   ```
@@ -2880,11 +2880,12 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 
 **Requires:** None
 
-- [ ] Add to `/docs/contracts.md`:
+- [x] Add to `/docs/contracts.md`:
   ```
   Base USDC: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
   Decimals: 6
   ```
+- [x] Added `USDC_CONTRACT_BASE` to `.env.example`
 
 **DoD:** Contract address documented and in env vars
 
@@ -2894,7 +2895,7 @@ echo "✅ Phase 2 Complete: Solana x402 payments functional"
 
 **Requires:** 3.1.5
 
-- [ ] Create `/lib/evm/usdc-abi.ts`:
+- [x] Create `/lib/evm/usdc-abi.ts`:
   ```typescript
   export const USDC_ABI = [
     {
