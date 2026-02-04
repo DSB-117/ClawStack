@@ -933,8 +933,8 @@ curl -X GET http://localhost:3000/api/v1/stats \
 
 **Requires:** 1.3.5
 
-- [ ] Create `/app/api/v1/publish/route.ts`
-- [ ] Implement basic structure:
+- [x] Create `/app/api/v1/publish/route.ts`
+- [x] Implement basic structure:
   ```typescript
   export async function POST(request: NextRequest) {
     return withAuth(request, async (req, agentId) => {
@@ -951,8 +951,8 @@ curl -X GET http://localhost:3000/api/v1/stats \
 
 **Requires:** 1.4.1
 
-- [ ] Install: `npm i zod`
-- [ ] Create `/lib/validators/publish.ts`:
+- [x] Install: `npm i zod`
+- [x] Create `/lib/validators/publish.ts`:
 
   ```typescript
   import { z } from 'zod';
@@ -982,8 +982,8 @@ curl -X GET http://localhost:3000/api/v1/stats \
 
 **Requires:** 1.4.2
 
-- [ ] Zod schema already enforces `.max(200)`
-- [ ] Add test case for 201-char title → 400 error
+- [x] Zod schema already enforces `.max(200)`
+- [x] Add test case for 201-char title → 400 error
 
 **DoD:** Title longer than 200 chars returns 400
 
@@ -993,8 +993,8 @@ curl -X GET http://localhost:3000/api/v1/stats \
 
 **Requires:** 1.4.2
 
-- [ ] Install: `npm i sanitize-html @types/sanitize-html`
-- [ ] Create `/lib/content/sanitize.ts`:
+- [x] Install: `npm i sanitize-html @types/sanitize-html`
+- [x] Create `/lib/content/sanitize.ts`:
 
   ```typescript
   import sanitizeHtml from 'sanitize-html';
@@ -1015,7 +1015,7 @@ curl -X GET http://localhost:3000/api/v1/stats \
   }
   ```
 
-- [ ] Test: XSS payload `<script>alert('xss')</script>` is stripped
+- [x] Test: XSS payload `<script>alert('xss')</script>` is stripped
 
 **DoD:** `<script>` tags removed, safe HTML preserved
 
@@ -1025,7 +1025,7 @@ curl -X GET http://localhost:3000/api/v1/stats \
 
 **Requires:** 1.4.2
 
-- [ ] Add tag normalization in route handler:
+- [x] Add tag normalization in route handler:
   ```typescript
   const tags =
     body.tags?.map((t: string) => t.toLowerCase().trim()).slice(0, 5) || [];
@@ -1039,7 +1039,7 @@ curl -X GET http://localhost:3000/api/v1/stats \
 
 **Requires:** 1.4.2
 
-- [ ] Add Zod refinement:
+- [x] Add Zod refinement:
   ```typescript
   .refine(
     (data) => {
@@ -1059,7 +1059,7 @@ curl -X GET http://localhost:3000/api/v1/stats \
 
 **Requires:** 1.4.4
 
-- [ ] Implement:
+- [x] Implement:
   ```typescript
   function generateSummary(content: string): string {
     const text = sanitizeContent(content).replace(/<[^>]*>/g, ''); // Strip HTML
@@ -1075,7 +1075,7 @@ curl -X GET http://localhost:3000/api/v1/stats \
 
 **Requires:** 1.4.2-1.4.7, 1.2.2
 
-- [ ] Complete publish handler:
+- [x] Complete publish handler:
   ```typescript
   const { data: post, error } = await supabaseAdmin
     .from('posts')
@@ -1102,8 +1102,8 @@ curl -X GET http://localhost:3000/api/v1/stats \
 
 **Requires:** 1.4.8
 
-- [ ] Install: `npm i slugify`
-- [ ] Implement:
+- [x] Install: `npm i slugify`
+- [x] Implement:
 
   ```typescript
   import slugify from 'slugify';
@@ -1114,7 +1114,7 @@ curl -X GET http://localhost:3000/api/v1/stats \
   }
   ```
 
-- [ ] Add `slug` column to posts table if not present
+- [x] Add `slug` column to posts table if not present
 
 **DoD:** Each post has unique, URL-safe slug
 
@@ -1124,7 +1124,7 @@ curl -X GET http://localhost:3000/api/v1/stats \
 
 **Requires:** 1.4.8, 1.4.9
 
-- [ ] Complete response:
+- [x] Complete response:
   ```typescript
   return Response.json(
     {
@@ -1150,16 +1150,16 @@ curl -X GET http://localhost:3000/api/v1/stats \
 
 **Requires:** 1.4.1-1.4.10
 
-- [ ] Create `/app/api/v1/publish/__tests__/route.test.ts`
-- [ ] Test cases:
-  - [ ] Valid free post → 201
-  - [ ] Valid paid post → 201 with price
-  - [ ] Missing title → 400
-  - [ ] Title too long → 400
-  - [ ] Paid without price → 400
-  - [ ] Price out of range → 400
-  - [ ] Too many tags → 400
-  - [ ] XSS in content → content sanitized
+- [x] Create `/app/api/v1/publish/__tests__/route.test.ts`
+- [x] Test cases:
+  - [x] Valid free post → 201
+  - [x] Valid paid post → 201 with price
+  - [x] Missing title → 400
+  - [x] Title too long → 400
+  - [x] Paid without price → 400
+  - [x] Price out of range → 400
+  - [x] Too many tags → 400
+  - [x] XSS in content → content sanitized
 
 **DoD:** `npm run test -- publish` passes
 
