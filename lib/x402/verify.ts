@@ -19,6 +19,11 @@ import {
   verifyPayment as verifySolanaPayment,
   PaymentVerificationError,
 } from '@/lib/solana/verify';
+import {
+  verifyEVMPayment,
+  EVMPaymentVerificationError,
+  isValidTransactionHash,
+} from '@/lib/evm/verify';
 import { supabaseAdmin } from '@/lib/db/supabase-server';
 import { Redis } from '@upstash/redis';
 
@@ -91,6 +96,15 @@ export function parsePaymentProof(header: string | null): PaymentProof | null {
     if (proof.chain !== 'solana' && proof.chain !== 'base') {
       console.warn(`Unsupported payment chain: ${proof.chain}`);
       return null;
+    }
+
+    // Validate transaction signature format based on chain
+    if (proof.chain === 'base') {
+      // EVM tx hashes are 66 chars (0x + 64 hex)
+      if (!isValidTransactionHash(proof.transaction_signature)) {
+        console.warn('Invalid EVM transaction hash format');
+        return null;
+      }
     }
 
     // Timestamp is optional but should be a number if present
@@ -274,18 +288,54 @@ async function verifySolanaPaymentProof(
 
 /**
  * Verify a Base (EVM) payment proof.
- * Placeholder for Phase 3 implementation.
+ * Routes to the EVM verifier for USDC transfer validation.
  */
 async function verifyBasePaymentProof(
   proof: PaymentProof,
   post: PostForPayment
 ): Promise<VerificationResult> {
-  // Phase 3: Implement Base/EVM verification
-  return {
-    success: false,
-    error: 'Base payment verification not yet implemented',
-    error_code: 'NOT_IMPLEMENTED',
-  };
+  try {
+    const expectedAmountRaw = usdcToRaw(post.price_usdc || 0);
+
+    const verifiedPayment = await verifyEVMPayment({
+      transactionHash: proof.transaction_signature as `0x${string}`,
+      expectedPostId: post.id,
+      expectedAmountRaw,
+      requestTimestamp: proof.timestamp,
+      referenceExpirationSeconds: X402_CONFIG.PAYMENT_VALIDITY_SECONDS,
+    });
+
+    // Cache the verified payment
+    await cacheVerifiedPayment('base', proof.transaction_signature);
+
+    return {
+      success: true,
+      payment: {
+        signature: verifiedPayment.transactionHash,
+        payer: verifiedPayment.payer,
+        recipient: verifiedPayment.recipient,
+        amount_raw: verifiedPayment.amount,
+        amount_usdc: rawToUsdc(verifiedPayment.amount),
+        network: 'base',
+        chain_id: '8453',
+      },
+    };
+  } catch (error) {
+    if (error instanceof EVMPaymentVerificationError) {
+      return {
+        success: false,
+        error: error.message,
+        error_code: error.code,
+      };
+    }
+
+    console.error('Unexpected error verifying Base payment:', error);
+    return {
+      success: false,
+      error: 'Unexpected verification error',
+      error_code: 'INTERNAL_ERROR',
+    };
+  }
 }
 
 // ============================================
@@ -456,12 +506,7 @@ export async function verifySpamFeePayment(
     case 'solana':
       return verifySolanaSpamFeePayment(proof, agentId, expectedFeeUsdc);
     case 'base':
-      // Phase 3: Implement Base spam fee verification
-      return {
-        success: false,
-        error: 'Base spam fee verification not yet implemented',
-        error_code: 'NOT_IMPLEMENTED',
-      };
+      return verifyBaseSpamFeePayment(proof, agentId, expectedFeeUsdc);
     default:
       return {
         success: false,
@@ -516,6 +561,59 @@ async function verifySolanaSpamFeePayment(
     }
 
     console.error('Unexpected error verifying Solana spam fee payment:', error);
+    return {
+      success: false,
+      error: 'Unexpected verification error',
+      error_code: 'INTERNAL_ERROR',
+    };
+  }
+}
+
+/**
+ * Verify a Base (EVM) spam fee payment.
+ */
+async function verifyBaseSpamFeePayment(
+  proof: PaymentProof,
+  agentId: string,
+  expectedFeeUsdc: string
+): Promise<VerificationResult> {
+  try {
+    const expectedAmountRaw = usdcToRaw(parseFloat(expectedFeeUsdc));
+
+    // Verify the payment - for spam fees we use a special reference format
+    const verifiedPayment = await verifyEVMPayment({
+      transactionHash: proof.transaction_signature as `0x${string}`,
+      expectedPostId: `spam_fee:${agentId}`,
+      expectedAmountRaw,
+      requestTimestamp: proof.timestamp,
+      referenceExpirationSeconds: X402_CONFIG.PAYMENT_VALIDITY_SECONDS,
+    });
+
+    // Cache the verified payment
+    await cacheVerifiedPayment('base', proof.transaction_signature);
+
+    return {
+      success: true,
+      payment: {
+        signature: verifiedPayment.transactionHash,
+        payer: verifiedPayment.payer,
+        recipient: verifiedPayment.recipient,
+        amount_raw: verifiedPayment.amount,
+        amount_usdc: rawToUsdc(verifiedPayment.amount),
+        network: 'base',
+        chain_id: '8453',
+      },
+    };
+  } catch (error) {
+    if (error instanceof EVMPaymentVerificationError) {
+      return {
+        success: false,
+        error: error.message,
+        error_code: error.code,
+      };
+    }
+
+    console.error('Unexpected error verifying Base spam fee payment:', error);
     return {
       success: false,
       error: 'Unexpected verification error',

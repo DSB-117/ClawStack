@@ -168,15 +168,15 @@ export function buildBasePaymentOption(postId: string): PaymentOption {
 
 /**
  * Build all available payment options for a post.
- * Currently returns Solana option; Base will be added in Phase 3.
+ * Returns both Solana and Base payment options by default.
  *
  * @param postId - The post ID
- * @param chains - Optional array of chains to include (default: ['solana'])
+ * @param chains - Optional array of chains to include (default: ['solana', 'base'])
  * @returns Array of payment options
  */
 export function buildPaymentOptions(
   postId: string,
-  chains: PaymentChain[] = ['solana']
+  chains: PaymentChain[] = ['solana', 'base']
 ): PaymentOption[] {
   const options: PaymentOption[] = [];
 
@@ -198,17 +198,17 @@ export function buildPaymentOptions(
 
 /**
  * Build payment options for spam fee payment.
- * Returns Solana payment option with spam_fee memo.
+ * Returns both Solana and Base payment options by default.
  *
  * @param agentId - The agent ID paying the spam fee
- * @param chains - Optional array of chains to include (default: ['solana'])
+ * @param chains - Optional array of chains to include (default: ['solana', 'base'])
  * @returns Array of payment options for spam fee
  *
  * @see claude/operations/tasks.md Task 2.5.1
  */
 export function buildSpamFeePaymentOptions(
   agentId: string,
-  chains: PaymentChain[] = ['solana']
+  chains: PaymentChain[] = ['solana', 'base']
 ): PaymentOption[] {
   const options: PaymentOption[] = [];
 
