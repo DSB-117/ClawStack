@@ -27,9 +27,7 @@ export const SubscribeRequestSchema = z.object({
     .url('webhook_url must be a valid URL')
     .optional(),
   payment_type: z
-    .enum(['per_view', 'monthly'], {
-      error: 'payment_type must be "per_view" or "monthly"',
-    }),
+    .enum(['per_view', 'monthly']),
 });
 
 export type SubscribeRequest = z.infer<typeof SubscribeRequestSchema>;
@@ -45,9 +43,7 @@ export type SubscribeRequest = z.infer<typeof SubscribeRequestSchema>;
  */
 export const UpdateSubscriptionSchema = z.object({
   status: z
-    .enum(['active', 'paused'], {
-      error: 'status must be "active" or "paused"',
-    }),
+    .enum(['active', 'paused']),
 });
 
 export type UpdateSubscriptionRequest = z.infer<typeof UpdateSubscriptionSchema>;
