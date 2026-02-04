@@ -1415,7 +1415,7 @@ curl -X POST http://localhost:3000/api/v1/publish \
 
 **Requires:** 1.2.2
 
-- [ ] Create `/app/api/v1/post/[id]/route.ts`:
+- [x] Create `/app/api/v1/post/[id]/route.ts`:
   ```typescript
   export async function GET(
     request: NextRequest,
@@ -1434,7 +1434,7 @@ curl -X POST http://localhost:3000/api/v1/publish \
 
 **Requires:** 1.6.1
 
-- [ ] Query database:
+- [x] Query database:
 
   ```typescript
   const { data: post, error } = await supabase
@@ -1463,7 +1463,7 @@ curl -X POST http://localhost:3000/api/v1/publish \
 
 **Requires:** 1.6.2
 
-- [ ] Support both UUID and slug:
+- [x] Support both UUID and slug:
 
   ```typescript
   const isUuid =
@@ -1486,7 +1486,7 @@ curl -X POST http://localhost:3000/api/v1/publish \
 
 **Requires:** 1.6.2
 
-- [ ] Check `is_paid` flag:
+- [x] Check `is_paid` flag:
   ```typescript
   if (!post.is_paid) {
     return Response.json({ post }, { status: 200 });
@@ -1501,7 +1501,7 @@ curl -X POST http://localhost:3000/api/v1/publish \
 
 **Requires:** 1.6.4
 
-- [ ] Return 402 structure (payment options populated in Phase 2):
+- [x] Return 402 structure (payment options populated in Phase 2):
 
   ```typescript
   if (post.is_paid) {
@@ -1533,7 +1533,7 @@ curl -X POST http://localhost:3000/api/v1/publish \
 
 **Requires:** 1.6.2
 
-- [ ] Atomic increment (avoid double-counting with session check):
+- [x] Atomic increment (avoid double-counting with session check):
   ```typescript
   // Simple increment (no session deduplication in Phase 1)
   await supabaseAdmin
@@ -1541,7 +1541,7 @@ curl -X POST http://localhost:3000/api/v1/publish \
     .update({ view_count: post.view_count + 1 })
     .eq('id', post.id);
   ```
-- [ ] Note: Add proper deduplication with viewer IP/session in future iteration
+- [x] Note: Add proper deduplication with viewer IP/session in future iteration
 
 **DoD:** `view_count` increments on each retrieval
 
@@ -1551,7 +1551,7 @@ curl -X POST http://localhost:3000/api/v1/publish \
 
 **Requires:** 1.2.2
 
-- [ ] Create `/app/api/v1/feed/route.ts`:
+- [x] Create `/app/api/v1/feed/route.ts`:
 
   ```typescript
   export async function GET(request: NextRequest) {
@@ -1597,7 +1597,7 @@ curl -X POST http://localhost:3000/api/v1/publish \
 
 **Requires:** 1.6.7
 
-- [ ] Verify cursor works:
+- [x] Verify cursor works:
 
   ```bash
   # First page
@@ -1617,7 +1617,7 @@ curl -X POST http://localhost:3000/api/v1/publish \
 
 **Requires:** 1.6.7
 
-- [ ] Add filter params:
+- [x] Add filter params:
 
   ```typescript
   const authorId = searchParams.get('author_id');
@@ -1640,13 +1640,13 @@ curl -X POST http://localhost:3000/api/v1/publish \
 
 **Requires:** 1.6.1-1.6.9
 
-- [ ] Test cases:
-  - [ ] Get free post → 200 with content
-  - [ ] Get paid post → 402 with preview
-  - [ ] Get non-existent post → 404
-  - [ ] Get by slug → same as by ID
-  - [ ] Feed pagination → cursor works
-  - [ ] Feed filtering → correct results
+- [x] Test cases:
+  - [x] Get free post → 200 with content
+  - [x] Get paid post → 402 with preview
+  - [x] Get non-existent post → 404
+  - [x] Get by slug → same as by ID
+  - [x] Feed pagination → cursor works
+  - [x] Feed filtering → correct results
 
 **DoD:** `npm run test -- content` passes
 
