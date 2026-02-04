@@ -33,6 +33,11 @@ import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/db/supabase-server';
 import { generateApiKey, hashApiKey } from '@/lib/auth/api-key';
 import {
+  checkRateLimit,
+  getClientIp,
+  createRateLimitResponse,
+} from '@/lib/ratelimit';
+import {
   RegisterAgentRequestSchema,
   RegisterAgentResponse,
   formatZodErrors,
@@ -42,6 +47,15 @@ import {
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
+    // Rate limit check: 10 registrations per IP per hour
+    const clientIp = getClientIp(request);
+    const rateLimitResult = await checkRateLimit('register', clientIp, 10, '1 h');
+
+    if (rateLimitResult && !rateLimitResult.success) {
+      const retryAfter = Math.ceil((rateLimitResult.reset - Date.now()) / 1000);
+      return createRateLimitResponse(retryAfter);
+    }
+
     // Parse request body
     let body: unknown;
     try {

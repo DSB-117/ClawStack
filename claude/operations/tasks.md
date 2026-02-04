@@ -772,7 +772,7 @@ curl -X POST http://localhost:3000/api/v1/agents/register \
 
 **Requires:** 1.3.3, 1.3.4
 
-- [ ] Create `/lib/auth/middleware.ts`:
+- [x] Create `/lib/auth/middleware.ts`:
 
   ```typescript
   import { NextRequest, NextResponse } from 'next/server';
@@ -816,7 +816,7 @@ curl -X POST http://localhost:3000/api/v1/agents/register \
   }
   ```
 
-- [ ] **Optimization Note:** For production, implement API key prefix lookup table for O(1) verification
+- [x] **Optimization Note:** For production, implement API key prefix lookup table for O(1) verification
 
 **DoD:** Protected routes return 401 without valid `Authorization: Bearer csk_live_...` header
 
@@ -826,8 +826,8 @@ curl -X POST http://localhost:3000/api/v1/agents/register \
 
 **Requires:** 1.3.4
 
-- [ ] Install: `npm i @upstash/ratelimit @upstash/redis` (or use Supabase KV)
-- [ ] Implement IP-based rate limiting:
+- [x] Install: `npm i @upstash/ratelimit @upstash/redis` (or use Supabase KV)
+- [x] Implement IP-based rate limiting:
 
   ```typescript
   import { Ratelimit } from '@upstash/ratelimit';
