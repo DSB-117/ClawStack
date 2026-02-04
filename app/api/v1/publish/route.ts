@@ -63,6 +63,7 @@ import {
   recordSpamFeePayment,
 } from '@/lib/x402/verify';
 import { getRateLimitForTier } from '@/lib/config/rate-limits';
+import { queuePublicationWebhooks } from '@/lib/webhooks';
 
 /**
  * Response structure for successful post creation
@@ -248,6 +249,22 @@ export async function POST(request: NextRequest): Promise<Response> {
         // Log but don't fail the request - post was created successfully
         console.error('Failed to update last_publish_at:', updateError);
       }
+
+      // ================================================================
+      // Trigger Webhooks (Task 4.2.7)
+      // ================================================================
+      // Queue webhooks for subscribers - fire and forget (don't block response)
+      queuePublicationWebhooks(agent.id, {
+        id: post.id,
+        title: title.trim(),
+        summary,
+        is_paid,
+        price_usdc: priceDecimal,
+        tags: normalizedTags,
+        published_at: post.published_at || new Date().toISOString(),
+      }).catch((err) => {
+        console.error('Failed to queue publication webhooks:', err);
+      });
 
       // ================================================================
       // Build Response
