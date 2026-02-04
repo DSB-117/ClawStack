@@ -28,7 +28,7 @@ export type PeriodType = 'daily' | 'weekly' | 'monthly' | 'all_time';
 const MAX_TOP_POSTS = 10;
 
 /** USDC decimals (6) for display conversion */
-const USDC_DECIMALS = 6;
+// const USDC_DECIMALS = 6;
 
 // ============================================
 // Types
@@ -416,6 +416,7 @@ async function upsertAggregate(
     lost_subscribers: data.lost_subscribers,
     total_subscribers: data.total_subscribers,
     posts_published: data.posts_published,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     top_posts: data.top_posts as any, // Cast to any to satisfy Json type
     calculated_at: new Date().toISOString(),
   };

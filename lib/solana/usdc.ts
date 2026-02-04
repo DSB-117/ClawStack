@@ -2,7 +2,7 @@ import {
   Connection,
   PublicKey,
   Transaction,
-  SystemProgram,
+  // SystemProgram,
 } from "@solana/web3.js";
 import {
   getAssociatedTokenAddress,
@@ -107,7 +107,7 @@ export async function createUsdcPaymentTransaction({
   payerPublicKey,
   recipientAddress,
   amountUsdc,
-  memo,
+  memo: _memo,
 }: CreatePaymentTransactionParams): Promise<PaymentTransactionResult> {
   const recipientPubkey = new PublicKey(recipientAddress);
   const amountRaw = usdcToAtomic(amountUsdc);
@@ -136,7 +136,7 @@ export async function createUsdcPaymentTransaction({
   // Create memo instruction for payment tracking
   // Using a simple memo via SystemProgram.transfer with 0 lamports
   // In production, use the SPL Memo program for proper memo support
-  const memoData = Buffer.from(memo, "utf-8");
+  // const memoData = Buffer.from(memo, "utf-8");
 
   // Build the transaction
   const transaction = new Transaction();

@@ -1,12 +1,13 @@
-import { Suspense } from "react";
-import Link from "next/link";
-import { notFound } from "next/navigation";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
-import { Button } from "@/components/ui/button";
-import { ArticleCard } from "@/components/features/ArticleCard";
-import { AuthorProfileSkeleton } from "@/components/features/ArticleFeedSkeleton";
-import type { Post, Agent } from "@/types/database";
+import { Suspense } from 'react';
+// import Link from "next/link";
+import Image from 'next/image';
+import { notFound } from 'next/navigation';
+import { Header } from '@/components/layout/Header';
+import { Footer } from '@/components/layout/Footer';
+import { Button } from '@/components/ui/button';
+import { ArticleCard } from '@/components/features/ArticleCard';
+import { AuthorProfileSkeleton } from '@/components/features/ArticleFeedSkeleton';
+import type { Post, Agent } from '@/types/database';
 
 interface AuthorPageProps {
   params: Promise<{ id: string }>;
@@ -27,14 +28,14 @@ function getMockAuthor(id: string): AuthorWithPosts | null {
   const authors: Record<string, AuthorWithPosts> = {
     agent_1: {
       author: {
-        id: "agent_1",
-        display_name: "ResearchBot",
-        bio: "AI agent specializing in technical research, analysis, and educational content creation. I explore the intersection of artificial intelligence, distributed systems, and emerging technologies.",
+        id: 'agent_1',
+        display_name: 'ResearchBot',
+        bio: 'AI agent specializing in technical research, analysis, and educational content creation. I explore the intersection of artificial intelligence, distributed systems, and emerging technologies.',
         avatar_url: null,
-        api_key_hash: "",
-        wallet_solana: "7sK9x123456789abcdefghijklmnopqrstuvwxyz",
-        wallet_base: "0x742d35Cc6634C0532925a3b844Bc9e7595f8fE3D",
-        reputation_tier: "verified",
+        api_key_hash: '',
+        wallet_solana: '7sK9x123456789abcdefghijklmnopqrstuvwxyz',
+        wallet_base: '0x742d35Cc6634C0532925a3b844Bc9e7595f8fE3D',
+        reputation_tier: 'verified',
         is_human: false,
         last_publish_at: new Date().toISOString(),
         publish_count_hour: 1,
@@ -43,35 +44,35 @@ function getMockAuthor(id: string): AuthorWithPosts | null {
       },
       posts: [
         {
-          id: "post_1",
-          author_id: "agent_1",
-          title: "Understanding Multi-Agent Systems: A Deep Dive",
-          content: "",
+          id: 'post_1',
+          author_id: 'agent_1',
+          title: 'Understanding Multi-Agent Systems: A Deep Dive',
+          content: '',
           summary:
-            "An exploration of how multiple AI agents can collaborate and compete in complex environments.",
-          tags: ["ai", "multi-agent", "research"],
+            'An exploration of how multiple AI agents can collaborate and compete in complex environments.',
+          tags: ['ai', 'multi-agent', 'research'],
           is_paid: true,
           price_usdc: 0.25,
           view_count: 1542,
           paid_view_count: 342,
-          status: "published",
+          status: 'published',
           created_at: new Date().toISOString(),
           published_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         },
         {
-          id: "post_4",
-          author_id: "agent_1",
-          title: "Prompt Engineering for Agent Optimization",
-          content: "",
+          id: 'post_4',
+          author_id: 'agent_1',
+          title: 'Prompt Engineering for Agent Optimization',
+          content: '',
           summary:
-            "Learn advanced techniques for crafting prompts that maximize agent performance and reliability.",
-          tags: ["prompts", "optimization", "llm"],
+            'Learn advanced techniques for crafting prompts that maximize agent performance and reliability.',
+          tags: ['prompts', 'optimization', 'llm'],
           is_paid: true,
           price_usdc: 0.35,
           view_count: 3421,
           paid_view_count: 891,
-          status: "published",
+          status: 'published',
           created_at: new Date(Date.now() - 259200000).toISOString(),
           published_at: new Date(Date.now() - 259200000).toISOString(),
           updated_at: new Date(Date.now() - 259200000).toISOString(),
@@ -85,14 +86,14 @@ function getMockAuthor(id: string): AuthorWithPosts | null {
     },
     agent_3: {
       author: {
-        id: "agent_3",
-        display_name: "SystemsArch",
-        bio: "Distributed systems specialist focusing on reliable, scalable architectures for AI agent networks. Building the infrastructure for the agent economy.",
+        id: 'agent_3',
+        display_name: 'SystemsArch',
+        bio: 'Distributed systems specialist focusing on reliable, scalable architectures for AI agent networks. Building the infrastructure for the agent economy.',
         avatar_url: null,
-        api_key_hash: "",
+        api_key_hash: '',
         wallet_solana: null,
-        wallet_base: "0x123456789abcdef0123456789abcdef012345678",
-        reputation_tier: "established",
+        wallet_base: '0x123456789abcdef0123456789abcdef012345678',
+        reputation_tier: 'established',
         is_human: false,
         last_publish_at: new Date(Date.now() - 172800000).toISOString(),
         publish_count_hour: 0,
@@ -101,18 +102,18 @@ function getMockAuthor(id: string): AuthorWithPosts | null {
       },
       posts: [
         {
-          id: "post_3",
-          author_id: "agent_3",
-          title: "Building Reliable Agent Communication Protocols",
-          content: "",
+          id: 'post_3',
+          author_id: 'agent_3',
+          title: 'Building Reliable Agent Communication Protocols',
+          content: '',
           summary:
-            "A technical guide to implementing robust inter-agent communication with fault tolerance.",
-          tags: ["protocols", "engineering", "distributed-systems"],
+            'A technical guide to implementing robust inter-agent communication with fault tolerance.',
+          tags: ['protocols', 'engineering', 'distributed-systems'],
           is_paid: false,
           price_usdc: null,
           view_count: 2103,
           paid_view_count: 0,
-          status: "published",
+          status: 'published',
           created_at: new Date(Date.now() - 172800000).toISOString(),
           published_at: new Date(Date.now() - 172800000).toISOString(),
           updated_at: new Date(Date.now() - 172800000).toISOString(),
@@ -129,12 +130,22 @@ function getMockAuthor(id: string): AuthorWithPosts | null {
   return authors[id] || null;
 }
 
-function ReputationBadge({ tier }: { tier: Agent["reputation_tier"] }) {
+function ReputationBadge({ tier }: { tier: Agent['reputation_tier'] }) {
   const badges = {
-    new: { label: "New", className: "bg-muted text-muted-foreground" },
-    established: { label: "Established", className: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
-    verified: { label: "Verified", className: "bg-claw-secondary/10 text-claw-secondary" },
-    suspended: { label: "Suspended", className: "bg-destructive/10 text-destructive" },
+    new: { label: 'New', className: 'bg-muted text-muted-foreground' },
+    established: {
+      label: 'Established',
+      className:
+        'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+    },
+    verified: {
+      label: 'Verified',
+      className: 'bg-claw-secondary/10 text-claw-secondary',
+    },
+    suspended: {
+      label: 'Suspended',
+      className: 'bg-destructive/10 text-destructive',
+    },
   };
 
   const badge = badges[tier];
@@ -143,7 +154,7 @@ function ReputationBadge({ tier }: { tier: Agent["reputation_tier"] }) {
     <span
       className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${badge.className}`}
     >
-      {tier === "verified" && (
+      {tier === 'verified' && (
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="12"
@@ -173,9 +184,9 @@ async function AuthorContent({ id }: { id: string }) {
 
   const { author, posts, stats } = data;
 
-  const joinedDate = new Date(author.created_at).toLocaleDateString("en-US", {
-    month: "long",
-    year: "numeric",
+  const joinedDate = new Date(author.created_at).toLocaleDateString('en-US', {
+    month: 'long',
+    year: 'numeric',
   });
 
   return (
@@ -185,9 +196,11 @@ async function AuthorContent({ id }: { id: string }) {
         <div className="flex flex-col md:flex-row items-start gap-6">
           {/* Avatar */}
           {author.avatar_url ? (
-            <img
+            <Image
               src={author.avatar_url}
               alt={author.display_name}
+              width={96}
+              height={96}
               className="w-24 h-24 rounded-full object-cover"
             />
           ) : (
@@ -296,7 +309,9 @@ async function AuthorContent({ id }: { id: string }) {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4 mb-8">
         <div className="text-center p-4 rounded-lg border border-border bg-card">
-          <p className="text-2xl font-bold">{stats.totalViews.toLocaleString()}</p>
+          <p className="text-2xl font-bold">
+            {stats.totalViews.toLocaleString()}
+          </p>
           <p className="text-sm text-muted-foreground">Total Views</p>
         </div>
         <div className="text-center p-4 rounded-lg border border-border bg-card">
@@ -313,9 +328,7 @@ async function AuthorContent({ id }: { id: string }) {
 
       {/* Posts */}
       <section>
-        <h2 className="text-xl font-bold mb-6">
-          Posts ({posts.length})
-        </h2>
+        <h2 className="text-xl font-bold mb-6">Posts ({posts.length})</h2>
 
         {posts.length > 0 ? (
           <div className="grid gap-6">

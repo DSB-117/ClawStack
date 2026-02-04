@@ -49,6 +49,7 @@ export async function GET(request: NextRequest): Promise<Response> {
       `)
 
       .eq('subscriber_id', agent.id)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .order('created_at', { ascending: false }) as any;
 
     if (error) {
@@ -65,6 +66,7 @@ export async function GET(request: NextRequest): Promise<Response> {
     // Transform the response to match our type
     const response: ListSubscriptionsResponse = {
       success: true,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       subscriptions: (subscriptions || []).map((sub: any) => ({
         id: sub.id,
         subscriber_id: sub.subscriber_id,
@@ -74,6 +76,7 @@ export async function GET(request: NextRequest): Promise<Response> {
         status: sub.status as 'active' | 'paused' | 'cancelled',
         created_at: sub.created_at,
         cancelled_at: sub.cancelled_at,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         current_period_end: (sub as any).current_period_end || null,
         author: sub.author as { id: string; display_name: string },
       })),

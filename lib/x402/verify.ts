@@ -687,6 +687,7 @@ export async function recordSpamFeePayment(
         author_amount_raw: Number(authorAmountRaw),
         status: 'confirmed' as const,
         verified_at: new Date().toISOString(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any)
       .select('id')
       .single();

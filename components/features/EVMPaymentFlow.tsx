@@ -1,19 +1,15 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useState } from "react";
-import { useAccount, useConnect } from "wagmi";
-import { Button } from "@/components/ui/button";
-import {
-  useBaseUsdcBalance,
-  useEVMPayment,
-} from "@/lib/evm/hooks";
+import { useCallback, useEffect, useState } from 'react';
+import { useAccount, useConnect } from 'wagmi';
+import { Button } from '@/components/ui/button';
+import { useBaseUsdcBalance, useEVMPayment } from '@/lib/evm/hooks';
 import {
   createEVMPaymentProof,
   submitEVMPaymentProof,
   storeEVMPaymentProof,
-} from "@/lib/evm/payment-proof";
-import { isBaseChain, BASE_CHAIN_ID } from "@/lib/evm/config";
-import { useChainId } from "wagmi";
+} from '@/lib/evm/payment-proof';
+import { BASE_CHAIN_ID } from '@/lib/evm/config';
 
 interface EVMPaymentFlowProps {
   postId: string;
@@ -24,15 +20,15 @@ interface EVMPaymentFlowProps {
 }
 
 type FlowStep =
-  | "connect"
-  | "check-balance"
-  | "wrong-chain"
-  | "ready"
-  | "paying"
-  | "confirming"
-  | "submitting"
-  | "success"
-  | "error";
+  | 'connect'
+  | 'check-balance'
+  | 'wrong-chain'
+  | 'ready'
+  | 'paying'
+  | 'confirming'
+  | 'submitting'
+  | 'success'
+  | 'error';
 
 /**
  * Complete EVM/Base payment flow component
@@ -47,57 +43,62 @@ export function EVMPaymentFlow({
 }: EVMPaymentFlowProps) {
   const { address, isConnected, isConnecting } = useAccount();
   const { connectors, connect } = useConnect();
-  const chainId = useChainId();
-  const { balance, loading: balanceLoading, isWrongChain, refetch } = useBaseUsdcBalance();
+  // const chainId = useChainId();
+  const {
+    balance,
+    loading: balanceLoading,
+    isWrongChain,
+    refetch,
+  } = useBaseUsdcBalance();
   const { state: paymentState, initiatePayment, reset } = useEVMPayment();
 
-  const [step, setStep] = useState<FlowStep>("connect");
+  const [step, setStep] = useState<FlowStep>('connect');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showConnectors, setShowConnectors] = useState(false);
 
   // Determine current step based on state
   useEffect(() => {
     if (!isConnected) {
-      setStep("connect");
+      setStep('connect');
       return;
     }
 
     if (isWrongChain) {
-      setStep("wrong-chain");
+      setStep('wrong-chain');
       return;
     }
 
     if (balanceLoading) {
-      setStep("check-balance");
+      setStep('check-balance');
       return;
     }
 
-    if (paymentState.status === "idle") {
-      setStep("ready");
+    if (paymentState.status === 'idle') {
+      setStep('ready');
       return;
     }
 
     if (
-      paymentState.status === "switching-chain" ||
-      paymentState.status === "preparing" ||
-      paymentState.status === "confirming-wallet"
+      paymentState.status === 'switching-chain' ||
+      paymentState.status === 'preparing' ||
+      paymentState.status === 'confirming-wallet'
     ) {
-      setStep("paying");
+      setStep('paying');
       return;
     }
 
-    if (paymentState.status === "pending") {
-      setStep("confirming");
+    if (paymentState.status === 'pending') {
+      setStep('confirming');
       return;
     }
 
-    if (paymentState.status === "success") {
-      setStep("submitting");
+    if (paymentState.status === 'success') {
+      setStep('submitting');
       return;
     }
 
-    if (paymentState.status === "error") {
-      setStep("error");
+    if (paymentState.status === 'error') {
+      setStep('error');
       setErrorMessage(paymentState.error);
       return;
     }
@@ -106,7 +107,7 @@ export function EVMPaymentFlow({
   // Handle payment proof submission after transaction success
   useEffect(() => {
     async function submitProof() {
-      if (step !== "submitting" || !paymentState.hash || !address) {
+      if (step !== 'submitting' || !paymentState.hash || !address) {
         return;
       }
 
@@ -123,17 +124,25 @@ export function EVMPaymentFlow({
       const result = await submitEVMPaymentProof(postId, proof);
 
       if (result.success && result.accessGranted) {
-        setStep("success");
+        setStep('success');
         onSuccess();
       } else {
-        setStep("error");
-        setErrorMessage(result.error || "Failed to verify payment");
-        onError(result.error || "Failed to verify payment");
+        setStep('error');
+        setErrorMessage(result.error || 'Failed to verify payment');
+        onError(result.error || 'Failed to verify payment');
       }
     }
 
     submitProof();
-  }, [step, paymentState.hash, paymentState.blockNumber, address, postId, onSuccess, onError]);
+  }, [
+    step,
+    paymentState.hash,
+    paymentState.blockNumber,
+    address,
+    postId,
+    onSuccess,
+    onError,
+  ]);
 
   const handleConnect = useCallback(
     (connectorId: string) => {
@@ -149,7 +158,7 @@ export function EVMPaymentFlow({
   const handlePay = useCallback(async () => {
     if (balance < priceUsdc) {
       setErrorMessage(`Insufficient balance. You need ${priceUsdc} USDC.`);
-      setStep("error");
+      setStep('error');
       return;
     }
 
@@ -168,35 +177,39 @@ export function EVMPaymentFlow({
     <div className="space-y-4">
       {/* Step Indicator */}
       <div className="flex items-center justify-center gap-2 mb-6">
-        {["connect", "pay", "verify"].map((s, i) => {
+        {['connect', 'pay', 'verify'].map((s, i) => {
           const isActive =
-            (s === "connect" && (step === "connect" || step === "wrong-chain")) ||
-            (s === "pay" && ["check-balance", "ready", "paying", "confirming"].includes(step)) ||
-            (s === "verify" && ["submitting", "success"].includes(step));
+            (s === 'connect' &&
+              (step === 'connect' || step === 'wrong-chain')) ||
+            (s === 'pay' &&
+              ['check-balance', 'ready', 'paying', 'confirming'].includes(
+                step
+              )) ||
+            (s === 'verify' && ['submitting', 'success'].includes(step));
           const isComplete =
-            (s === "connect" && isConnected && !isWrongChain) ||
-            (s === "pay" && ["submitting", "success"].includes(step)) ||
-            (s === "verify" && step === "success");
+            (s === 'connect' && isConnected && !isWrongChain) ||
+            (s === 'pay' && ['submitting', 'success'].includes(step)) ||
+            (s === 'verify' && step === 'success');
 
           return (
             <div key={s} className="flex items-center gap-2">
               {i > 0 && (
                 <div
                   className={`w-8 h-0.5 ${
-                    isComplete ? "bg-claw-secondary" : "bg-muted"
+                    isComplete ? 'bg-claw-secondary' : 'bg-muted'
                   }`}
                 />
               )}
               <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                   isComplete
-                    ? "bg-claw-secondary text-white"
+                    ? 'bg-claw-secondary text-white'
                     : isActive
-                    ? "bg-[#0052FF] text-white"
-                    : "bg-muted text-muted-foreground"
+                      ? 'bg-[#0052FF] text-white'
+                      : 'bg-muted text-muted-foreground'
                 }`}
               >
-                {isComplete ? "✓" : i + 1}
+                {isComplete ? '✓' : i + 1}
               </div>
             </div>
           );
@@ -204,7 +217,7 @@ export function EVMPaymentFlow({
       </div>
 
       {/* Connect Step */}
-      {step === "connect" && (
+      {step === 'connect' && (
         <div className="text-center space-y-4">
           <p className="text-sm text-muted-foreground">
             Connect your wallet to continue
@@ -237,7 +250,9 @@ export function EVMPaymentFlow({
                     onClick={() => handleConnect(connector.id)}
                     className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-muted text-left transition-colors"
                   >
-                    <span className="font-medium text-sm">{connector.name}</span>
+                    <span className="font-medium text-sm">
+                      {connector.name}
+                    </span>
                   </button>
                 ))}
               </div>
@@ -247,7 +262,7 @@ export function EVMPaymentFlow({
       )}
 
       {/* Wrong Chain Step */}
-      {step === "wrong-chain" && (
+      {step === 'wrong-chain' && (
         <div className="text-center space-y-4">
           <div className="p-3 rounded-lg bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 text-sm">
             Please switch to Base network in your wallet
@@ -259,7 +274,7 @@ export function EVMPaymentFlow({
       )}
 
       {/* Check Balance Step */}
-      {step === "check-balance" && (
+      {step === 'check-balance' && (
         <div className="text-center space-y-4">
           <LoadingSpinner />
           <p className="text-sm text-muted-foreground">
@@ -269,11 +284,13 @@ export function EVMPaymentFlow({
       )}
 
       {/* Ready Step */}
-      {step === "ready" && (
+      {step === 'ready' && (
         <div className="space-y-4">
           <div className="p-4 rounded-lg bg-muted/50">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-muted-foreground">Your Balance</span>
+              <span className="text-sm text-muted-foreground">
+                Your Balance
+              </span>
               <span className="font-medium">${balance.toFixed(2)} USDC</span>
             </div>
             <div className="flex justify-between items-center">
@@ -286,7 +303,7 @@ export function EVMPaymentFlow({
 
           {!canAfford && (
             <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
-              Insufficient balance. You need ${(priceUsdc - balance).toFixed(2)}{" "}
+              Insufficient balance. You need ${(priceUsdc - balance).toFixed(2)}{' '}
               more USDC.
             </div>
           )}
@@ -302,21 +319,21 @@ export function EVMPaymentFlow({
       )}
 
       {/* Paying Step */}
-      {step === "paying" && (
+      {step === 'paying' && (
         <div className="text-center space-y-4">
           <LoadingSpinner />
           <p className="text-sm text-muted-foreground">
-            {paymentState.status === "switching-chain"
-              ? "Please switch to Base network..."
-              : paymentState.status === "preparing"
-              ? "Preparing transaction..."
-              : "Please confirm in your wallet..."}
+            {paymentState.status === 'switching-chain'
+              ? 'Please switch to Base network...'
+              : paymentState.status === 'preparing'
+                ? 'Preparing transaction...'
+                : 'Please confirm in your wallet...'}
           </p>
         </div>
       )}
 
       {/* Confirming Step */}
-      {step === "confirming" && (
+      {step === 'confirming' && (
         <div className="text-center space-y-4">
           <LoadingSpinner />
           <p className="text-sm text-muted-foreground">
@@ -336,7 +353,7 @@ export function EVMPaymentFlow({
       )}
 
       {/* Submitting Step */}
-      {step === "submitting" && (
+      {step === 'submitting' && (
         <div className="text-center space-y-4">
           <LoadingSpinner />
           <p className="text-sm text-muted-foreground">
@@ -346,7 +363,7 @@ export function EVMPaymentFlow({
       )}
 
       {/* Success Step */}
-      {step === "success" && (
+      {step === 'success' && (
         <div className="text-center space-y-4">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-claw-secondary/10 text-claw-secondary">
             <svg
@@ -371,10 +388,10 @@ export function EVMPaymentFlow({
       )}
 
       {/* Error Step */}
-      {step === "error" && (
+      {step === 'error' && (
         <div className="space-y-4">
           <div className="p-4 rounded-lg bg-destructive/10 text-destructive text-sm text-center">
-            {errorMessage || "An error occurred"}
+            {errorMessage || 'An error occurred'}
           </div>
           <Button onClick={handleRetry} variant="outline" className="w-full">
             Try Again

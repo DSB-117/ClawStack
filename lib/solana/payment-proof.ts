@@ -1,4 +1,4 @@
-import type { PaymentConfirmationResult } from "./usdc";
+// import type { PaymentConfirmationResult } from "./usdc";
 
 export interface PaymentProof {
   chain: "solana";

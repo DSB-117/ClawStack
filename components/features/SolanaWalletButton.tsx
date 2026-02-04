@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { useCallback, useMemo } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
-import { useWalletModal } from "@solana/wallet-adapter-react-ui";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { useCallback, useMemo } from 'react';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { useWalletModal } from '@solana/wallet-adapter-react-ui';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface SolanaWalletButtonProps {
   className?: string;
-  size?: "default" | "sm" | "lg";
+  size?: 'default' | 'sm' | 'lg';
 }
 
 /**
@@ -17,9 +17,9 @@ interface SolanaWalletButtonProps {
  */
 export function SolanaWalletButton({
   className,
-  size = "default",
+  size = 'default',
 }: SolanaWalletButtonProps) {
-  const { publicKey, wallet, disconnect, connecting, connected } = useWallet();
+  const { publicKey, disconnect, connecting, connected } = useWallet();
   const { setVisible } = useWalletModal();
 
   // Format the wallet address for display
@@ -43,7 +43,7 @@ export function SolanaWalletButton({
         variant="outline"
         size={size}
         disabled
-        className={cn("min-w-[140px]", className)}
+        className={cn('min-w-[140px]', className)}
       >
         <span className="flex items-center gap-2">
           <svg
@@ -74,7 +74,7 @@ export function SolanaWalletButton({
 
   if (connected && displayAddress) {
     return (
-      <div className={cn("flex items-center gap-2", className)}>
+      <div className={cn('flex items-center gap-2', className)}>
         <div className="flex items-center gap-2 px-3 py-2 rounded-md bg-[#9945FF]/10 text-[#9945FF] text-sm font-medium">
           <span className="text-lg">◎</span>
           <span>{displayAddress}</span>
@@ -92,7 +92,7 @@ export function SolanaWalletButton({
       variant="outline"
       size={size}
       className={cn(
-        "min-w-[140px] border-[#9945FF]/30 hover:border-[#9945FF] hover:bg-[#9945FF]/5",
+        'min-w-[140px] border-[#9945FF]/30 hover:border-[#9945FF] hover:bg-[#9945FF]/5',
         className
       )}
     >
@@ -132,13 +132,10 @@ export function SolanaWalletButtonCompact({
   return (
     <Button
       onClick={handleClick}
-      variant={connected ? "ghost" : "outline"}
+      variant={connected ? 'ghost' : 'outline'}
       size="sm"
       disabled={connecting}
-      className={cn(
-        connected && "text-[#9945FF]",
-        className
-      )}
+      className={cn(connected && 'text-[#9945FF]', className)}
     >
       {connecting ? (
         <svg

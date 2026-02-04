@@ -18,6 +18,8 @@ import {
 } from '../verify';
 import { buildSpamFeePaymentOptions, generateSpamFeeMemo } from '../helpers';
 import type { PaymentProof, VerificationResult } from '../types';
+import { verifyPayment as mockVerifySolanaPayment, PaymentVerificationError } from '@/lib/solana/verify';
+import { supabaseAdmin } from '@/lib/db/supabase-server';
 
 // Mock Solana verification
 jest.mock('@/lib/solana/verify', () => ({
@@ -81,9 +83,12 @@ describe('Spam Fee Payment Flow', () => {
     });
 
     it('should throw error if Solana env vars not configured', () => {
-      delete process.env.SOLANA_TREASURY_PUBKEY;
+      const originalValue = process.env.SOLANA_TREASURY_PUBKEY;
+      process.env.SOLANA_TREASURY_PUBKEY = ''; // Empty string instead of delete
 
       expect(() => buildSpamFeePaymentOptions(mockAgentId)).toThrow();
+      
+      process.env.SOLANA_TREASURY_PUBKEY = originalValue;
     });
   });
 
@@ -155,9 +160,9 @@ describe('Spam Fee Payment Flow', () => {
 
   describe('verifySpamFeePayment', () => {
     it('should verify valid spam fee payment', async () => {
-      const { verifyPayment: mockVerifySolanaPayment } = require('@/lib/solana/verify');
+      // const { verifyPayment: mockVerifySolanaPayment } = require('@/lib/solana/verify');
       
-      mockVerifySolanaPayment.mockResolvedValue({
+      (mockVerifySolanaPayment as unknown as jest.Mock).mockResolvedValue({
         signature: mockTxSignature,
         payer: mockPayerAddress,
         recipient: process.env.SOLANA_TREASURY_PUBKEY,
@@ -180,9 +185,9 @@ describe('Spam Fee Payment Flow', () => {
     });
 
     it('should fail verification for insufficient payment', async () => {
-      const { verifyPayment: mockVerifySolanaPayment, PaymentVerificationError } = require('@/lib/solana/verify');
+      // const { verifyPayment: mockVerifySolanaPayment, PaymentVerificationError } = require('@/lib/solana/verify');
       
-      mockVerifySolanaPayment.mockRejectedValue(
+      (mockVerifySolanaPayment as unknown as jest.Mock).mockRejectedValue(
         new PaymentVerificationError('Insufficient payment amount', 'INSUFFICIENT_AMOUNT')
       );
 
@@ -217,7 +222,7 @@ describe('Spam Fee Payment Flow', () => {
 
   describe('recordSpamFeePayment', () => {
     it('should record spam fee payment with 100% platform fee', async () => {
-      const { supabaseAdmin } = require('@/lib/db/supabase-server');
+      // const { supabaseAdmin } = require('@/lib/db/supabase-server');
       
       const proof: PaymentProof = {
         chain: 'solana',
@@ -279,10 +284,10 @@ describe('Spam Fee Payment Flow', () => {
     });
 
     it('should handle duplicate payment (already recorded)', async () => {
-      const { supabaseAdmin } = require('@/lib/db/supabase-server');
+      // const { supabaseAdmin } = require('@/lib/db/supabase-server');
       
       // Mock unique constraint violation
-      supabaseAdmin.from.mockReturnValue({
+      (supabaseAdmin.from as unknown as jest.Mock).mockReturnValue({
         insert: jest.fn(() => ({
           select: jest.fn(() => ({
             single: jest.fn(() => ({
@@ -327,8 +332,8 @@ describe('Spam Fee Payment Flow', () => {
       expect(paymentOptions[0].memo).toMatch(/^clawstack:spam_fee:agent-123:\d+$/);
 
       // Step 2: Agent pays spam fee (simulated)
-      const { verifyPayment: mockVerifySolanaPayment } = require('@/lib/solana/verify');
-      mockVerifySolanaPayment.mockResolvedValue({
+      // const { verifyPayment: mockVerifySolanaPayment } = require('@/lib/solana/verify');
+      (mockVerifySolanaPayment as unknown as jest.Mock).mockResolvedValue({
         signature: mockTxSignature,
         payer: mockPayerAddress,
         recipient: process.env.SOLANA_TREASURY_PUBKEY,

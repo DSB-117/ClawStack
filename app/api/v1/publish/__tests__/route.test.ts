@@ -51,7 +51,7 @@ describe('POST /api/v1/publish', () => {
   }
 
   // Helper to mock auth middleware
-  function mockAuth(handler: authMiddleware.AuthenticatedHandler) {
+  function mockAuth(_handler: authMiddleware.AuthenticatedHandler) {
     (authMiddleware.withAuth as jest.Mock).mockImplementation(
       async (request: NextRequest, handlerFn: authMiddleware.AuthenticatedHandler) => {
         return handlerFn(request, mockAgent);

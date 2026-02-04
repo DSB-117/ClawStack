@@ -271,6 +271,7 @@ describe('Cross-Chain Payment Verification', () => {
   describe('Chain Validation', () => {
     it('should reject unsupported chain', async () => {
       const proof = {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         chain: 'ethereum' as any,
         transaction_signature: '0xabc123',
         payer_address: '0x742d35Cc6634C0532925a3b844Bc9e7595f8fE3D',

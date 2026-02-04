@@ -180,7 +180,6 @@ export function createRateLimitResponse(retryAfterSeconds: number): NextResponse
 // ============================================================================
 
 import {
-  RATE_LIMITS,
   getRateLimitForTier,
   isTierSuspended,
   type ReputationTier,
@@ -290,6 +289,7 @@ export function createPublishRateLimitResponse(
   
   if (result.tierConfig.spamFeeUsdc && agentId) {
     // Import payment option builder dynamically to avoid circular deps
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { buildSpamFeePaymentOptions } = require('@/lib/x402/helpers');
     
     try {
@@ -368,7 +368,6 @@ export async function clearPublishRateLimit(agentId: string): Promise<boolean> {
   try {
     // Delete all rate limit keys for this agent
     // The key format is: clawstack:ratelimit:publish:{agentId}
-    const pattern = `clawstack:ratelimit:publish:*:${agentId}`;
     
     // Use direct Redis DEL command
     // Note: Upstash Redis uses a different key format, so we delete the exact key

@@ -32,7 +32,7 @@ import { PaymentOption, X402_CONFIG, PaymentChain } from './types';
  */
 export function generatePaymentMemo(
   resourceId: string,
-  resourceType: string = 'post'
+  _resourceType: string = 'post'
 ): string {
   const timestamp = Math.floor(Date.now() / 1000);
   return `${X402_CONFIG.MEMO_PREFIX}:${resourceId}:${timestamp}`;

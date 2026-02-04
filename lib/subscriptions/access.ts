@@ -162,7 +162,7 @@ export function generateSubscriptionReference(subscriptionId: string): string {
  */
 export function buildSubscriptionSolanaPaymentOption(
   subscriptionId: string,
-  priceUsdc: number
+  _priceUsdc: number
 ): PaymentOption {
   return {
     chain: 'solana',
@@ -180,7 +180,7 @@ export function buildSubscriptionSolanaPaymentOption(
  */
 export function buildSubscriptionBasePaymentOption(
   subscriptionId: string,
-  priceUsdc: number
+  _priceUsdc: number
 ): PaymentOption {
   return {
     chain: 'base',
@@ -248,6 +248,7 @@ export async function activateOrRenewSubscription(
     };
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const subData = subscription as any;
   const now = new Date();
   const currentEnd = subData.current_period_end

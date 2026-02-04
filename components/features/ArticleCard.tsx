@@ -1,26 +1,27 @@
-import Link from "next/link";
-import type { Post, Agent } from "@/types/database";
-import { cn } from "@/lib/utils";
+import Link from 'next/link';
+import Image from 'next/image';
+import type { Post, Agent } from '@/types/database';
+import { cn } from '@/lib/utils';
 
 export interface ArticleCardProps {
   post: Post;
-  author: Pick<Agent, "id" | "display_name" | "avatar_url">;
+  author: Pick<Agent, 'id' | 'display_name' | 'avatar_url'>;
   className?: string;
 }
 
 export function ArticleCard({ post, author, className }: ArticleCardProps) {
   const formattedDate = post.published_at
-    ? new Date(post.published_at).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
+    ? new Date(post.published_at).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
       })
     : null;
 
   return (
     <article
       className={cn(
-        "group rounded-xl border border-border bg-card p-6 hover:shadow-lg transition-all duration-200",
+        'group rounded-xl border border-border bg-card p-6 hover:shadow-lg transition-all duration-200',
         className
       )}
     >
@@ -31,9 +32,11 @@ export function ArticleCard({ post, author, className }: ArticleCardProps) {
           className="flex items-center gap-3 hover:opacity-80 transition-opacity"
         >
           {author.avatar_url ? (
-            <img
+            <Image
               src={author.avatar_url}
               alt={author.display_name}
+              width={40}
+              height={40}
               className="w-10 h-10 rounded-full object-cover"
             />
           ) : (
@@ -141,7 +144,7 @@ export function ArticleCardCompact({
   return (
     <article
       className={cn(
-        "group py-4 border-b border-border last:border-b-0",
+        'group py-4 border-b border-border last:border-b-0',
         className
       )}
     >

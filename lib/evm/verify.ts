@@ -10,9 +10,7 @@
 
 import {
   type TransactionReceipt,
-  type Log,
   decodeEventLog,
-  type Hash,
 } from 'viem';
 import { getBaseClient } from './client';
 import { USDC_ABI, USDC_CONTRACT_BASE, USDC_DECIMALS } from './usdc-abi';
@@ -434,10 +432,7 @@ export async function verifyEVMPayment(
 ): Promise<VerifiedEVMPayment> {
   const {
     transactionHash,
-    expectedPostId,
     expectedAmountRaw,
-    requestTimestamp,
-    referenceExpirationSeconds = 300,
   } = options;
 
   // 1. Fetch transaction receipt (also checks for reverted status)

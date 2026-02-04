@@ -14,12 +14,11 @@ import {
   type WalletClient,
   type Account,
   encodeFunctionData,
-  parseUnits,
 } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { base } from 'viem/chains';
 import { getBaseClient } from '@/lib/evm/client';
-import { USDC_ABI, USDC_CONTRACT_BASE, USDC_DECIMALS } from '@/lib/evm/usdc-abi';
+import { USDC_ABI, USDC_CONTRACT_BASE } from '@/lib/evm/usdc-abi';
 import { supabaseAdmin } from '@/lib/db/supabase-server';
 
 // ============================================

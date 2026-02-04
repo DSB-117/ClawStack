@@ -13,7 +13,7 @@
  * @see claude/operations/tasks.md Task 4.1.8
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { POST } from '../route';
 import { DELETE, PATCH } from '../[id]/route';
 import { GET } from '../../subscriptions/route';

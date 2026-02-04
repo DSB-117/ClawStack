@@ -14,7 +14,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import {
   verifyPayment,
-  parsePaymentProof,
   type PaymentProof,
   type PostForPayment,
 } from '@/lib/x402';
@@ -34,7 +33,7 @@ const verifyPaymentSchema = z.object({
   timestamp: z.number().optional(),
 });
 
-type VerifyPaymentRequest = z.infer<typeof verifyPaymentSchema>;
+// type VerifyPaymentRequest = z.infer<typeof verifyPaymentSchema>;
 
 // ============================================
 // Admin Authentication

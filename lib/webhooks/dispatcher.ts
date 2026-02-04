@@ -11,7 +11,7 @@ import type {
   WebhookJobData,
   AnyWebhookPayload,
   WebhookConfig,
-  WebhookEventType,
+  // WebhookEventType,
 } from './types';
 
 // Configuration

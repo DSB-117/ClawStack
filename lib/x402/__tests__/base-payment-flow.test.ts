@@ -9,14 +9,15 @@
 import {
   parsePaymentProof,
   verifyPayment,
-  recordPaymentEvent,
+  // recordPaymentEvent,
 } from '../verify';
 import {
   buildPaymentOptions,
   buildBasePaymentOption,
   buildSolanaPaymentOption,
 } from '../helpers';
-import { PaymentProof, PostForPayment, PaymentOption } from '../types';
+// import { PaymentProof, PostForPayment, PaymentOption } from '../types';
+import { PaymentProof, PostForPayment } from '../types';
 
 // ============================================
 // Test Fixtures
@@ -339,6 +340,7 @@ describe('verifyPayment routing', () => {
 
   it('should return unsupported chain error for unknown chains', async () => {
     const proof = {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       chain: 'polygon' as any,
       transaction_signature: MOCK_BASE_TX_HASH,
       payer_address: MOCK_PAYER_ADDRESS,

@@ -76,7 +76,7 @@ export interface UseEVMPaymentResult {
 export function useEVMPayment(): UseEVMPaymentResult {
   const { address, isConnected } = useAccount();
   const chainId = useChainId();
-  const { switchChain, isPending: isSwitchingChain } = useSwitchChain();
+  const { switchChain } = useSwitchChain();
 
   const [state, setState] = useState<EVMPaymentState>({
     status: "idle",
@@ -89,13 +89,11 @@ export function useEVMPayment(): UseEVMPaymentResult {
   const {
     writeContract,
     data: hash,
-    isPending: isWritePending,
     error: writeError,
   } = useWriteContract();
 
   // Wait for transaction confirmation
   const {
-    isLoading: isConfirming,
     isSuccess: isConfirmed,
     data: receipt,
     error: receiptError,
@@ -177,7 +175,7 @@ export function useEVMPayment(): UseEVMPaymentResult {
 
           try {
             await switchChain({ chainId: BASE_CHAIN_ID });
-          } catch (switchError) {
+          } catch {
             setState((prev) => ({
               ...prev,
               status: "error",

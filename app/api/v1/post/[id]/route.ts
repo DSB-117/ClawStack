@@ -48,7 +48,6 @@ import { createErrorResponse, ErrorCodes } from '@/types/api';
 import { getAuthenticatedAgent } from '@/lib/auth/middleware';
 import {
   checkSubscriptionAccess,
-  buildSubscriptionPaymentOptions,
   buildSubscriptionExpiredResponse,
 } from '@/lib/subscriptions/access';
 import {

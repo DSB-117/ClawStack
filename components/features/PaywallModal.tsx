@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useState, useCallback, useEffect } from "react";
-import { SolanaPaymentFlow } from "./SolanaPaymentFlow";
-import { EVMPaymentFlow } from "./EVMPaymentFlow";
+import { useState, useCallback, useEffect } from 'react';
+import { SolanaPaymentFlow } from './SolanaPaymentFlow';
+import { EVMPaymentFlow } from './EVMPaymentFlow';
 
 interface PaywallModalProps {
   postId: string;
@@ -13,33 +13,33 @@ interface PaywallModalProps {
   authorWalletBase: string | null;
 }
 
-type PaymentChain = "solana" | "base" | null;
+type PaymentChain = 'solana' | 'base' | null;
 
-const CHAIN_PREFERENCE_KEY = "clawstack_preferred_chain";
+const CHAIN_PREFERENCE_KEY = 'clawstack_preferred_chain';
 
 // Chain metadata with display info
 const CHAIN_CONFIG = {
   solana: {
-    id: "solana" as const,
-    name: "Solana",
-    icon: "◎",
-    color: "#9945FF",
-    bgColor: "bg-[#9945FF]/10",
-    borderColor: "border-[#9945FF]",
-    hoverBg: "hover:bg-[#9945FF]/5",
-    hoverBorder: "hover:border-[#9945FF]/50",
-    networkLabel: "on Solana",
+    id: 'solana' as const,
+    name: 'Solana',
+    icon: '◎',
+    color: '#9945FF',
+    bgColor: 'bg-[#9945FF]/10',
+    borderColor: 'border-[#9945FF]',
+    hoverBg: 'hover:bg-[#9945FF]/5',
+    hoverBorder: 'hover:border-[#9945FF]/50',
+    networkLabel: 'on Solana',
   },
   base: {
-    id: "base" as const,
-    name: "Base",
-    icon: "Ⓑ",
-    color: "#0052FF",
-    bgColor: "bg-[#0052FF]/10",
-    borderColor: "border-[#0052FF]",
-    hoverBg: "hover:bg-[#0052FF]/5",
-    hoverBorder: "hover:border-[#0052FF]/50",
-    networkLabel: "on Base",
+    id: 'base' as const,
+    name: 'Base',
+    icon: 'Ⓑ',
+    color: '#0052FF',
+    bgColor: 'bg-[#0052FF]/10',
+    borderColor: 'border-[#0052FF]',
+    hoverBg: 'hover:bg-[#0052FF]/5',
+    hoverBorder: 'hover:border-[#0052FF]/50',
+    networkLabel: 'on Base',
   },
 };
 
@@ -47,9 +47,9 @@ const CHAIN_CONFIG = {
  * Get the user's preferred payment chain from localStorage
  */
 function getPreferredChain(): PaymentChain {
-  if (typeof window === "undefined") return null;
+  if (typeof window === 'undefined') return null;
   const stored = localStorage.getItem(CHAIN_PREFERENCE_KEY);
-  if (stored === "solana" || stored === "base") {
+  if (stored === 'solana' || stored === 'base') {
     return stored;
   }
   return null;
@@ -59,7 +59,7 @@ function getPreferredChain(): PaymentChain {
  * Save the user's preferred payment chain to localStorage
  */
 function setPreferredChain(chain: PaymentChain): void {
-  if (typeof window === "undefined" || !chain) return;
+  if (typeof window === 'undefined' || !chain) return;
   localStorage.setItem(CHAIN_PREFERENCE_KEY, chain);
 }
 
@@ -94,10 +94,11 @@ export function PaywallModal({
         setSelectedChain(preferred);
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleChainSelect = useCallback(
-    (chainId: "solana" | "base") => {
+    (chainId: 'solana' | 'base') => {
       setSelectedChain(chainId);
       setPaymentError(null);
       // 5.4.5: Save preference if user opted in
@@ -120,7 +121,7 @@ export function PaywallModal({
 
   // 5.4.4: Graceful error handling with UI feedback
   const handlePaymentError = useCallback((error: string) => {
-    console.error("Payment error:", error);
+    console.error('Payment error:', error);
     setPaymentError(error);
   }, []);
 
@@ -134,7 +135,9 @@ export function PaywallModal({
   }, []);
 
   // Get the selected chain config for display
-  const selectedChainConfig = selectedChain ? CHAIN_CONFIG[selectedChain] : null;
+  const selectedChainConfig = selectedChain
+    ? CHAIN_CONFIG[selectedChain]
+    : null;
 
   // 5.4.6: Success state with animation
   if (paymentSuccess) {
@@ -148,19 +151,19 @@ export function PaywallModal({
             <div className="w-full max-w-md">
               <div
                 className={`bg-card border border-border rounded-xl p-6 shadow-lg text-center transition-all duration-500 ${
-                  isAnimating ? "animate-success-bounce" : ""
+                  isAnimating ? 'animate-success-bounce' : ''
                 }`}
               >
                 {/* Animated checkmark with ring effect */}
                 <div className="relative inline-flex items-center justify-center mb-4">
                   <div
                     className={`absolute w-20 h-20 rounded-full bg-claw-secondary/20 ${
-                      isAnimating ? "animate-ping-slow" : ""
+                      isAnimating ? 'animate-ping-slow' : ''
                     }`}
                   />
                   <div
                     className={`relative inline-flex items-center justify-center w-16 h-16 rounded-full bg-claw-secondary text-white transition-transform duration-300 ${
-                      isAnimating ? "scale-110" : ""
+                      isAnimating ? 'scale-110' : ''
                     }`}
                   >
                     <svg
@@ -173,7 +176,7 @@ export function PaywallModal({
                       strokeWidth="3"
                       strokeLinecap="round"
                       strokeLinejoin="round"
-                      className={isAnimating ? "animate-draw-check" : ""}
+                      className={isAnimating ? 'animate-draw-check' : ''}
                     >
                       <path d="M20 6 9 17l-5-5" />
                     </svg>
@@ -181,14 +184,14 @@ export function PaywallModal({
                 </div>
                 <h3
                   className={`text-xl font-bold mb-2 transition-opacity duration-500 ${
-                    isAnimating ? "opacity-100" : "opacity-0"
+                    isAnimating ? 'opacity-100' : 'opacity-0'
                   }`}
                 >
                   Payment Successful!
                 </h3>
                 <p
                   className={`text-muted-foreground text-sm transition-opacity duration-700 delay-200 ${
-                    isAnimating ? "opacity-100" : "opacity-0"
+                    isAnimating ? 'opacity-100' : 'opacity-0'
                   }`}
                 >
                   Unlocking content...
@@ -198,15 +201,15 @@ export function PaywallModal({
                   <div className="flex gap-1">
                     <div
                       className="w-2 h-2 rounded-full bg-claw-secondary animate-bounce"
-                      style={{ animationDelay: "0ms" }}
+                      style={{ animationDelay: '0ms' }}
                     />
                     <div
                       className="w-2 h-2 rounded-full bg-claw-secondary animate-bounce"
-                      style={{ animationDelay: "150ms" }}
+                      style={{ animationDelay: '150ms' }}
                     />
                     <div
                       className="w-2 h-2 rounded-full bg-claw-secondary animate-bounce"
-                      style={{ animationDelay: "300ms" }}
+                      style={{ animationDelay: '300ms' }}
                     />
                   </div>
                 </div>
@@ -256,7 +259,7 @@ export function PaywallModal({
                 </p>
                 <div className="mt-2">
                   <p className="text-3xl font-bold text-claw-secondary">
-                    ${priceUsdc.toFixed(2)}{" "}
+                    ${priceUsdc.toFixed(2)}{' '}
                     <span className="text-lg font-normal">USDC</span>
                   </p>
                   {/* 5.4.2: Show chain context when selected */}
@@ -368,13 +371,15 @@ export function PaywallModal({
                       <input
                         type="checkbox"
                         checked={rememberPreference}
-                        onChange={(e) => setRememberPreference(e.target.checked)}
+                        onChange={(e) =>
+                          setRememberPreference(e.target.checked)
+                        }
                         className="w-3.5 h-3.5 rounded border-border text-claw-primary focus:ring-claw-primary/20"
                       />
                       Remember my preference
                     </label>
                   </div>
-                ) : selectedChain === "solana" && authorWalletSolana ? (
+                ) : selectedChain === 'solana' && authorWalletSolana ? (
                   // Solana Payment Flow
                   <div>
                     <button
@@ -404,7 +409,7 @@ export function PaywallModal({
                       onError={handlePaymentError}
                     />
                   </div>
-                ) : selectedChain === "base" && authorWalletBase ? (
+                ) : selectedChain === 'base' && authorWalletBase ? (
                   // Base/EVM Payment Flow
                   <div>
                     <button
