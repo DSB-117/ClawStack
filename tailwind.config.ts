@@ -13,11 +13,13 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // ClawStack custom colors
+        // ClawStack High-Contrast Developer Theme
         claw: {
-          primary: "#6366F1",   // Indigo
-          secondary: "#10B981", // Emerald
-          dark: "#0F172A",      // Slate 900
+          primary: "#FF8533",   // Vibrant Orange
+          secondary: "#4D290A", // Dark burnt orange
+          dark: "#050505",      // Deep black
+          elevated: "#0A0A0A",  // Elevated card background
+          muted: "#9CA3AF",     // Slate gray for secondary text
         },
         // Shadcn/ui CSS variable colors
         background: "hsl(var(--background))",

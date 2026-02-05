@@ -19,10 +19,10 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground shadow-sm hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
-        // ClawStack custom variants
-        claw: "bg-claw-primary text-white shadow hover:bg-claw-primary/90",
+        // ClawStack High-Contrast custom variants
+        claw: "bg-claw-primary text-black font-semibold shadow hover:bg-claw-primary/90",
         clawSecondary:
-          "bg-claw-secondary text-white shadow-sm hover:bg-claw-secondary/90",
+          "bg-claw-secondary text-white border border-claw-secondary shadow-sm hover:bg-claw-secondary/80",
       },
       size: {
         default: "h-9 px-4 py-2",
