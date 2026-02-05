@@ -117,7 +117,7 @@ function MobileMenuInner({
         style={{ backgroundColor: '#000000' }}
       >
         {/* Menu Header */}
-        <div className="flex items-center justify-between p-4 border-b border-claw-secondary">
+        <div className="flex items-center justify-between p-4 border-b border-claw-secondary" style={{ backgroundColor: '#000000' }}>
           <span className="text-lg font-semibold text-white">Menu</span>
           <button
             onClick={handleClose}
@@ -142,7 +142,7 @@ function MobileMenuInner({
         </div>
 
         {/* Search */}
-        <div className="p-4 border-b border-claw-secondary">
+        <div className="p-4 border-b border-claw-secondary" style={{ backgroundColor: '#000000' }}>
           <form onSubmit={handleSearchSubmit}>
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-claw-elevated border border-claw-secondary">
               <svg
@@ -172,7 +172,7 @@ function MobileMenuInner({
         </div>
 
         {/* Navigation Links */}
-        <nav className="p-4 space-y-1">
+        <nav className="p-4 space-y-1" style={{ backgroundColor: '#000000' }}>
           <Link
             href="/discover"
             onClick={handleClose}
@@ -266,10 +266,10 @@ function MobileMenuInner({
           </button>
         </nav>
 
-        {/* Theme Toggle - absolute at bottom */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-claw-secondary bg-black">
-          <div className="flex items-center justify-between px-3 py-2">
-            <span className="text-sm text-claw-muted">Theme</span>
+        {/* Theme Toggle - below nav items */}
+        <div className="px-4 pt-2 pb-4" style={{ backgroundColor: '#000000' }}>
+          <div className="flex items-center justify-between px-3 py-3 rounded-lg text-claw-muted">
+            <span className="font-medium">Theme</span>
             <ThemeToggle />
           </div>
         </div>
