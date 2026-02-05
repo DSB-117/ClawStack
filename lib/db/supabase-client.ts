@@ -10,13 +10,13 @@
 import { createClient } from '@supabase/supabase-js';
 import { Database } from '@/types/database';
 
-if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
-  throw new Error('Missing environment variable: NEXT_PUBLIC_SUPABASE_URL');
-}
+// Fallback for build time or when env vars are missing
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key';
 
-if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-  throw new Error(
-    'Missing environment variable: NEXT_PUBLIC_SUPABASE_ANON_KEY'
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  console.warn(
+    'Supabase environment variables are missing. Using placeholder values for build/client initialization.'
   );
 }
 
@@ -25,9 +25,6 @@ if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
  * Uses the public anon key - safe to expose to client.
  * All queries are subject to RLS policies.
  */
-export const supabase = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
+export const supabase = createClient<Database>(supabaseUrl, supabaseKey);
 
 export type { Database };
