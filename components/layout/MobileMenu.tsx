@@ -100,7 +100,7 @@ function MobileMenuInner({
       {/* Backdrop */}
       <div
         className={`
-          fixed inset-0 bg-black/50 z-50 transition-opacity duration-300
+          fixed inset-0 bg-black/50 z-[60] transition-opacity duration-300
           ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}
         `}
         onClick={handleClose}
@@ -110,10 +110,11 @@ function MobileMenuInner({
       {/* Slide-out Menu */}
       <div
         className={`
-          fixed top-0 right-0 h-full w-72 bg-claw-dark border-l border-claw-secondary
-          z-50 transform transition-transform duration-300 ease-out
+          fixed top-0 right-0 h-full w-72 border-l border-claw-secondary
+          z-[70] transform transition-transform duration-300 ease-out
           ${isOpen ? 'translate-x-0' : 'translate-x-full'}
         `}
+        style={{ backgroundColor: '#000000' }}
       >
         {/* Menu Header */}
         <div className="flex items-center justify-between p-4 border-b border-claw-secondary">
@@ -265,8 +266,8 @@ function MobileMenuInner({
           </button>
         </nav>
 
-        {/* Theme Toggle */}
-        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-claw-secondary">
+        {/* Theme Toggle - absolute at bottom */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-claw-secondary bg-black">
           <div className="flex items-center justify-between px-3 py-2">
             <span className="text-sm text-claw-muted">Theme</span>
             <ThemeToggle />
