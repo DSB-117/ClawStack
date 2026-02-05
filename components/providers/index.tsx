@@ -1,9 +1,11 @@
-"use client";
+'use client';
 
-import { type ReactNode } from "react";
-import { SolanaWalletProvider } from "./SolanaWalletProvider";
-import { EVMWalletProvider } from "./EVMWalletProvider";
-import { AuthModalProvider } from "@/components/features/AuthModal";
+import { type ReactNode } from 'react';
+import { SolanaWalletProvider } from './SolanaWalletProvider';
+import { EVMWalletProvider } from './EVMWalletProvider';
+import { ProfileModalProvider } from '@/components/features/ProfileModal';
+import { OnboardingModal } from '@/components/features/OnboardingModal';
+import { PrivySystemProvider } from './PrivySystemProvider';
 
 interface ProvidersProps {
   children: ReactNode;
@@ -18,10 +20,15 @@ interface ProvidersProps {
  */
 export function Providers({ children }: ProvidersProps) {
   return (
-    <EVMWalletProvider>
-      <SolanaWalletProvider>
-        <AuthModalProvider>{children}</AuthModalProvider>
-      </SolanaWalletProvider>
-    </EVMWalletProvider>
+    <PrivySystemProvider>
+      <EVMWalletProvider>
+        <SolanaWalletProvider>
+          <ProfileModalProvider>
+            {children}
+            <OnboardingModal />
+          </ProfileModalProvider>
+        </SolanaWalletProvider>
+      </EVMWalletProvider>
+    </PrivySystemProvider>
   );
 }

@@ -1,20 +1,29 @@
-"use client";
+'use client';
 
-import { Suspense, useState, useEffect, useCallback } from "react";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { Suspense, useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
+// Update interface to accept user/auth (optional, as we can also use hook inside)
+// But simpler to match Header passing props if we want.
+// Actually, let's just use props since Header passes them.
 interface MobileMenuProps {
   onHumansClick: () => void;
+  authenticated?: boolean;
+  user?: any; // Use proper type if available or keep loose for now until install finishes
 }
 
 // Inner component that uses useSearchParams
-function MobileMenuInner({ onHumansClick }: MobileMenuProps) {
+function MobileMenuInner({
+  onHumansClick,
+  authenticated,
+  user,
+}: MobileMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
 
   // Close menu on route change
   useEffect(() => {
@@ -24,12 +33,12 @@ function MobileMenuInner({ onHumansClick }: MobileMenuProps) {
   // Prevent body scroll when menu is open
   useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = "hidden";
+      document.body.style.overflow = 'hidden';
     } else {
-      document.body.style.overflow = "";
+      document.body.style.overflow = '';
     }
     return () => {
-      document.body.style.overflow = "";
+      document.body.style.overflow = '';
     };
   }, [isOpen]);
 
@@ -37,21 +46,24 @@ function MobileMenuInner({ onHumansClick }: MobileMenuProps) {
     setIsOpen(false);
   }, []);
 
-  const handleSearchSubmit = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    const params = new URLSearchParams(searchParams.toString());
+  const handleSearchSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+      const params = new URLSearchParams(searchParams.toString());
 
-    if (searchQuery.trim()) {
-      params.set("q", searchQuery.trim());
-    } else {
-      params.delete("q");
-    }
+      if (searchQuery.trim()) {
+        params.set('q', searchQuery.trim());
+      } else {
+        params.delete('q');
+      }
 
-    const queryString = params.toString();
-    const newUrl = queryString ? `/feed?${queryString}` : "/feed";
-    router.push(newUrl);
-    setIsOpen(false);
-  }, [searchQuery, router, searchParams]);
+      const queryString = params.toString();
+      const newUrl = queryString ? `/feed?${queryString}` : '/feed';
+      router.push(newUrl);
+      setIsOpen(false);
+    },
+    [searchQuery, router, searchParams]
+  );
 
   const handleHumansClick = useCallback(() => {
     setIsOpen(false);
@@ -87,7 +99,7 @@ function MobileMenuInner({ onHumansClick }: MobileMenuProps) {
       <div
         className={`
           fixed inset-0 bg-black/50 z-50 transition-opacity duration-300
-          ${isOpen ? "opacity-100" : "opacity-0 pointer-events-none"}
+          ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}
         `}
         onClick={handleClose}
         aria-hidden="true"
@@ -98,7 +110,7 @@ function MobileMenuInner({ onHumansClick }: MobileMenuProps) {
         className={`
           fixed top-0 right-0 h-full w-72 bg-claw-dark border-l border-claw-secondary
           z-50 transform transition-transform duration-300 ease-out
-          ${isOpen ? "translate-x-0" : "translate-x-full"}
+          ${isOpen ? 'translate-x-0' : 'translate-x-full'}
         `}
       >
         {/* Menu Header */}
@@ -210,21 +222,42 @@ function MobileMenuInner({ onHumansClick }: MobileMenuProps) {
             onClick={handleHumansClick}
             className="flex items-center gap-3 px-3 py-3 rounded-lg text-claw-muted hover:text-white hover:bg-claw-secondary/30 transition-colors w-full text-left"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-            <span className="font-medium">Humans</span>
+            {authenticated && user ? (
+              <div className="flex items-center gap-3">
+                <div className="w-5 h-5 rounded-full bg-claw-primary/20 overflow-hidden">
+                  {user.wallet?.address ? (
+                    <img
+                      src={`https://api.dicebear.com/7.x/bottts/svg?seed=${user.wallet.address}`}
+                      alt="Avatar"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-xs">H</span>
+                  )}
+                </div>
+                <span className="font-medium text-white">
+                  {user.email?.address || 'My Profile'}
+                </span>
+              </div>
+            ) : (
+              <>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                <span className="font-medium">Humans</span>
+              </>
+            )}
           </button>
         </nav>
 

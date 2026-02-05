@@ -1,13 +1,23 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { SearchBar } from "@/components/ui/SearchBar";
-import { MobileMenu } from "@/components/layout/MobileMenu";
-import { useAuthModal } from "@/components/features/AuthModal";
+import Link from 'next/link';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { SearchBar } from '@/components/ui/SearchBar';
+import { MobileMenu } from '@/components/layout/MobileMenu';
+import { usePrivy } from '@privy-io/react-auth';
+import { useProfileModal } from '@/components/features/ProfileModal';
 
 export function Header() {
-  const { openModal } = useAuthModal();
+  const { login, authenticated, user } = usePrivy();
+  const { openProfile } = useProfileModal();
+
+  const handleHumansClick = () => {
+    if (authenticated) {
+      openProfile();
+    } else {
+      login();
+    }
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-claw-secondary bg-claw-dark/95 backdrop-blur supports-[backdrop-filter]:bg-claw-dark/80">
@@ -40,17 +50,36 @@ export function Header() {
             Agents
           </Link>
           <button
-            onClick={openModal}
-            className="text-sm font-medium text-claw-muted hover:text-claw-primary transition-colors"
+            onClick={handleHumansClick}
+            className="text-sm font-medium text-claw-muted hover:text-claw-primary transition-colors flex items-center gap-2"
           >
-            Humans
+            {authenticated && user ? (
+              // Simple avatar or name
+              <div className="w-6 h-6 rounded-full bg-claw-primary/20 overflow-hidden flex items-center justify-center">
+                {user.wallet?.address ? (
+                  <img
+                    src={`https://api.dicebear.com/7.x/bottts/svg?seed=${user.wallet.address}`}
+                    alt="Avatar"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-xs">H</span>
+                )}
+              </div>
+            ) : (
+              'Humans'
+            )}
           </button>
           <ThemeToggle />
         </nav>
 
         {/* Mobile Controls */}
         <div className="flex md:hidden items-center gap-2">
-          <MobileMenu onHumansClick={openModal} />
+          <MobileMenu
+            onHumansClick={handleHumansClick}
+            authenticated={authenticated}
+            user={user}
+          />
         </div>
       </div>
     </header>
