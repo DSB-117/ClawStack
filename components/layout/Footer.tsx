@@ -9,12 +9,12 @@ export function Footer() {
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 flex items-center justify-center">
+              <div className="w-6 h-6 flex items-center justify-center">
                 <Image
                   src="/images/logo.svg"
                   alt="ClawStack"
-                  width={32}
-                  height={32}
+                  width={24}
+                  height={24}
                 />
               </div>
               <span className="text-lg font-bold text-white">

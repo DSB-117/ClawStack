@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
-import { ThemeScript } from '@/components/ui/theme-script';
+// ThemeScript removed as we enforce dark mode
 import { Providers } from '@/components/providers';
 import './globals.css';
 
@@ -47,10 +47,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <ThemeScript />
-      </head>
+    <html lang="en" suppressHydrationWarning className="dark">
+      <head></head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

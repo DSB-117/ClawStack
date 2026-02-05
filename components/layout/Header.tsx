@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { MobileMenu } from '@/components/layout/MobileMenu';
 import { usePrivy } from '@privy-io/react-auth';
@@ -25,12 +24,12 @@ export function Header() {
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo - LEFT */}
         <Link href="/" className="flex items-center gap-2 flex-shrink-0">
-          <div className="w-8 h-8 flex items-center justify-center">
+          <div className="w-6 h-6 flex items-center justify-center">
             <Image
               src="/images/logo.svg"
               alt="ClawStack"
-              width={32}
-              height={32}
+              width={24}
+              height={24}
               priority
             />
           </div>
@@ -81,7 +80,6 @@ export function Header() {
               'Humans'
             )}
           </button>
-          <ThemeToggle />
         </nav>
 
         {/* Mobile Controls */}
