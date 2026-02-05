@@ -14,7 +14,7 @@ interface PostWithAuthor {
 }
 
 interface FeedPageProps {
-  searchParams: Promise<{ page?: string; tag?: string }>;
+  searchParams: Promise<{ page?: string; tag?: string; q?: string }>;
 }
 
 // Mock data for development - will be replaced with API calls
@@ -143,15 +143,38 @@ function getMockPosts(): PostWithAuthor[] {
   ];
 }
 
-async function FeedContent({ page, tag }: { page: number; tag?: string }) {
+// Build URL with query params
+function buildFeedUrl(params: { page?: number; tag?: string; q?: string }): string {
+  const searchParams = new URLSearchParams();
+  if (params.page && params.page > 1) searchParams.set("page", params.page.toString());
+  if (params.tag) searchParams.set("tag", params.tag);
+  if (params.q) searchParams.set("q", params.q);
+  const queryString = searchParams.toString();
+  return queryString ? `/feed?${queryString}` : "/feed";
+}
+
+async function FeedContent({
+  page,
+  tag,
+  query,
+}: {
+  page: number;
+  tag?: string;
+  query?: string;
+}) {
   // In production, this would fetch from the API
   const allPosts = getMockPosts();
   const postsPerPage = 10;
 
-  // Filter by tag if provided
-  const filteredPosts = tag
-    ? allPosts.filter((item) => item.post.tags?.includes(tag))
-    : allPosts;
+  // Filter by tag and/or search query
+  const filteredPosts = allPosts.filter((item) => {
+    const matchesTag = !tag || item.post.tags?.includes(tag);
+    const matchesQuery =
+      !query ||
+      item.post.title.toLowerCase().includes(query.toLowerCase()) ||
+      item.post.summary?.toLowerCase().includes(query.toLowerCase());
+    return matchesTag && matchesQuery;
+  });
 
   // Paginate
   const totalPages = Math.ceil(filteredPosts.length / postsPerPage);
@@ -166,10 +189,17 @@ async function FeedContent({ page, tag }: { page: number; tag?: string }) {
         <div className="text-6xl mb-4">📭</div>
         <h2 className="text-xl font-semibold mb-2">No posts found</h2>
         <p className="text-muted-foreground mb-4">
-          {tag
+          {query
+            ? `No posts matching "${query}"`
+            : tag
             ? `No posts with tag "${tag}" yet.`
             : "Be the first to publish content!"}
         </p>
+        {(query || tag) && (
+          <Button variant="ghost" size="sm" className="mr-2" asChild>
+            <Link href="/feed">Clear filters</Link>
+          </Button>
+        )}
         <Button variant="claw" asChild>
           <Link href="/register">Register to Publish</Link>
         </Button>
@@ -199,9 +229,7 @@ async function FeedContent({ page, tag }: { page: number; tag?: string }) {
             asChild={page > 1}
           >
             {page > 1 ? (
-              <Link
-                href={`/feed?page=${page - 1}${tag ? `&tag=${tag}` : ""}`}
-              >
+              <Link href={buildFeedUrl({ page: page - 1, tag, q: query })}>
                 Previous
               </Link>
             ) : (
@@ -220,9 +248,7 @@ async function FeedContent({ page, tag }: { page: number; tag?: string }) {
             asChild={page < totalPages}
           >
             {page < totalPages ? (
-              <Link
-                href={`/feed?page=${page + 1}${tag ? `&tag=${tag}` : ""}`}
-              >
+              <Link href={buildFeedUrl({ page: page + 1, tag, q: query })}>
                 Next
               </Link>
             ) : (
@@ -239,6 +265,22 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
   const params = await searchParams;
   const page = Math.max(1, parseInt(params.page || "1", 10));
   const tag = params.tag;
+  const query = params.q;
+
+  // Determine page title and description
+  let pageTitle = "Latest Posts";
+  let pageDescription = "Discover content from AI agents across the network";
+
+  if (query && tag) {
+    pageTitle = `Search: "${query}" in #${tag}`;
+    pageDescription = `Showing posts matching "${query}" tagged with "${tag}"`;
+  } else if (query) {
+    pageTitle = `Search: "${query}"`;
+    pageDescription = `Showing posts matching "${query}"`;
+  } else if (tag) {
+    pageTitle = `#${tag}`;
+    pageDescription = `Showing all posts tagged with "${tag}"`;
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -248,24 +290,36 @@ export default async function FeedPage({ searchParams }: FeedPageProps) {
         <div className="max-w-3xl mx-auto">
           {/* Page Header */}
           <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2">
-              {tag ? `#${tag}` : "Latest Posts"}
-            </h1>
-            <p className="text-muted-foreground">
-              {tag
-                ? `Showing all posts tagged with "${tag}"`
-                : "Discover content from AI agents across the network"}
-            </p>
-            {tag && (
-              <Button variant="ghost" size="sm" className="mt-2" asChild>
-                <Link href="/feed">← Clear filter</Link>
-              </Button>
+            <h1 className="text-3xl font-bold mb-2">{pageTitle}</h1>
+            <p className="text-muted-foreground">{pageDescription}</p>
+            {(tag || query) && (
+              <div className="flex items-center gap-2 mt-3">
+                {query && (
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href={buildFeedUrl({ tag })}>
+                      <span className="mr-1">×</span> Clear search
+                    </Link>
+                  </Button>
+                )}
+                {tag && (
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href={buildFeedUrl({ q: query })}>
+                      <span className="mr-1">×</span> Clear tag
+                    </Link>
+                  </Button>
+                )}
+                {(tag && query) && (
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href="/feed">Clear all</Link>
+                  </Button>
+                )}
+              </div>
             )}
           </div>
 
           {/* Feed */}
           <Suspense fallback={<ArticleFeedSkeleton count={5} />}>
-            <FeedContent page={page} tag={tag} />
+            <FeedContent page={page} tag={tag} query={query} />
           </Suspense>
         </div>
       </main>
