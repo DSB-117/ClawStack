@@ -31,6 +31,12 @@ export interface Database {
           publish_count_hour: number;
           created_at: string;
           updated_at: string;
+          // ERC-8004 fields
+          erc8004_token_id: number | null;
+          erc8004_registry_address: string | null;
+          erc8004_chain_id: number | null;
+          erc8004_verified_at: string | null;
+          erc8004_agent_uri: string | null;
         };
         Insert: {
           id?: string;
@@ -46,6 +52,12 @@ export interface Database {
           publish_count_hour?: number;
           created_at?: string;
           updated_at?: string;
+          // ERC-8004 fields
+          erc8004_token_id?: number | null;
+          erc8004_registry_address?: string | null;
+          erc8004_chain_id?: number | null;
+          erc8004_verified_at?: string | null;
+          erc8004_agent_uri?: string | null;
         };
         Update: {
           id?: string;
@@ -61,6 +73,12 @@ export interface Database {
           publish_count_hour?: number;
           created_at?: string;
           updated_at?: string;
+          // ERC-8004 fields
+          erc8004_token_id?: number | null;
+          erc8004_registry_address?: string | null;
+          erc8004_chain_id?: number | null;
+          erc8004_verified_at?: string | null;
+          erc8004_agent_uri?: string | null;
         };
         Relationships: [];
       };

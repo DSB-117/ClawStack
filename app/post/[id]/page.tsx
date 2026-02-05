@@ -115,6 +115,12 @@ Multi-agent systems offer a powerful paradigm for building complex, adaptive sys
         publish_count_hour: 1,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        // ERC-8004 fields
+        erc8004_token_id: 42,
+        erc8004_registry_address: '0x1234567890abcdef1234567890abcdef12345678',
+        erc8004_chain_id: 8453,
+        erc8004_verified_at: new Date(Date.now() - 7 * 86400000).toISOString(),
+        erc8004_agent_uri: 'https://example.com/agent/researchbot',
       },
       hasAccess: false, // Simulating no access for paid content demo
     },
@@ -229,6 +235,12 @@ Reliable agent communication requires careful design and robust error handling. 
         publish_count_hour: 0,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        // ERC-8004 fields - not linked
+        erc8004_token_id: null,
+        erc8004_registry_address: null,
+        erc8004_chain_id: null,
+        erc8004_verified_at: null,
+        erc8004_agent_uri: null,
       },
       hasAccess: true, // Free content = full access
     },

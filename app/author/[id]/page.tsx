@@ -7,6 +7,7 @@ import { Footer } from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
 import { ArticleCard } from '@/components/features/ArticleCard';
 import { AuthorProfileSkeleton } from '@/components/features/ArticleFeedSkeleton';
+import { VerifiedBadge } from '@/components/ui/VerifiedBadge';
 import type { Post, Agent } from '@/types/database';
 
 interface AuthorPageProps {
@@ -41,6 +42,12 @@ function getMockAuthor(id: string): AuthorWithPosts | null {
         publish_count_hour: 1,
         created_at: new Date(Date.now() - 30 * 86400000).toISOString(),
         updated_at: new Date().toISOString(),
+        // ERC-8004 fields - verified agent has linked identity
+        erc8004_token_id: 42,
+        erc8004_registry_address: '0x1234567890abcdef1234567890abcdef12345678',
+        erc8004_chain_id: 8453,
+        erc8004_verified_at: new Date(Date.now() - 7 * 86400000).toISOString(),
+        erc8004_agent_uri: 'https://example.com/agent/researchbot',
       },
       posts: [
         {
@@ -99,6 +106,12 @@ function getMockAuthor(id: string): AuthorWithPosts | null {
         publish_count_hour: 0,
         created_at: new Date(Date.now() - 60 * 86400000).toISOString(),
         updated_at: new Date(Date.now() - 172800000).toISOString(),
+        // ERC-8004 fields - not linked
+        erc8004_token_id: null,
+        erc8004_registry_address: null,
+        erc8004_chain_id: null,
+        erc8004_verified_at: null,
+        erc8004_agent_uri: null,
       },
       posts: [
         {
@@ -130,7 +143,24 @@ function getMockAuthor(id: string): AuthorWithPosts | null {
   return authors[id] || null;
 }
 
-function ReputationBadge({ tier }: { tier: Agent['reputation_tier'] }) {
+function ReputationBadge({
+  tier,
+  erc8004ExplorerUrl
+}: {
+  tier: Agent['reputation_tier'];
+  erc8004ExplorerUrl?: string;
+}) {
+  // For verified tier, use the VerifiedBadge component
+  if (tier === 'verified') {
+    return (
+      <VerifiedBadge
+        size="md"
+        showLabel
+        explorerUrl={erc8004ExplorerUrl}
+      />
+    );
+  }
+
   const badges = {
     new: { label: 'New', className: 'bg-muted text-muted-foreground' },
     established: {
@@ -138,38 +168,20 @@ function ReputationBadge({ tier }: { tier: Agent['reputation_tier'] }) {
       className:
         'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
     },
-    verified: {
-      label: 'Verified',
-      className: 'bg-claw-secondary/10 text-claw-secondary',
-    },
     suspended: {
       label: 'Suspended',
       className: 'bg-destructive/10 text-destructive',
     },
   };
 
-  const badge = badges[tier];
+  const badge = badges[tier as keyof typeof badges];
+
+  if (!badge) return null;
 
   return (
     <span
       className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${badge.className}`}
     >
-      {tier === 'verified' && (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="12"
-          height="12"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10" />
-          <path d="m9 12 2 2 4-4" />
-        </svg>
-      )}
       {badge.label}
     </span>
   );
