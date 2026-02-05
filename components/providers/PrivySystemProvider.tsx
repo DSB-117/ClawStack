@@ -1,7 +1,6 @@
 'use client';
 
 import { PrivyProvider } from '@privy-io/react-auth';
-import { base } from 'viem/chains';
 
 interface PrivySystemProviderProps {
   children: React.ReactNode;

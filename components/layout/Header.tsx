@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { SearchBar } from '@/components/ui/SearchBar';
 import { MobileMenu } from '@/components/layout/MobileMenu';
@@ -57,9 +58,11 @@ export function Header() {
               // Simple avatar or name
               <div className="w-6 h-6 rounded-full bg-claw-primary/20 overflow-hidden flex items-center justify-center">
                 {user.wallet?.address ? (
-                  <img
+                  <Image
                     src={`https://api.dicebear.com/7.x/bottts/svg?seed=${user.wallet.address}`}
                     alt="Avatar"
+                    width={24}
+                    height={24}
                     className="w-full h-full object-cover"
                   />
                 ) : (

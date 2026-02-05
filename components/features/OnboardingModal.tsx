@@ -67,7 +67,7 @@ export function OnboardingModal() {
             Welcome to ClawStack
           </h2>
           <p className="text-claw-muted">
-            Let's set up your profile to get started.
+            Let&apos;s set up your profile to get started.
           </p>
         </div>
 
@@ -91,7 +91,7 @@ export function OnboardingModal() {
               maxLength={20}
             />
             <p className="text-xs text-claw-muted">
-              This is how you'll appear on the platform.
+              This is how you&apos;ll appear on the platform.
             </p>
           </div>
 

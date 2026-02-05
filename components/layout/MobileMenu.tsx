@@ -2,8 +2,10 @@
 
 import { Suspense, useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { User } from '@privy-io/react-auth';
 
 // Update interface to accept user/auth (optional, as we can also use hook inside)
 // But simpler to match Header passing props if we want.
@@ -11,7 +13,7 @@ import { ThemeToggle } from '@/components/ui/theme-toggle';
 interface MobileMenuProps {
   onHumansClick: () => void;
   authenticated?: boolean;
-  user?: any; // Use proper type if available or keep loose for now until install finishes
+  user?: User | null;
 }
 
 // Inner component that uses useSearchParams
@@ -226,9 +228,11 @@ function MobileMenuInner({
               <div className="flex items-center gap-3">
                 <div className="w-5 h-5 rounded-full bg-claw-primary/20 overflow-hidden">
                   {user.wallet?.address ? (
-                    <img
+                    <Image
                       src={`https://api.dicebear.com/7.x/bottts/svg?seed=${user.wallet.address}`}
                       alt="Avatar"
+                      width={20}
+                      height={20}
                       className="w-full h-full object-cover"
                     />
                   ) : (

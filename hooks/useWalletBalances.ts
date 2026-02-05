@@ -51,7 +51,7 @@ export function useWalletBalances() {
     try {
       // 1. Identify Addresses
       const ethWallet = user.wallet ? user.wallet : user.linkedAccounts.find(a => a.type === 'wallet' && a.chainType === 'ethereum');
-      // @ts-ignore - Privy types might be strict, but we check specific fields
+      // @ts-expect-error - Privy types might be strict, but we check specific fields
       const solWallet = user.linkedAccounts.find(a => a.type === 'wallet' && a.chainType === 'solana');
       
       const ethAddress = ethWallet?.address;
@@ -95,7 +95,7 @@ export function useWalletBalances() {
           // manual calculation: Number(accountInfo.amount) / 10^6
           const rawSolUsdc = Number(accountInfo.amount);
           usdcSolBal = (rawSolUsdc / 1000000).toFixed(2);
-        } catch (e) {
+        } catch {
           // ATA might not exist if user has no USDC
           usdcSolBal = "0.00";
         }
