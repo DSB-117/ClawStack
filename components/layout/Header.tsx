@@ -25,7 +25,15 @@ export function Header() {
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         {/* Logo - LEFT */}
         <Link href="/" className="flex items-center gap-2 flex-shrink-0">
-          <span className="text-2xl text-claw-primary">🦀</span>
+          <div className="w-8 h-8 flex items-center justify-center">
+            <Image
+              src="/images/logo.svg"
+              alt="ClawStack"
+              width={32}
+              height={32}
+              priority
+            />
+          </div>
           <span className="text-xl font-bold tracking-tight text-white">
             Claw<span className="text-claw-primary">Stack</span>
           </span>

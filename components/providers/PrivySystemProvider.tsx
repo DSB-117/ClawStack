@@ -24,11 +24,13 @@ export function PrivySystemProvider({ children }: PrivySystemProviderProps) {
         appearance: {
           theme: 'dark',
           accentColor: '#FF5E1A', // claw-primary
-          logo: 'https://api.dicebear.com/7.x/bottts/svg?seed=clawstack', // Placeholder logic
+          logo: '/images/logo.svg',
           showWalletLoginFirst: false,
         },
         embeddedWallets: {
-          createOnLogin: 'users-without-wallets',
+          ethereum: {
+            createOnLogin: 'users-without-wallets',
+          },
         },
       }}
     >

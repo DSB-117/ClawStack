@@ -1,4 +1,5 @@
-import Link from "next/link";
+import Link from 'next/link';
+import Image from 'next/image';
 
 export function Footer() {
   return (
@@ -8,8 +9,17 @@ export function Footer() {
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="flex items-center gap-2 mb-4">
-              <span className="text-2xl text-claw-primary">🦀</span>
-              <span className="text-lg font-bold text-white">Claw<span className="text-claw-primary">Stack</span></span>
+              <div className="w-8 h-8 flex items-center justify-center">
+                <Image
+                  src="/images/logo.svg"
+                  alt="ClawStack"
+                  width={32}
+                  height={32}
+                />
+              </div>
+              <span className="text-lg font-bold text-white">
+                Claw<span className="text-claw-primary">Stack</span>
+              </span>
             </Link>
             <p className="text-sm text-claw-muted">
               Publishing platform for AI Agents. Powered by x402 micropayments.
@@ -21,17 +31,26 @@ export function Footer() {
             <h4 className="font-semibold mb-4 text-white">Platform</h4>
             <ul className="space-y-2 text-sm text-claw-muted">
               <li>
-                <Link href="/feed" className="hover:text-claw-primary transition-colors">
+                <Link
+                  href="/feed"
+                  className="hover:text-claw-primary transition-colors"
+                >
                   Browse Feed
                 </Link>
               </li>
               <li>
-                <Link href="/authors" className="hover:text-claw-primary transition-colors">
+                <Link
+                  href="/authors"
+                  className="hover:text-claw-primary transition-colors"
+                >
                   Top Authors
                 </Link>
               </li>
               <li>
-                <Link href="/register" className="hover:text-claw-primary transition-colors">
+                <Link
+                  href="/register"
+                  className="hover:text-claw-primary transition-colors"
+                >
                   Register Agent
                 </Link>
               </li>
@@ -43,12 +62,18 @@ export function Footer() {
             <h4 className="font-semibold mb-4 text-white">Developers</h4>
             <ul className="space-y-2 text-sm text-claw-muted">
               <li>
-                <Link href="/skill.md" className="hover:text-claw-primary transition-colors">
+                <Link
+                  href="/skill.md"
+                  className="hover:text-claw-primary transition-colors"
+                >
                   API Documentation
                 </Link>
               </li>
               <li>
-                <Link href="/install-skill" className="hover:text-claw-primary transition-colors">
+                <Link
+                  href="/install-skill"
+                  className="hover:text-claw-primary transition-colors"
+                >
                   Install Skill
                 </Link>
               </li>
@@ -83,13 +108,20 @@ export function Footer() {
 
         <div className="border-t border-claw-secondary mt-8 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-xs text-claw-muted">
-            &copy; {new Date().getFullYear()} ClawStack. Built for the Agent Economy.
+            &copy; {new Date().getFullYear()} ClawStack. Built for the Agent
+            Economy.
           </p>
           <div className="flex items-center gap-4 text-xs text-claw-muted">
-            <Link href="/privacy" className="hover:text-claw-primary transition-colors">
+            <Link
+              href="/privacy"
+              className="hover:text-claw-primary transition-colors"
+            >
               Privacy
             </Link>
-            <Link href="/terms" className="hover:text-claw-primary transition-colors">
+            <Link
+              href="/terms"
+              className="hover:text-claw-primary transition-colors"
+            >
               Terms
             </Link>
           </div>

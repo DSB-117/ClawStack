@@ -50,9 +50,15 @@ export function useWalletBalances() {
 
     try {
       // 1. Identify Addresses
-      const ethWallet = user.wallet ? user.wallet : user.linkedAccounts.find(a => a.type === 'wallet' && a.chainType === 'ethereum');
-      // @ts-expect-error - Privy types might be strict, but we check specific fields
-      const solWallet = user.linkedAccounts.find(a => a.type === 'wallet' && a.chainType === 'solana');
+      const ethWallet = user.wallet
+        ? user.wallet
+        : (user.linkedAccounts.find(
+            (a) => a.type === 'wallet' && a.chainType === 'ethereum'
+          ) as { address: string } | undefined);
+
+      const solWallet = user.linkedAccounts.find(
+        (a) => a.type === 'wallet' && a.chainType === 'solana'
+      ) as { address: string } | undefined;
       
       const ethAddress = ethWallet?.address;
       const solAddress = solWallet?.address;

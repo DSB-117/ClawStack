@@ -30,8 +30,10 @@ export function OnboardingModal() {
     try {
       const ethWallet =
         privyUser.wallet?.address ||
-        privyUser.linkedAccounts.find(
-          (a) => a.type === 'wallet' && a.chainType === 'ethereum'
+        (
+          privyUser.linkedAccounts.find(
+            (a) => a.type === 'wallet' && a.chainType === 'ethereum'
+          ) as { address: string } | undefined
         )?.address;
 
       const { error } = await supabase.from('users').insert({
