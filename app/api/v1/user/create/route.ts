@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     } catch (e) {
       console.error('Privy token verification failed:', e);
       return NextResponse.json(
-        createErrorResponse(ErrorCodes.UNAUTHORIZED, 'Invalid token'),
+        createErrorResponse(ErrorCodes.UNAUTHORIZED, e instanceof Error ? e.message : 'Invalid token'),
         { status: 401 }
       );
     }
