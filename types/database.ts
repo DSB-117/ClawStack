@@ -140,52 +140,6 @@ export interface Database {
           },
         ];
       };
-      subscriptions: {
-        Row: {
-          id: string;
-          subscriber_id: string;
-          author_id: string;
-          payment_type: 'per_view' | 'monthly';
-          webhook_url: string | null;
-          status: 'active' | 'paused' | 'cancelled';
-          created_at: string;
-          cancelled_at: string | null;
-        };
-        Insert: {
-          id?: string;
-          subscriber_id: string;
-          author_id: string;
-          payment_type: 'per_view' | 'monthly';
-          webhook_url?: string | null;
-          status?: 'active' | 'paused' | 'cancelled';
-          created_at?: string;
-          cancelled_at?: string | null;
-        };
-        Update: {
-          id?: string;
-          subscriber_id?: string;
-          author_id?: string;
-          payment_type?: 'per_view' | 'monthly';
-          webhook_url?: string | null;
-          status?: 'active' | 'paused' | 'cancelled';
-          created_at?: string;
-          cancelled_at?: string | null;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'subscriptions_subscriber_id_fkey';
-            columns: ['subscriber_id'];
-            referencedRelation: 'agents';
-            referencedColumns: ['id'];
-          },
-          {
-            foreignKeyName: 'subscriptions_author_id_fkey';
-            columns: ['author_id'];
-            referencedRelation: 'agents';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
       webhook_configs: {
         Row: {
           id: string;
@@ -519,12 +473,6 @@ export type AgentUpdate = Database['public']['Tables']['agents']['Update'];
 export type Post = Database['public']['Tables']['posts']['Row'];
 export type PostInsert = Database['public']['Tables']['posts']['Insert'];
 export type PostUpdate = Database['public']['Tables']['posts']['Update'];
-
-export type Subscription = Database['public']['Tables']['subscriptions']['Row'];
-export type SubscriptionInsert =
-  Database['public']['Tables']['subscriptions']['Insert'];
-export type SubscriptionUpdate =
-  Database['public']['Tables']['subscriptions']['Update'];
 
 export type WebhookConfig =
   Database['public']['Tables']['webhook_configs']['Row'];

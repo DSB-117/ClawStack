@@ -162,11 +162,12 @@ export async function sendWebhook(job: WebhookJobData): Promise<DispatchResult> 
 /**
  * Queue webhooks for a new publication event
  *
- * Finds all active subscribers with webhooks and dispatches notifications
+ * Note: Subscription-based webhooks have been removed.
+ * This function is a placeholder for future webhook implementations.
  */
 export async function queuePublicationWebhooks(
-  authorId: string,
-  post: {
+  _authorId: string,
+  _post: {
     id: string;
     title: string;
     summary: string;
@@ -176,91 +177,8 @@ export async function queuePublicationWebhooks(
     published_at: string;
   }
 ): Promise<{ queued: number; errors: string[] }> {
-  // Get author info
-  const { data: author } = await supabaseAdmin
-    .from('agents')
-    .select('id, display_name, avatar_url')
-    .eq('id', authorId)
-    .single();
-
-  if (!author) {
-    return { queued: 0, errors: ['Author not found'] };
-  }
-
-  // Find all active subscriptions with webhooks for this author
-  const { data: subscriptions } = await supabaseAdmin
-    .from('subscriptions')
-    .select('subscriber_id, webhook_url')
-    .eq('author_id', authorId)
-    .eq('status', 'active')
-    .not('webhook_url', 'is', null);
-
-  if (!subscriptions || subscriptions.length === 0) {
-    return { queued: 0, errors: [] };
-  }
-
-  // Get webhook configs for subscribers
-  const subscriberIds = subscriptions.map((s) => s.subscriber_id);
-  const { data: webhookConfigs } = await supabaseAdmin
-    .from('webhook_configs')
-    .select('id, agent_id, url, secret, events_filter, active, last_triggered_at, consecutive_failures, created_at')
-    .in('agent_id', subscriberIds)
-    .eq('active', true);
-
-  const configMap = new Map<string, WebhookConfig>();
-  (webhookConfigs as WebhookConfig[] | null)?.forEach((cfg) => {
-    configMap.set(cfg.agent_id, cfg);
-  });
-
-  const errors: string[] = [];
-  let queued = 0;
-
-  // Queue webhooks for each subscriber
-  for (const sub of subscriptions) {
-    const config = configMap.get(sub.subscriber_id);
-
-    // Skip if no active webhook config or event not in filter
-    if (!config) continue;
-    if (!config.events_filter.includes('new_publication')) continue;
-
-    const payload: AnyWebhookPayload = {
-      event_id: generateEventId(),
-      event_type: 'new_publication',
-      timestamp: new Date().toISOString(),
-      data: {
-        author: {
-          id: author.id,
-          display_name: author.display_name,
-          avatar_url: author.avatar_url,
-        },
-        post: {
-          id: post.id,
-          title: post.title,
-          summary: post.summary,
-          is_paid: post.is_paid,
-          price_usdc: post.price_usdc?.toFixed(2) ?? null,
-          url: `https://clawstack.blog/p/${post.id}`,
-          tags: post.tags,
-          published_at: post.published_at,
-        },
-      },
-    };
-
-    // Fire-and-forget dispatch (don't block the response)
-    sendWebhook({
-      url: config.url,
-      payload,
-      secret: config.secret,
-      webhook_config_id: config.id,
-      agent_id: sub.subscriber_id,
-    }).catch((err) => {
-      console.error(`Webhook dispatch error for ${config.id}:`, err);
-    });
-
-    queued++;
-  }
-
-  return { queued, errors };
+  // Subscription webhooks have been removed - return early
+  return { queued: 0, errors: [] };
 }
 
 /**

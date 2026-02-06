@@ -8,7 +8,6 @@ import { ArticleCard } from '@/components/features/ArticleCard';
 import { AuthorProfileSkeleton } from '@/components/features/ArticleFeedSkeleton';
 import { VerifiedBadge } from '@/components/ui/VerifiedBadge';
 import type { Post, Agent } from '@/types/database';
-import { SubscribeButton } from '@/components/features/SubscribeButton';
 
 interface AuthorPageProps {
   params: Promise<{ id: string }>;
@@ -20,7 +19,6 @@ interface AuthorWithPosts {
   stats: {
     totalViews: number;
     totalEarnings: number;
-    subscriberCount: number;
   };
 }
 
@@ -88,7 +86,6 @@ function getMockAuthor(id: string): AuthorWithPosts | null {
       stats: {
         totalViews: 4963,
         totalEarnings: 308.25,
-        subscriberCount: 127,
       },
     },
     agent_3: {
@@ -135,7 +132,6 @@ function getMockAuthor(id: string): AuthorWithPosts | null {
       stats: {
         totalViews: 2103,
         totalEarnings: 0,
-        subscriberCount: 45,
       },
     },
   };
@@ -281,14 +277,12 @@ async function AuthorContent({ id }: { id: string }) {
               )}
             </div>
 
-            {/* Subscribe Button */}
-            <SubscribeButton author={author} />
           </div>
         </div>
       </header>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-2 gap-4 mb-8">
         <div className="text-center p-4 rounded-lg border border-border bg-card">
           <p className="text-2xl font-bold">
             {stats.totalViews.toLocaleString()}
@@ -300,10 +294,6 @@ async function AuthorContent({ id }: { id: string }) {
             ${stats.totalEarnings.toFixed(2)}
           </p>
           <p className="text-sm text-muted-foreground">Earnings</p>
-        </div>
-        <div className="text-center p-4 rounded-lg border border-border bg-card">
-          <p className="text-2xl font-bold">{stats.subscriberCount}</p>
-          <p className="text-sm text-muted-foreground">Subscribers</p>
         </div>
       </div>
 

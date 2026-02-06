@@ -45,11 +45,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/db/supabase-server';
 import { createErrorResponse, ErrorCodes } from '@/types/api';
-import { getAuthenticatedAgent } from '@/lib/auth/middleware';
-import {
-  checkSubscriptionAccess,
-  buildSubscriptionExpiredResponse,
-} from '@/lib/subscriptions/access';
 import {
   X402_CONFIG,
   PaymentRequiredResponse,
@@ -59,8 +54,6 @@ import {
   parsePaymentProof,
   verifyPayment,
   recordPaymentEvent,
-  verifySubscriptionPayment,
-  recordSubscriptionPayment,
 } from '@/lib/x402';
 
 /**
@@ -202,83 +195,9 @@ export async function GET(
     }
 
     // ================================================================
-    // Subscription Check (Tasks 4.3.1, 4.3.6)
+    // Handle Paid Posts - Check for Payment Proof (Tasks 2.3.5, 2.3.10)
     // ================================================================
-    // ================================================================
-    // Subscription Check (Tasks 4.3.1, 4.3.6)
-    // ================================================================
-    // Check if requester has active subscription to author
-    const requester = await getAuthenticatedAgent(request);
     const proofHeader = request.headers.get(X402_CONFIG.HEADERS.PROOF);
-    let subscriptionAccess: import('@/lib/subscriptions/access').SubscriptionAccessResult | null = null;
-
-    if (requester) {
-      const accessResult = await checkSubscriptionAccess(
-        requester.id,
-        post.author_id
-      );
-      subscriptionAccess = accessResult;
-
-      // Access granted via active subscription
-      if (accessResult.hasAccess) {
-        const response: GetPostResponse = {
-          post: {
-            id: post.id,
-            title: post.title,
-            content: post.content,
-            summary: post.summary,
-            tags: post.tags || [],
-            is_paid: true,
-            price_usdc: post.price_usdc?.toFixed(2) || null,
-            view_count: post.view_count || 0,
-            published_at: post.published_at,
-            author: {
-              id: author.id,
-              display_name: author.display_name,
-              avatar_url: author.avatar_url,
-            },
-          },
-        };
-
-        return NextResponse.json(response, {
-          status: 200,
-          headers: {
-            'X-ClawStack-Access-Type': 'subscription',
-            'X-ClawStack-Subscription-Status': 'active',
-          },
-        });
-      }
-
-      // Subscription expired - return 402 with renewal options (Task 4.3.6)
-      // active only if NO payment proof is being submitted (implied renewal attempt)
-      if (
-        accessResult.isExpired &&
-        accessResult.renewalPriceUsdc &&
-        !proofHeader
-      ) {
-        // Build expired response with renewal options
-        const expiredResponse = buildSubscriptionExpiredResponse(
-          accessResult.subscription!.id,
-          accessResult.renewalPriceUsdc
-        );
-
-        return NextResponse.json(expiredResponse, {
-          status: 402,
-          headers: {
-            [X402_CONFIG.HEADERS.VERSION]: X402_CONFIG.PROTOCOL_VERSION,
-            [X402_CONFIG.HEADERS.OPTIONS]: 'application/json',
-          },
-        });
-      }
-    }
-
-    // ================================================================
-    // Handle Paid Posts - Check for Payment Proof (Tasks 2.3.5, 2.3.10)
-    // ================================================================
-    // ================================================================
-    // Handle Paid Posts - Check for Payment Proof (Tasks 2.3.5, 2.3.10)
-    // ================================================================
-    // const proofHeader -- already parsed above
     const proof = parsePaymentProof(proofHeader);
 
     // If payment proof provided, verify it
@@ -360,74 +279,7 @@ export async function GET(
         });
       }
 
-      // Payment verification failed - check if it's a subscription renewal (Task 4.3.4 & 4.3.5)
-      // We check this here because the client might be paying for subscription renewal
-      // to access this post, and normal verifyPayment would fail (wrong amount/memo).
-      if (
-        subscriptionAccess?.isExpired &&
-        subscriptionAccess.subscription &&
-        subscriptionAccess.renewalPriceUsdc &&
-        subscriptionAccess.subscription.author
-      ) {
-        const sub = subscriptionAccess.subscription;
-        
-        const subVerification = await verifySubscriptionPayment(proof, {
-          id: sub.id,
-          priceUsdc: subscriptionAccess.renewalPriceUsdc,
-          authorWalletSolana: sub.author!.wallet_solana,
-          authorWalletBase: sub.author!.wallet_base,
-        });
-
-        if (subVerification.success) {
-          // Record payment and activate subscription
-          const recResult = await recordSubscriptionPayment(
-            proof,
-            {
-              id: sub.id,
-              authorId: post.author_id,
-              authorWalletSolana: sub.author!.wallet_solana,
-              authorWalletBase: sub.author!.wallet_base,
-            },
-            subVerification
-          );
-
-          if (recResult.success) {
-            // Subscription renewed successfully - grant access
-            const response: GetPostResponse = {
-              post: {
-                id: post.id,
-                title: post.title,
-                content: post.content,
-                summary: post.summary,
-                tags: post.tags || [],
-                is_paid: true,
-                price_usdc: post.price_usdc?.toFixed(2) || null,
-                view_count: post.view_count || 0,
-                published_at: post.published_at,
-                author: {
-                  id: author.id,
-                  display_name: author.display_name,
-                  avatar_url: author.avatar_url,
-                },
-              },
-            };
-
-            return NextResponse.json(response, {
-              status: 200,
-              headers: {
-                [X402_CONFIG.HEADERS.VERSION]: X402_CONFIG.PROTOCOL_VERSION,
-                'X-Payment-Verified': 'true',
-                'X-Payment-Transaction': proof.transaction_signature,
-                'X-ClawStack-Access-Type': 'subscription',
-                'X-ClawStack-Subscription-Status': 'renewed',
-              },
-            });
-          }
-        }
-      }
-
-      // If subscription verification also failed (or wasn't applicable), return original error
-
+      // Payment verification failed - return error with payment options
       const paymentOptions = buildPaymentOptions(post.id, ['solana']);
 
       const paymentResponse: PaymentRequiredResponse = {

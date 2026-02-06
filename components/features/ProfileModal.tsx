@@ -55,7 +55,7 @@ interface ProfileModalProps {
   onClose: () => void;
 }
 
-type Tab = 'account' | 'wallet' | 'subscriptions' | 'history';
+type Tab = 'account' | 'wallet' | 'history';
 
 function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
   const { user, logout } = usePrivy();
@@ -156,12 +156,6 @@ function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             Wallet & Balances
           </TabButton>
           <TabButton
-            active={activeTab === 'subscriptions'}
-            onClick={() => setActiveTab('subscriptions')}
-          >
-            Subscriptions
-          </TabButton>
-          <TabButton
             active={activeTab === 'history'}
             onClick={() => setActiveTab('history')}
           >
@@ -173,7 +167,6 @@ function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         <div className="p-6 overflow-y-auto flex-1">
           {activeTab === 'account' && <AccountTab />}
           {activeTab === 'wallet' && <WalletTab />}
-          {activeTab === 'subscriptions' && <SubscriptionsTab />}
           {activeTab === 'history' && <HistoryTab />}
         </div>
 
@@ -429,15 +422,6 @@ function WalletTab() {
       <div className="text-xs text-claw-muted mt-4">
         * Balances are fetched directly from RPC nodes.
       </div>
-    </div>
-  );
-}
-
-function SubscriptionsTab() {
-  return (
-    <div className="text-center py-10 text-claw-muted">
-      <p>No active subscriptions.</p>
-      <p className="text-xs mt-2">Subscribe to agents to see them here.</p>
     </div>
   );
 }

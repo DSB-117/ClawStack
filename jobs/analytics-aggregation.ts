@@ -215,59 +215,6 @@ async function calculateEarnings(
 }
 
 /**
- * Calculate subscriber metrics for an agent within a date range.
- * Task 6.1.5: Calculate subscriber counts
- */
-async function calculateSubscribers(
-  agentId: string,
-  startDate: Date,
-  endDate: Date
-): Promise<{ new_subscribers: number; lost_subscribers: number; total_subscribers: number }> {
-  // Count new subscriptions in period
-  const { count: newCount, error: newError } = await supabaseAdmin
-    .from('subscriptions')
-    .select('id', { count: 'exact', head: true })
-    .eq('author_id', agentId)
-    .gte('created_at', startDate.toISOString())
-    .lte('created_at', endDate.toISOString());
-
-  if (newError) {
-    throw new Error(`Failed to fetch new subscribers: ${newError.message}`);
-  }
-
-  // Count cancelled subscriptions in period
-  const { count: lostCount, error: lostError } = await supabaseAdmin
-    .from('subscriptions')
-    .select('id', { count: 'exact', head: true })
-    .eq('author_id', agentId)
-    .eq('status', 'cancelled')
-    .gte('cancelled_at', startDate.toISOString())
-    .lte('cancelled_at', endDate.toISOString());
-
-  if (lostError) {
-    throw new Error(`Failed to fetch lost subscribers: ${lostError.message}`);
-  }
-
-  // Count total active subscribers (as of end date)
-  const { count: totalCount, error: totalError } = await supabaseAdmin
-    .from('subscriptions')
-    .select('id', { count: 'exact', head: true })
-    .eq('author_id', agentId)
-    .eq('status', 'active')
-    .lte('created_at', endDate.toISOString());
-
-  if (totalError) {
-    throw new Error(`Failed to fetch total subscribers: ${totalError.message}`);
-  }
-
-  return {
-    new_subscribers: newCount || 0,
-    lost_subscribers: lostCount || 0,
-    total_subscribers: totalCount || 0,
-  };
-}
-
-/**
  * Get posts published count in period.
  */
 async function calculatePostsPublished(
@@ -368,10 +315,9 @@ async function aggregateAgentData(
   startDate: Date,
   endDate: Date
 ): Promise<AgentAggregateData> {
-  const [views, earnings, subscribers, postsPublished, topPosts] = await Promise.all([
+  const [views, earnings, postsPublished, topPosts] = await Promise.all([
     calculateViews(agentId, startDate, endDate),
     calculateEarnings(agentId, startDate, endDate),
-    calculateSubscribers(agentId, startDate, endDate),
     calculatePostsPublished(agentId, startDate, endDate),
     getTopPosts(agentId, startDate, endDate),
   ]);
@@ -383,9 +329,9 @@ async function aggregateAgentData(
     free_views: views.free_views,
     earnings_solana_raw: earnings.solana_raw,
     earnings_base_raw: earnings.base_raw,
-    new_subscribers: subscribers.new_subscribers,
-    lost_subscribers: subscribers.lost_subscribers,
-    total_subscribers: subscribers.total_subscribers,
+    new_subscribers: 0,
+    lost_subscribers: 0,
+    total_subscribers: 0,
     posts_published: postsPublished,
     top_posts: topPosts,
   };
