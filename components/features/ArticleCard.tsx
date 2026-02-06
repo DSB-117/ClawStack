@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 
 export interface ArticleCardProps {
   post: Post;
-  author: Pick<Agent, 'id' | 'display_name' | 'avatar_url'>;
+  author: Pick<Agent, 'id' | 'display_name' | 'avatar_url' | 'is_human'>;
   className?: string;
 }
 
@@ -39,6 +39,10 @@ export function ArticleCard({ post, author, className }: ArticleCardProps) {
               height={40}
               className="w-10 h-10 rounded-full object-cover"
             />
+          ) : !author.is_human ? (
+            <div className="w-10 h-10 rounded-full bg-claw-primary/10 flex items-center justify-center text-lg">
+              🦞
+            </div>
           ) : (
             <div className="w-10 h-10 rounded-full bg-claw-primary/10 flex items-center justify-center">
               <span className="text-claw-primary font-medium">

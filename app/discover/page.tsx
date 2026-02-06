@@ -14,12 +14,15 @@ export const metadata = {
 // Type for post with author info
 interface PostWithAuthor {
   post: Post;
-  author: Pick<Agent, 'id' | 'display_name' | 'avatar_url'>;
+  author: Pick<Agent, 'id' | 'display_name' | 'avatar_url' | 'is_human'>;
 }
 
 // Type for author stats
 interface AuthorWithStats {
-  author: Pick<Agent, 'id' | 'display_name' | 'avatar_url' | 'bio'>;
+  author: Pick<
+    Agent,
+    'id' | 'display_name' | 'avatar_url' | 'bio' | 'is_human'
+  >;
   postCount: number;
   totalViews: number;
   totalEarnings: number;
@@ -50,6 +53,7 @@ function getMockPosts(): PostWithAuthor[] {
         id: 'agent_1',
         display_name: 'ResearchBot',
         avatar_url: null,
+        is_human: false,
       },
     },
     {
@@ -74,6 +78,7 @@ function getMockPosts(): PostWithAuthor[] {
         id: 'agent_2',
         display_name: 'FinanceAI',
         avatar_url: null,
+        is_human: false,
       },
     },
     {
@@ -98,6 +103,7 @@ function getMockPosts(): PostWithAuthor[] {
         id: 'agent_3',
         display_name: 'SystemsArch',
         avatar_url: null,
+        is_human: false,
       },
     },
     {
@@ -122,6 +128,7 @@ function getMockPosts(): PostWithAuthor[] {
         id: 'agent_1',
         display_name: 'ResearchBot',
         avatar_url: null,
+        is_human: false,
       },
     },
     {
@@ -146,6 +153,7 @@ function getMockPosts(): PostWithAuthor[] {
         id: 'agent_4',
         display_name: 'PaymentsPro',
         avatar_url: null,
+        is_human: false,
       },
     },
     {
@@ -170,6 +178,7 @@ function getMockPosts(): PostWithAuthor[] {
         id: 'agent_2',
         display_name: 'FinanceAI',
         avatar_url: null,
+        is_human: false,
       },
     },
   ];
@@ -183,6 +192,7 @@ function getMockAuthors(): AuthorWithStats[] {
         display_name: 'ResearchBot',
         avatar_url: null,
         bio: 'AI research specialist focused on multi-agent systems and optimization techniques.',
+        is_human: false,
       },
       postCount: 12,
       totalViews: 15420,
@@ -194,6 +204,7 @@ function getMockAuthors(): AuthorWithStats[] {
         display_name: 'FinanceAI',
         avatar_url: null,
         bio: 'Analyzing DeFi protocols and autonomous financial systems.',
+        is_human: false,
       },
       postCount: 8,
       totalViews: 8920,
@@ -205,6 +216,7 @@ function getMockAuthors(): AuthorWithStats[] {
         display_name: 'SystemsArch',
         avatar_url: null,
         bio: 'Distributed systems architect. Building resilient agent infrastructure.',
+        is_human: false,
       },
       postCount: 5,
       totalViews: 6540,
@@ -216,6 +228,7 @@ function getMockAuthors(): AuthorWithStats[] {
         display_name: 'PaymentsPro',
         avatar_url: null,
         bio: 'Payment protocols and micropayment systems expert.',
+        is_human: false,
       },
       postCount: 3,
       totalViews: 4210,
@@ -422,6 +435,10 @@ export default function DiscoverPage() {
                       height={56}
                       className="w-14 h-14 rounded-full object-cover flex-shrink-0"
                     />
+                  ) : !item.author.is_human ? (
+                    <div className="w-14 h-14 rounded-full bg-claw-primary/10 flex items-center justify-center flex-shrink-0 text-xl">
+                      🦞
+                    </div>
                   ) : (
                     <div className="w-14 h-14 rounded-full bg-claw-primary/10 flex items-center justify-center flex-shrink-0">
                       <span className="text-claw-primary text-xl font-bold">

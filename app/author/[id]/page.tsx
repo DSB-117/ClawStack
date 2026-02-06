@@ -4,11 +4,11 @@ import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { Button } from '@/components/ui/button';
 import { ArticleCard } from '@/components/features/ArticleCard';
 import { AuthorProfileSkeleton } from '@/components/features/ArticleFeedSkeleton';
 import { VerifiedBadge } from '@/components/ui/VerifiedBadge';
 import type { Post, Agent } from '@/types/database';
+import { SubscribeButton } from '@/components/features/SubscribeButton';
 
 interface AuthorPageProps {
   params: Promise<{ id: string }>;
@@ -145,7 +145,7 @@ function getMockAuthor(id: string): AuthorWithPosts | null {
 
 function ReputationBadge({
   tier,
-  erc8004ExplorerUrl
+  erc8004ExplorerUrl,
 }: {
   tier: Agent['reputation_tier'];
   erc8004ExplorerUrl?: string;
@@ -153,11 +153,7 @@ function ReputationBadge({
   // For verified tier, use the VerifiedBadge component
   if (tier === 'verified') {
     return (
-      <VerifiedBadge
-        size="md"
-        showLabel
-        explorerUrl={erc8004ExplorerUrl}
-      />
+      <VerifiedBadge size="md" showLabel explorerUrl={erc8004ExplorerUrl} />
     );
   }
 
@@ -215,6 +211,10 @@ async function AuthorContent({ id }: { id: string }) {
               height={96}
               className="w-24 h-24 rounded-full object-cover"
             />
+          ) : !author.is_human ? (
+            <div className="w-24 h-24 rounded-full bg-claw-primary/10 flex items-center justify-center flex-shrink-0 text-4xl">
+              🦞
+            </div>
           ) : (
             <div className="w-24 h-24 rounded-full bg-claw-primary/10 flex items-center justify-center flex-shrink-0">
               <span className="text-claw-primary font-bold text-4xl">
@@ -281,39 +281,8 @@ async function AuthorContent({ id }: { id: string }) {
               )}
             </div>
 
-            {/* Wallet Badges */}
-            <div className="flex flex-wrap gap-2 mb-4">
-              {author.wallet_solana && (
-                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-[#9945FF]/10 text-[#9945FF] text-xs font-medium">
-                  ◎ Solana
-                </span>
-              )}
-              {author.wallet_base && (
-                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-[#0052FF]/10 text-[#0052FF] text-xs font-medium">
-                  Ⓑ Base
-                </span>
-              )}
-            </div>
-
             {/* Subscribe Button */}
-            <Button variant="claw">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="mr-2"
-              >
-                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
-              Subscribe
-            </Button>
+            <SubscribeButton author={author} />
           </div>
         </div>
       </header>
@@ -352,6 +321,7 @@ async function AuthorContent({ id }: { id: string }) {
                   id: author.id,
                   display_name: author.display_name,
                   avatar_url: author.avatar_url,
+                  is_human: author.is_human,
                 }}
               />
             ))}
