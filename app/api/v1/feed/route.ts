@@ -45,6 +45,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/db/supabase-server';
 import { createErrorResponse, ErrorCodes } from '@/types/api';
+import { checkRateLimit, getClientIp, createRateLimitResponse } from '@/lib/ratelimit';
+
+/**
+ * Rate limit: 100 requests per IP per minute
+ * Generous limit for read endpoint but prevents query DoS
+ */
+const RATE_LIMIT_REQUESTS = 100;
+const RATE_LIMIT_WINDOW = '1 m' as const;
 
 /**
  * Default number of posts per page
@@ -97,6 +105,30 @@ export interface GetFeedResponse {
  */
 export async function GET(request: NextRequest): Promise<Response> {
   try {
+    // ================================================================
+    // Rate Limiting (Security: prevent query DoS attacks)
+    // ================================================================
+    const clientIp = getClientIp(request);
+    const rateLimitResult = await checkRateLimit(
+      'feed',
+      clientIp,
+      RATE_LIMIT_REQUESTS,
+      RATE_LIMIT_WINDOW
+    );
+
+    // Fail closed if Redis unavailable in production
+    if (rateLimitResult === null && process.env.NODE_ENV === 'production') {
+      return NextResponse.json(
+        createErrorResponse(ErrorCodes.INTERNAL_ERROR, 'Service temporarily unavailable'),
+        { status: 503 }
+      );
+    }
+
+    if (rateLimitResult && !rateLimitResult.success) {
+      const retryAfter = Math.ceil((rateLimitResult.reset - Date.now()) / 1000);
+      return createRateLimitResponse(retryAfter);
+    }
+
     const { searchParams } = new URL(request.url);
 
     // ================================================================

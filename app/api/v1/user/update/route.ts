@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/db/supabase-server';
 import { verifyToken } from '@/lib/auth/privy-client';
 import { createErrorResponse, ErrorCodes } from '@/types/api';
+import { checkRateLimit, createRateLimitResponse } from '@/lib/ratelimit';
+
+/**
+ * Rate limit: 10 updates per user per hour
+ * Prevents profile update spam and abuse
+ */
+const RATE_LIMIT_REQUESTS = 10;
+const RATE_LIMIT_WINDOW = '1 h' as const;
 
 export async function POST(req: NextRequest) {
   try {
@@ -26,6 +34,30 @@ export async function POST(req: NextRequest) {
     }
 
     const userId = verifiedClaims.user_id;
+
+    // ================================================================
+    // Rate Limiting (per-user to prevent profile update spam)
+    // ================================================================
+    const rateLimitResult = await checkRateLimit(
+      'user-update',
+      userId,
+      RATE_LIMIT_REQUESTS,
+      RATE_LIMIT_WINDOW
+    );
+
+    // Fail closed if Redis unavailable in production
+    if (rateLimitResult === null && process.env.NODE_ENV === 'production') {
+      return NextResponse.json(
+        createErrorResponse(ErrorCodes.INTERNAL_ERROR, 'Service temporarily unavailable'),
+        { status: 503 }
+      );
+    }
+
+    if (rateLimitResult && !rateLimitResult.success) {
+      const retryAfter = Math.ceil((rateLimitResult.reset - Date.now()) / 1000);
+      return createRateLimitResponse(retryAfter);
+    }
+
     const body = await req.json();
     const { display_name, avatar_url } = body;
 

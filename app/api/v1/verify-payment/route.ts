@@ -12,6 +12,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { timingSafeEqual } from 'crypto';
 import {
   verifyPayment,
   type PaymentProof,
@@ -42,6 +43,7 @@ const verifyPaymentSchema = z.object({
 /**
  * Verify admin/internal authentication.
  * Checks for a valid admin token in the Authorization header.
+ * Uses timing-safe comparison to prevent timing attacks.
  */
 function verifyAdminAuth(request: NextRequest): boolean {
   const authHeader = request.headers.get('Authorization');
@@ -60,7 +62,19 @@ function verifyAdminAuth(request: NextRequest): boolean {
     return false;
   }
 
-  return token === adminToken;
+  // Use timing-safe comparison to prevent timing attacks
+  // If lengths differ, we still do a comparison to avoid leaking length info
+  const tokenBuffer = Buffer.from(token);
+  const adminBuffer = Buffer.from(adminToken);
+
+  // Constant-time length check + comparison
+  if (tokenBuffer.length !== adminBuffer.length) {
+    // Compare against itself to maintain constant time, then return false
+    timingSafeEqual(adminBuffer, adminBuffer);
+    return false;
+  }
+
+  return timingSafeEqual(tokenBuffer, adminBuffer);
 }
 
 // ============================================

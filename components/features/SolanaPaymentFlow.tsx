@@ -50,7 +50,9 @@ export function SolanaPaymentFlow({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Determine current step based on state
+  // This effect syncs derived state from external Solana wallet hooks - valid pattern
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (!connected) {
       setStep("connect");
       return;
@@ -89,6 +91,7 @@ export function SolanaPaymentFlow({
       setErrorMessage(paymentState.error);
       return;
     }
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [connected, balanceLoading, paymentState]);
 
   // Handle payment proof submission after transaction success

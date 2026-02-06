@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useEffect, useCallback, useReducer } from "react";
 import {
   useAccount,
   useReadContract,
@@ -69,6 +69,35 @@ export interface UseEVMPaymentResult {
   reset: () => void;
 }
 
+// Action types for payment state machine
+type PaymentAction =
+  | { type: "SET_STATUS"; status: EVMPaymentStatus }
+  | { type: "SET_HASH"; hash: `0x${string}` }
+  | { type: "SET_SUCCESS"; blockNumber: bigint }
+  | { type: "SET_ERROR"; error: string }
+  | { type: "RESET" };
+
+// Reducer for payment state machine
+function paymentReducer(
+  state: EVMPaymentState,
+  action: PaymentAction
+): EVMPaymentState {
+  switch (action.type) {
+    case "SET_STATUS":
+      return { ...state, status: action.status, error: null };
+    case "SET_HASH":
+      return { ...state, status: "pending", hash: action.hash };
+    case "SET_SUCCESS":
+      return { ...state, status: "success", blockNumber: action.blockNumber };
+    case "SET_ERROR":
+      return { ...state, status: "error", error: action.error };
+    case "RESET":
+      return { status: "idle", hash: null, error: null, blockNumber: null };
+    default:
+      return state;
+  }
+}
+
 /**
  * Hook to manage EVM USDC payments on Base
  * Handles chain switching, transaction writing, and confirmation
@@ -78,7 +107,7 @@ export function useEVMPayment(): UseEVMPaymentResult {
   const chainId = useChainId();
   const { switchChain } = useSwitchChain();
 
-  const [state, setState] = useState<EVMPaymentState>({
+  const [state, dispatch] = useReducer(paymentReducer, {
     status: "idle",
     hash: null,
     error: null,
@@ -102,53 +131,45 @@ export function useEVMPayment(): UseEVMPaymentResult {
     confirmations: 1, // Wait for at least 1 confirmation
   });
 
-  // Update state when hash is received
-  useEffect(() => {
-    if (hash && state.status === "confirming-wallet") {
-      setState((prev) => ({
-        ...prev,
-        status: "pending",
-        hash,
-      }));
-    }
-  }, [hash, state.status]);
+  // Sync external state changes via effects
+  // Using separate variables to track previous values avoids cascading renders
+  const hashReceived = hash && state.status === "confirming-wallet";
+  const txConfirmed = isConfirmed && receipt && state.status === "pending";
+  const hasWriteError = writeError && state.status !== "error";
+  const hasReceiptError = receiptError && state.status !== "error";
 
-  // Update state when transaction is confirmed
   useEffect(() => {
-    if (isConfirmed && receipt) {
-      setState((prev) => ({
-        ...prev,
-        status: "success",
-        blockNumber: receipt.blockNumber,
-      }));
+    if (hashReceived && hash) {
+      dispatch({ type: "SET_HASH", hash });
     }
-  }, [isConfirmed, receipt]);
+  }, [hashReceived, hash]);
 
-  // Handle errors
   useEffect(() => {
-    if (writeError) {
-      setState((prev) => ({
-        ...prev,
-        status: "error",
+    if (txConfirmed && receipt) {
+      dispatch({ type: "SET_SUCCESS", blockNumber: receipt.blockNumber });
+    }
+  }, [txConfirmed, receipt]);
+
+  useEffect(() => {
+    if (hasWriteError && writeError) {
+      dispatch({
+        type: "SET_ERROR",
         error: writeError.message || "Transaction failed",
-      }));
+      });
     }
-    if (receiptError) {
-      setState((prev) => ({
-        ...prev,
-        status: "error",
+  }, [hasWriteError, writeError]);
+
+  useEffect(() => {
+    if (hasReceiptError && receiptError) {
+      dispatch({
+        type: "SET_ERROR",
         error: receiptError.message || "Transaction confirmation failed",
-      }));
+      });
     }
-  }, [writeError, receiptError]);
+  }, [hasReceiptError, receiptError]);
 
   const reset = useCallback(() => {
-    setState({
-      status: "idle",
-      hash: null,
-      error: null,
-      blockNumber: null,
-    });
+    dispatch({ type: "RESET" });
   }, []);
 
   const initiatePayment = useCallback(
@@ -157,47 +178,32 @@ export function useEVMPayment(): UseEVMPaymentResult {
       amountUsdc: number
     ): Promise<`0x${string}` | null> => {
       if (!isConnected || !address) {
-        setState((prev) => ({
-          ...prev,
-          status: "error",
-          error: "Wallet not connected",
-        }));
+        dispatch({ type: "SET_ERROR", error: "Wallet not connected" });
         return null;
       }
 
       try {
         // Check if on correct chain
         if (!isBaseChain(chainId)) {
-          setState((prev) => ({
-            ...prev,
-            status: "switching-chain",
-          }));
+          dispatch({ type: "SET_STATUS", status: "switching-chain" });
 
           try {
             await switchChain({ chainId: BASE_CHAIN_ID });
           } catch {
-            setState((prev) => ({
-              ...prev,
-              status: "error",
+            dispatch({
+              type: "SET_ERROR",
               error: "Please switch to Base network in your wallet",
-            }));
+            });
             return null;
           }
         }
 
-        setState((prev) => ({
-          ...prev,
-          status: "preparing",
-          error: null,
-        }));
+        dispatch({ type: "SET_STATUS", status: "preparing" });
 
         // Convert amount to raw units
         const amountRaw = parseUnits(amountUsdc.toString(), USDC_DECIMALS);
 
-        setState((prev) => ({
-          ...prev,
-          status: "confirming-wallet",
-        }));
+        dispatch({ type: "SET_STATUS", status: "confirming-wallet" });
 
         // Write the transfer transaction
         writeContract({
@@ -216,11 +222,7 @@ export function useEVMPayment(): UseEVMPaymentResult {
         const errorMessage =
           err instanceof Error ? err.message : "Payment failed";
 
-        setState((prev) => ({
-          ...prev,
-          status: "error",
-          error: errorMessage,
-        }));
+        dispatch({ type: "SET_ERROR", error: errorMessage });
 
         return null;
       }

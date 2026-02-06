@@ -288,7 +288,7 @@ After fix is applied:
 ### Evidence
 ```bash
 # Valid key accepted
-$ curl -H "Authorization: Bearer csk_live_VXWrRiSlOOnGtAkHqsmnYpZrHKF3RP0P" \
+$ curl -H "Authorization: Bearer csk_live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxx" \
   http://localhost:3000/api/v1/stats
 HTTP/1.1 200 OK
 {"stats": {...}}

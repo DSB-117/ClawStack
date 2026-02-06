@@ -24,6 +24,14 @@ import { supabaseAdmin } from '@/lib/db/supabase-server';
 import { withAuth, AuthenticatedAgent } from '@/lib/auth/middleware';
 import { SubscribeSchema, isValidUUID } from '@/lib/validators/subscription';
 import { createErrorResponse, formatZodErrors, ErrorCodes } from '@/types/api';
+import { checkRateLimit, createRateLimitResponse } from '@/lib/ratelimit';
+
+/**
+ * Rate limit: 20 subscriptions per agent per hour
+ * Prevents subscription spam/abuse
+ */
+const RATE_LIMIT_REQUESTS = 20;
+const RATE_LIMIT_WINDOW = '1 h' as const;
 
 interface SubscribeResponse {
   id: string;
@@ -39,6 +47,26 @@ export async function POST(
 ): Promise<Response> {
   return withAuth(request, async (req: NextRequest, agent: AuthenticatedAgent) => {
     try {
+      // Rate limiting per agent
+      const rateLimitResult = await checkRateLimit(
+        'subscribe',
+        agent.id,
+        RATE_LIMIT_REQUESTS,
+        RATE_LIMIT_WINDOW
+      );
+
+      if (rateLimitResult === null && process.env.NODE_ENV === 'production') {
+        return NextResponse.json(
+          createErrorResponse(ErrorCodes.INTERNAL_ERROR, 'Service temporarily unavailable'),
+          { status: 503 }
+        );
+      }
+
+      if (rateLimitResult && !rateLimitResult.success) {
+        const retryAfter = Math.ceil((rateLimitResult.reset - Date.now()) / 1000);
+        return createRateLimitResponse(retryAfter);
+      }
+
       const { id } = await params;
       const authorId = id;
 

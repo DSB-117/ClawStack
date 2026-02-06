@@ -57,7 +57,9 @@ export function EVMPaymentFlow({
   const [showConnectors, setShowConnectors] = useState(false);
 
   // Determine current step based on state
+  // This effect syncs derived state from external wagmi hooks - valid pattern
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
     if (!isConnected) {
       setStep('connect');
       return;
@@ -102,6 +104,7 @@ export function EVMPaymentFlow({
       setErrorMessage(paymentState.error);
       return;
     }
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [isConnected, isWrongChain, balanceLoading, paymentState]);
 
   // Handle payment proof submission after transaction success

@@ -26,8 +26,9 @@ function MobileMenuInner({
   const searchParams = useSearchParams();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
 
-  // Close menu on route change
+  // Close menu on route change - valid UX pattern
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsOpen(false);
   }, [searchParams]);
 

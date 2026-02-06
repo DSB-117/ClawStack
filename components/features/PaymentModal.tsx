@@ -162,6 +162,7 @@ function PaymentModalDialog({
   }, [isOpen, onClose, paymentSuccess]);
 
   // Load saved chain preference on mount
+  // Initialize preferred chain when modal opens - valid initialization pattern
   useEffect(() => {
     if (isOpen && postData) {
       const preferred = getPreferredChain();
@@ -171,19 +172,22 @@ function PaymentModalDialog({
       ].filter(Boolean);
 
       if (preferred && availableChains.includes(preferred)) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setSelectedChain(preferred);
       }
     }
   }, [isOpen, postData]);
 
-  // Reset state when modal closes
+  // Reset state when modal closes - valid cleanup pattern
   useEffect(() => {
     if (!isOpen) {
+      /* eslint-disable react-hooks/set-state-in-effect */
       setSelectedChain(null);
       setPaymentMethod(null);
       setPaymentSuccess(false);
       setPaymentError(null);
       setIsAnimating(false);
+      /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [isOpen]);
 

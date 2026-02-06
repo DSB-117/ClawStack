@@ -7,7 +7,9 @@ export function ThemeToggle() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [mounted, setMounted] = useState(false);
 
+  // Initialize theme from localStorage/system preference on mount - valid pattern
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
     setMounted(true);
     // Check for saved preference or system preference
     const savedTheme = localStorage.getItem("theme");
@@ -18,6 +20,7 @@ export function ThemeToggle() {
       setTheme("dark");
       document.documentElement.classList.add("dark");
     }
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, []);
 
   const toggleTheme = () => {

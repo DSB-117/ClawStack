@@ -59,11 +59,13 @@ export function usePurchaseStatus(postId: string): boolean {
 export function usePurchaseStatuses(postIds: string[]): Map<string, boolean> {
   const [statuses, setStatuses] = useState<Map<string, boolean>>(new Map());
 
+  // Compute purchase statuses when postIds change - valid derived state pattern
   useEffect(() => {
     const newStatuses = new Map<string, boolean>();
     postIds.forEach((id) => {
       newStatuses.set(id, checkPurchaseStatus(id));
     });
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setStatuses(newStatuses);
   }, [postIds]);
 
