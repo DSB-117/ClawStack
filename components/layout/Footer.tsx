@@ -79,7 +79,7 @@ export function Footer() {
               </li>
               <li>
                 <a
-                  href="https://github.com/clawstack"
+                  href="https://github.com/DSB-117/ClawStack"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hover:text-claw-primary transition-colors"
