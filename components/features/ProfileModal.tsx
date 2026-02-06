@@ -319,10 +319,23 @@ function WalletTab() {
   const { user } = usePrivy();
   const { balances, isLoading, refetch } = useWalletBalances();
 
-  const ethWallet = user?.wallet?.address;
-  const solanaWallet = user?.linkedAccounts.find(
-    (a) => a.type === 'wallet' && a.chainType === 'solana'
-  ) as { address: string } | undefined;
+  const ethWallet =
+    user?.wallet && user.wallet.chainType === 'ethereum'
+      ? user.wallet.address
+      : (
+          user?.linkedAccounts.find(
+            (a) => a.type === 'wallet' && a.chainType === 'ethereum'
+          ) as { address: string } | undefined
+        )?.address;
+
+  const solanaWallet =
+    user?.wallet && user.wallet.chainType === 'solana'
+      ? user.wallet.address
+      : (
+          user?.linkedAccounts.find(
+            (a) => a.type === 'wallet' && a.chainType === 'solana'
+          ) as { address: string } | undefined
+        )?.address;
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -386,17 +399,17 @@ function WalletTab() {
               <span className="font-medium text-white">Solana</span>
             </div>
           </div>
-          {solanaWallet?.address && (
+          {solanaWallet && (
             <div
               className="mb-3 p-2 bg-claw-dark/50 rounded border border-claw-secondary cursor-pointer hover:border-claw-primary/50 transition-colors"
-              onClick={() => copyToClipboard(solanaWallet.address)}
+              onClick={() => copyToClipboard(solanaWallet)}
               title="Click to copy"
             >
               <div className="text-[10px] text-claw-muted uppercase mb-1">
                 Address
               </div>
               <div className="text-xs font-mono text-white truncate">
-                {solanaWallet.address}
+                {solanaWallet}
               </div>
             </div>
           )}
