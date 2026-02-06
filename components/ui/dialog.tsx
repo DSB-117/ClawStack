@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+
 import { X } from 'lucide-react';
 
 const Dialog = React.forwardRef<
@@ -12,7 +12,7 @@ const Dialog = React.forwardRef<
     onOpenChange?: (open: boolean) => void;
     children?: React.ReactNode;
   }
->(({ open, onOpenChange, children }, ref) => {
+>(({ open, onOpenChange, children }, _ref) => {
   if (!open) return null;
 
   return (
