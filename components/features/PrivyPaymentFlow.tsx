@@ -2,7 +2,10 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { usePrivy, useSendTransaction } from '@privy-io/react-auth';
-import { useWallets as useSolanaWallets, useSignAndSendTransaction } from '@privy-io/react-auth/solana';
+import {
+  useWallets as useSolanaWallets,
+  useSignAndSendTransaction,
+} from '@privy-io/react-auth/solana';
 import { Button } from '@/components/ui/button';
 import {
   createPaymentProof,
@@ -14,7 +17,7 @@ import {
   submitEVMPaymentProof,
   storeEVMPaymentProof,
 } from '@/lib/evm/payment-proof';
-import { Connection, PublicKey, Transaction, SystemProgram } from '@solana/web3.js';
+import { Connection, PublicKey, Transaction } from '@solana/web3.js';
 import {
   getAssociatedTokenAddress,
   createTransferInstruction,
@@ -23,7 +26,9 @@ import {
 import { parseUnits, encodeFunctionData } from 'viem';
 
 // USDC Constants
-const SOLANA_USDC_MINT = new PublicKey('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v');
+const SOLANA_USDC_MINT = new PublicKey(
+  'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
+);
 const BASE_USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 const USDC_DECIMALS = 6;
 
@@ -125,10 +130,14 @@ export function PrivyPaymentFlow({
           const rpcUrl = `${window.location.origin}/api/rpc/solana`;
           const connection = new Connection(rpcUrl, 'confirmed');
           const pubKey = new PublicKey(walletAddress);
-          const usdcAta = await getAssociatedTokenAddress(SOLANA_USDC_MINT, pubKey);
+          const usdcAta = await getAssociatedTokenAddress(
+            SOLANA_USDC_MINT,
+            pubKey
+          );
 
           try {
-            const accountInfo = await connection.getTokenAccountBalance(usdcAta);
+            const accountInfo =
+              await connection.getTokenAccountBalance(usdcAta);
             setBalance(Number(accountInfo.value.uiAmount) || 0);
           } catch {
             // No USDC account
@@ -207,15 +216,23 @@ export function PrivyPaymentFlow({
       // Get a Solana wallet from Privy
       const privyWallet = solanaWallets.find((w) => w.address);
       if (!privyWallet) {
-        throw new Error('Solana wallet not found. Please ensure you have a Solana wallet connected.');
+        throw new Error(
+          'Solana wallet not found. Please ensure you have a Solana wallet connected.'
+        );
       }
 
       // Create USDC transfer instruction
       const senderPubkey = new PublicKey(walletAddress);
       const recipientPubkey = new PublicKey(recipientAddress);
 
-      const senderAta = await getAssociatedTokenAddress(SOLANA_USDC_MINT, senderPubkey);
-      const recipientAta = await getAssociatedTokenAddress(SOLANA_USDC_MINT, recipientPubkey);
+      const senderAta = await getAssociatedTokenAddress(
+        SOLANA_USDC_MINT,
+        senderPubkey
+      );
+      const recipientAta = await getAssociatedTokenAddress(
+        SOLANA_USDC_MINT,
+        recipientPubkey
+      );
 
       const amount = Math.floor(priceUsdc * 10 ** USDC_DECIMALS);
 
@@ -232,10 +249,13 @@ export function PrivyPaymentFlow({
       const memoIx = {
         keys: [],
         programId: new PublicKey('MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr'),
-        data: Buffer.from(`clawstack:${postId}:${Math.floor(Date.now() / 1000)}`),
+        data: Buffer.from(
+          `clawstack:${postId}:${Math.floor(Date.now() / 1000)}`
+        ),
       };
 
-      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+      const { blockhash, lastValidBlockHeight } =
+        await connection.getLatestBlockhash();
 
       const transaction = new Transaction({
         feePayer: senderPubkey,
@@ -256,7 +276,6 @@ export function PrivyPaymentFlow({
         wallet: privyWallet,
       });
 
-      const signature = Buffer.from(result.signature).toString('base64');
       // Convert to hex for Solana explorer
       const signatureHex = Buffer.from(result.signature).toString('hex');
       setTxSignature(signatureHex);
@@ -277,10 +296,21 @@ export function PrivyPaymentFlow({
     } catch (error) {
       console.error('Solana payment error:', error);
       setStep('error');
-      setErrorMessage(error instanceof Error ? error.message : 'Payment failed');
+      setErrorMessage(
+        error instanceof Error ? error.message : 'Payment failed'
+      );
       onError(error instanceof Error ? error.message : 'Payment failed');
     }
-  }, [walletAddress, recipientAddress, priceUsdc, postId, solanaWallets, signAndSendTransaction, onSuccess, onError]);
+  }, [
+    walletAddress,
+    recipientAddress,
+    priceUsdc,
+    postId,
+    solanaWallets,
+    signAndSendTransaction,
+    onSuccess,
+    onError,
+  ]);
 
   // Handle Base/EVM payment
   const handleEVMPayment = useCallback(async () => {
@@ -326,10 +356,20 @@ export function PrivyPaymentFlow({
     } catch (error) {
       console.error('EVM payment error:', error);
       setStep('error');
-      setErrorMessage(error instanceof Error ? error.message : 'Payment failed');
+      setErrorMessage(
+        error instanceof Error ? error.message : 'Payment failed'
+      );
       onError(error instanceof Error ? error.message : 'Payment failed');
     }
-  }, [walletAddress, recipientAddress, priceUsdc, postId, sendTransaction, onSuccess, onError]);
+  }, [
+    walletAddress,
+    recipientAddress,
+    priceUsdc,
+    postId,
+    sendTransaction,
+    onSuccess,
+    onError,
+  ]);
 
   const handlePay = useCallback(() => {
     if (balance < priceUsdc) {
@@ -360,12 +400,16 @@ export function PrivyPaymentFlow({
       <div className="flex items-center justify-center gap-2 mb-6">
         {['verify', 'pay', 'confirm'].map((s, i) => {
           const isActive =
-            (s === 'verify' && ['checking-wallet', 'check-balance'].includes(step)) ||
+            (s === 'verify' &&
+              ['checking-wallet', 'check-balance'].includes(step)) ||
             (s === 'pay' && ['ready', 'paying'].includes(step)) ||
-            (s === 'confirm' && ['confirming', 'submitting', 'success'].includes(step));
+            (s === 'confirm' &&
+              ['confirming', 'submitting', 'success'].includes(step));
           const isComplete =
-            (s === 'verify' && !['checking-wallet', 'check-balance'].includes(step)) ||
-            (s === 'pay' && ['confirming', 'submitting', 'success'].includes(step)) ||
+            (s === 'verify' &&
+              !['checking-wallet', 'check-balance'].includes(step)) ||
+            (s === 'pay' &&
+              ['confirming', 'submitting', 'success'].includes(step)) ||
             (s === 'confirm' && step === 'success');
 
           return (
@@ -383,7 +427,9 @@ export function PrivyPaymentFlow({
                       ? 'text-white'
                       : 'bg-muted text-muted-foreground'
                 }`}
-                style={isActive && !isComplete ? { backgroundColor: chainColor } : {}}
+                style={
+                  isActive && !isComplete ? { backgroundColor: chainColor } : {}
+                }
               >
                 {isComplete ? '✓' : i + 1}
               </div>
@@ -424,7 +470,9 @@ export function PrivyPaymentFlow({
       {step === 'check-balance' && (
         <div className="text-center space-y-4">
           <LoadingSpinner color={chainColor} />
-          <p className="text-sm text-muted-foreground">Checking your USDC balance...</p>
+          <p className="text-sm text-muted-foreground">
+            Checking your USDC balance...
+          </p>
         </div>
       )}
 
@@ -433,7 +481,9 @@ export function PrivyPaymentFlow({
         <div className="space-y-4">
           <div className="p-4 rounded-lg bg-muted/50">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-muted-foreground">Your Balance</span>
+              <span className="text-sm text-muted-foreground">
+                Your Balance
+              </span>
               <span className="font-medium">${balance.toFixed(2)} USDC</span>
             </div>
             <div className="flex justify-between items-center">
@@ -446,7 +496,8 @@ export function PrivyPaymentFlow({
 
           {!canAfford && (
             <div className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm">
-              Insufficient balance. You need ${(priceUsdc - balance).toFixed(2)} more USDC.
+              Insufficient balance. You need ${(priceUsdc - balance).toFixed(2)}{' '}
+              more USDC.
             </div>
           )}
 
@@ -465,7 +516,9 @@ export function PrivyPaymentFlow({
       {step === 'paying' && (
         <div className="text-center space-y-4">
           <LoadingSpinner color={chainColor} />
-          <p className="text-sm text-muted-foreground">Preparing transaction...</p>
+          <p className="text-sm text-muted-foreground">
+            Preparing transaction...
+          </p>
         </div>
       )}
 
@@ -523,7 +576,9 @@ export function PrivyPaymentFlow({
             </svg>
           </div>
           <p className="font-medium">Payment successful!</p>
-          <p className="text-sm text-muted-foreground">Content is now unlocked.</p>
+          <p className="text-sm text-muted-foreground">
+            Content is now unlocked.
+          </p>
         </div>
       )}
 
