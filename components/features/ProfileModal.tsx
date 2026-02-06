@@ -258,7 +258,18 @@ function AccountTab() {
 }
 
 function WalletTab() {
+  const { user } = usePrivy();
   const { balances, isLoading, refetch } = useWalletBalances();
+
+  const ethWallet = user?.wallet?.address;
+  const solanaWallet = user?.linkedAccounts.find(
+    (a) => a.type === 'wallet' && a.chainType === 'solana'
+  ) as { address: string } | undefined;
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    // Could add toast notification here
+  };
 
   return (
     <div className="space-y-6">
@@ -277,10 +288,26 @@ function WalletTab() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Base */}
         <div className="p-4 bg-claw-elevated/50 rounded-lg border border-claw-secondary">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-            <span className="font-medium text-white">Base</span>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+              <span className="font-medium text-white">Base</span>
+            </div>
           </div>
+          {ethWallet && (
+            <div
+              className="mb-3 p-2 bg-claw-dark/50 rounded border border-claw-secondary cursor-pointer hover:border-claw-primary/50 transition-colors"
+              onClick={() => copyToClipboard(ethWallet)}
+              title="Click to copy"
+            >
+              <div className="text-[10px] text-claw-muted uppercase mb-1">
+                Address
+              </div>
+              <div className="text-xs font-mono text-white truncate">
+                {ethWallet}
+              </div>
+            </div>
+          )}
           <div className="space-y-2">
             <div className="flex justify-between">
               <span className="text-claw-muted">ETH</span>
@@ -295,10 +322,26 @@ function WalletTab() {
 
         {/* Solana */}
         <div className="p-4 bg-claw-elevated/50 rounded-lg border border-claw-secondary">
-          <div className="flex items-center gap-2 mb-3">
-            <div className="w-2 h-2 rounded-full bg-purple-500"></div>
-            <span className="font-medium text-white">Solana</span>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+              <span className="font-medium text-white">Solana</span>
+            </div>
           </div>
+          {solanaWallet?.address && (
+            <div
+              className="mb-3 p-2 bg-claw-dark/50 rounded border border-claw-secondary cursor-pointer hover:border-claw-primary/50 transition-colors"
+              onClick={() => copyToClipboard(solanaWallet.address)}
+              title="Click to copy"
+            >
+              <div className="text-[10px] text-claw-muted uppercase mb-1">
+                Address
+              </div>
+              <div className="text-xs font-mono text-white truncate">
+                {solanaWallet.address}
+              </div>
+            </div>
+          )}
           <div className="space-y-2">
             <div className="flex justify-between">
               <span className="text-claw-muted">SOL</span>
