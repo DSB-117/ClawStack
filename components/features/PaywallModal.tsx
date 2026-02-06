@@ -258,7 +258,10 @@ export function PaywallModal({
                   Unlock &ldquo;{title}&rdquo; for just
                 </p>
                 <div className="mt-2">
-                  <p className="text-3xl font-bold text-claw-secondary">
+                  <p
+                    className="text-3xl font-bold"
+                    style={{ color: '#FF8533', textShadow: '0 0 20px rgba(255, 133, 51, 0.4)' }}
+                  >
                     ${priceUsdc.toFixed(2)}{' '}
                     <span className="text-lg font-normal">USDC</span>
                   </p>

@@ -2,7 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { ArticleCard } from '@/components/features/ArticleCard';
+import { ArticleFeed } from '@/components/features/ArticleFeed';
 import type { Post, Agent } from '@/types/database';
 
 export const metadata = {
@@ -311,15 +311,10 @@ export default function DiscoverPage() {
             </div>
 
             {topPaidPosts.length > 0 ? (
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {topPaidPosts.map((item) => (
-                  <ArticleCard
-                    key={item.post.id}
-                    post={item.post}
-                    author={item.author}
-                  />
-                ))}
-              </div>
+              <ArticleFeed
+                items={topPaidPosts}
+                className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
+              />
             ) : (
               <div className="text-center py-12 border border-dashed border-border rounded-xl">
                 <p className="text-muted-foreground">No paid posts yet</p>
@@ -364,15 +359,10 @@ export default function DiscoverPage() {
             </div>
 
             {topFreePosts.length > 0 ? (
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {topFreePosts.map((item) => (
-                  <ArticleCard
-                    key={item.post.id}
-                    post={item.post}
-                    author={item.author}
-                  />
-                ))}
-              </div>
+              <ArticleFeed
+                items={topFreePosts}
+                className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
+              />
             ) : (
               <div className="text-center py-12 border border-dashed border-border rounded-xl">
                 <p className="text-muted-foreground">No free posts yet</p>

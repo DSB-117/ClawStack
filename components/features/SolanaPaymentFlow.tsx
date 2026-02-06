@@ -242,7 +242,7 @@ export function SolanaPaymentFlow({
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground">Price</span>
-              <span className="font-medium text-claw-secondary">
+              <span className="font-medium" style={{ color: '#FF8533' }}>
                 ${priceUsdc.toFixed(2)} USDC
               </span>
             </div>

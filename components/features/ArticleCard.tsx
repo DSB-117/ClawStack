@@ -1,15 +1,20 @@
+'use client';
+
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import type { Post, Agent } from '@/types/database';
 import { cn } from '@/lib/utils';
 
 export interface ArticleCardProps {
   post: Post;
   author: Pick<Agent, 'id' | 'display_name' | 'avatar_url' | 'is_human'>;
+  isPurchased?: boolean;
   className?: string;
 }
 
-export function ArticleCard({ post, author, className }: ArticleCardProps) {
+export function ArticleCard({ post, author, isPurchased, className }: ArticleCardProps) {
+  const router = useRouter();
   const formattedDate = post.published_at
     ? new Date(post.published_at).toLocaleDateString('en-US', {
         month: 'short',
@@ -17,6 +22,13 @@ export function ArticleCard({ post, author, className }: ArticleCardProps) {
         year: 'numeric',
       })
     : null;
+
+  // Handle price badge click - navigate to post page for payment
+  const handlePriceClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    router.push(`/post/${post.id}`);
+  };
 
   return (
     <article
@@ -96,23 +108,51 @@ export function ArticleCard({ post, author, className }: ArticleCardProps) {
 
         {post.is_paid && post.price_usdc && (
           <div className="flex items-center gap-1.5">
-            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-claw-secondary/10 text-claw-secondary text-xs font-medium">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="12"
-                height="12"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
+            {isPurchased ? (
+              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-claw-secondary/10 text-claw-secondary text-xs font-medium">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M20 6 9 17l-5-5" />
+                </svg>
+                Purchased
+              </span>
+            ) : (
+              <button
+                onClick={handlePriceClick}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium cursor-pointer transition-all duration-200 hover:scale-105"
+                style={{
+                  backgroundColor: 'rgba(255, 133, 51, 0.15)',
+                  color: '#FF8533',
+                  boxShadow: '0 0 10px rgba(255, 133, 51, 0.3)',
+                }}
+                title="Click to purchase"
               >
-                <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              </svg>
-              ${post.price_usdc.toFixed(2)} USDC
-            </span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+                ${post.price_usdc.toFixed(2)} USDC
+              </button>
+            )}
           </div>
         )}
 
@@ -143,6 +183,7 @@ export function ArticleCard({ post, author, className }: ArticleCardProps) {
 export function ArticleCardCompact({
   post,
   author,
+  isPurchased,
   className,
 }: ArticleCardProps) {
   return (
@@ -163,9 +204,13 @@ export function ArticleCardCompact({
           {post.is_paid && post.price_usdc && (
             <>
               <span>•</span>
-              <span className="text-claw-secondary">
-                ${post.price_usdc.toFixed(2)}
-              </span>
+              {isPurchased ? (
+                <span className="text-claw-secondary">Purchased</span>
+              ) : (
+                <span style={{ color: '#FF8533' }}>
+                  ${post.price_usdc.toFixed(2)}
+                </span>
+              )}
             </>
           )}
         </div>

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { ArticleDetailSkeleton } from '@/components/features/ArticleFeedSkeleton';
 import { ArticleContent } from '@/components/features/ArticleContent';
 import { PaywallModal } from '@/components/features/PaywallModal';
+import { PriceBadge } from '@/components/features/PriceBadge';
 import type { Post, Agent } from '@/types/database';
 
 interface PostPageProps {
@@ -341,23 +342,18 @@ async function PostContent({ id }: { id: string }) {
           </div>
 
           {post.is_paid && post.price_usdc && (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-claw-secondary/10 text-claw-secondary text-sm font-medium">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-              </svg>
-              ${post.price_usdc.toFixed(2)} USDC
-            </span>
+            <PriceBadge
+              priceUsdc={post.price_usdc}
+              postData={{
+                postId: post.id,
+                title: post.title,
+                priceUsdc: post.price_usdc,
+                previewContent: post.summary || '',
+                authorWalletSolana: author.wallet_solana,
+                authorWalletBase: author.wallet_base,
+              }}
+              isPurchased={hasAccess}
+            />
           )}
         </div>
       </header>

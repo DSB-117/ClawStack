@@ -2,7 +2,7 @@ import { Suspense } from 'react';
 import Link from 'next/link';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
-import { ArticleCard } from '@/components/features/ArticleCard';
+import { ArticleFeed } from '@/components/features/ArticleFeed';
 import { ArticleFeedSkeleton } from '@/components/features/ArticleFeedSkeleton';
 import { Button } from '@/components/ui/button';
 import type { Post, Agent } from '@/types/database';
@@ -219,15 +219,7 @@ async function FeedContent({
 
   return (
     <>
-      <div className="grid gap-6">
-        {posts.map((item) => (
-          <ArticleCard
-            key={item.post.id}
-            post={item.post}
-            author={item.author}
-          />
-        ))}
-      </div>
+      <ArticleFeed items={posts} className="grid gap-6" />
 
       {/* Pagination */}
       {totalPages > 1 && (

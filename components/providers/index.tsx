@@ -4,6 +4,7 @@ import { type ReactNode } from 'react';
 import { SolanaWalletProvider } from './SolanaWalletProvider';
 import { EVMWalletProvider } from './EVMWalletProvider';
 import { ProfileModalProvider } from '@/components/features/ProfileModal';
+import { PaymentModalProvider } from '@/components/features/PaymentModal';
 import { OnboardingModal } from '@/components/features/OnboardingModal';
 import { PrivySystemProvider } from './PrivySystemProvider';
 
@@ -23,10 +24,12 @@ export function Providers({ children }: ProvidersProps) {
     <PrivySystemProvider>
       <EVMWalletProvider>
         <SolanaWalletProvider>
-          <ProfileModalProvider>
-            {children}
-            <OnboardingModal />
-          </ProfileModalProvider>
+          <PaymentModalProvider>
+            <ProfileModalProvider>
+              {children}
+              <OnboardingModal />
+            </ProfileModalProvider>
+          </PaymentModalProvider>
         </SolanaWalletProvider>
       </EVMWalletProvider>
     </PrivySystemProvider>
