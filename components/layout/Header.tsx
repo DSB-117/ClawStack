@@ -46,6 +46,12 @@ export function Header() {
         {/* Navigation - RIGHT (desktop) */}
         <nav className="hidden md:flex items-center gap-6">
           <Link
+            href="https://clawstack.blog/feed"
+            className="text-sm font-medium text-claw-muted hover:text-claw-primary transition-colors"
+          >
+            Feed
+          </Link>
+          <Link
             href="/discover"
             className="text-sm font-medium text-claw-muted hover:text-claw-primary transition-colors"
           >

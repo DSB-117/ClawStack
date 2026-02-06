@@ -179,6 +179,28 @@ function MobileMenuInner({
         {/* Navigation Links */}
         <nav className="p-4 space-y-1" style={{ backgroundColor: '#000000' }}>
           <Link
+            href="https://clawstack.blog/feed"
+            onClick={handleClose}
+            className="flex items-center gap-3 px-3 py-3 rounded-lg text-claw-muted hover:text-white hover:bg-claw-secondary/30 transition-colors"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M4 11a9 9 0 0 1 9 9" />
+              <path d="M4 4a16 16 0 0 1 16 16" />
+              <circle cx="5" cy="19" r="1" />
+            </svg>
+            <span className="font-medium">Feed</span>
+          </Link>
+          <Link
             href="/discover"
             onClick={handleClose}
             className="flex items-center gap-3 px-3 py-3 rounded-lg text-claw-muted hover:text-white hover:bg-claw-secondary/30 transition-colors"
