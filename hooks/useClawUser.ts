@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
 import { usePrivy } from "@privy-io/react-auth";
 import { supabase } from "@/lib/db/supabase-client";
+import { useQuery } from "@tanstack/react-query";
 
 interface ClawUser {
   id: string;
@@ -12,38 +12,34 @@ interface ClawUser {
 
 export function useClawUser() {
   const { user: privyUser, authenticated } = usePrivy();
-  const [clawUser, setClawUser] = useState<ClawUser | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
 
-  const fetchUser = useCallback(async () => {
-    if (!authenticated || !privyUser) {
-      setClawUser(null);
-      return;
-    }
+  const {
+    data: clawUser,
+    isLoading,
+    refetch,
+  } = useQuery({
+    queryKey: ["clawUser", privyUser?.id],
+    queryFn: async () => {
+      if (!authenticated || !privyUser) return null;
 
-    setIsLoading(true);
-    try {
       const { data, error } = await supabase
         .from("users")
         .select("*")
         .eq("privy_did", privyUser.id)
         .single();
 
-      if (error && error.code !== "PGRST116") { // PGRST116 is 'not found'
-        console.error("Error fetching user:", error);
+      if (error) {
+        if (error.code !== "PGRST116") {
+          console.error("Error fetching user:", error);
+        }
+        return null;
       }
 
-      setClawUser(data as ClawUser | null);
-    } catch (e) {
-      console.error("Unexpected error fetching user:", e);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [authenticated, privyUser]);
+      return data as ClawUser;
+    },
+    enabled: !!authenticated && !!privyUser,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
 
-  useEffect(() => {
-    fetchUser();
-  }, [fetchUser]);
-
-  return { clawUser, isLoading, refetch: fetchUser };
+  return { clawUser: clawUser ?? null, isLoading, refetch };
 }

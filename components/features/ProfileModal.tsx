@@ -11,6 +11,7 @@ import { usePrivy } from '@privy-io/react-auth';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { useWalletBalances } from '@/hooks/useWalletBalances';
+import { useClawUser } from '@/hooks/useClawUser';
 
 // --- Context ---
 interface ProfileModalContextType {
@@ -57,7 +58,8 @@ interface ProfileModalProps {
 type Tab = 'account' | 'wallet' | 'subscriptions' | 'history';
 
 function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
-  const { user, logout } = usePrivy();
+  const { user, logout, getAccessToken } = usePrivy();
+  const { clawUser, refetch } = useClawUser();
   const [activeTab, setActiveTab] = useState<Tab>('account');
 
   // Prevent body scroll
@@ -110,7 +112,8 @@ function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
             </div>
             <div>
               <h2 className="text-xl font-bold text-white">
-                {user?.email?.address ||
+                {clawUser?.display_name ||
+                  user?.email?.address ||
                   user?.wallet?.address?.slice(0, 6) + '...' ||
                   'Human'}
               </h2>
@@ -175,10 +178,7 @@ function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
         </div>
 
         {/* Footer / Logout */}
-        <div className="p-4 border-t border-claw-secondary bg-claw-elevated/50 rounded-b-xl flex justify-between items-center">
-          <div className="text-xs text-claw-muted">
-            Wallet: {user?.wallet?.address || 'Not connected'}
-          </div>
+        <div className="p-4 border-t border-claw-secondary bg-claw-elevated/50 rounded-b-xl flex justify-end items-center">
           <Button
             variant="ghost"
             className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
@@ -220,7 +220,49 @@ function TabButton({
 // --- Sub-Components (Placeholders for now) ---
 
 function AccountTab() {
-  const { user } = usePrivy();
+  const { user, getAccessToken } = usePrivy();
+  const { clawUser, refetch } = useClawUser();
+  const [displayName, setDisplayName] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>(
+    'idle'
+  );
+
+  useEffect(() => {
+    if (clawUser?.display_name) {
+      setDisplayName(clawUser.display_name);
+    }
+  }, [clawUser]);
+
+  const handleSave = async () => {
+    if (!displayName.trim()) return;
+    setIsSaving(true);
+    setSaveStatus('idle');
+
+    try {
+      const token = await getAccessToken();
+      const response = await fetch('/api/v1/user/update', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ display_name: displayName }),
+      });
+
+      if (!response.ok) throw new Error('Failed to update');
+
+      await refetch();
+      setSaveStatus('success');
+      setTimeout(() => setSaveStatus('idle'), 3000);
+    } catch (err) {
+      console.error(err);
+      setSaveStatus('error');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="space-y-2">
@@ -230,10 +272,26 @@ function AccountTab() {
             type="text"
             placeholder="Enter display name"
             className="flex-1 bg-claw-elevated border border-claw-secondary rounded-md px-3 py-2 text-white"
-            defaultValue={user?.email?.address?.split('@')[0] || ''}
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
           />
-          <Button>Save</Button>
+          <Button
+            onClick={handleSave}
+            disabled={isSaving || displayName === clawUser?.display_name}
+          >
+            {isSaving ? 'Saving...' : 'Save'}
+          </Button>
         </div>
+        {saveStatus === 'success' && (
+          <p className="text-xs text-green-400">
+            Profile updated successfully!
+          </p>
+        )}
+        {saveStatus === 'error' && (
+          <p className="text-xs text-red-400">
+            Failed to update profile. Please try again.
+          </p>
+        )}
       </div>
       <div className="space-y-2">
         <label className="text-sm text-claw-muted">Connected Accounts</label>
