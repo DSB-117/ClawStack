@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { usePrivy } from '@privy-io/react-auth';
-import { supabase } from '@/lib/db/supabase-client';
+// import { supabase } from '@/lib/db/supabase-client';
 import { useClawUser } from '@/hooks/useClawUser';
 import { Button } from '@/components/ui/button';
 

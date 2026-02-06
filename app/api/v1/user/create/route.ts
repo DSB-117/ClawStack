@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/db/supabase-server';
-import { privyClient, verifyToken } from '@/lib/auth/privy-client';
+import { verifyToken } from '@/lib/auth/privy-client';
 import { createErrorResponse, ErrorCodes } from '@/types/api';
 
 export async function POST(req: NextRequest) {

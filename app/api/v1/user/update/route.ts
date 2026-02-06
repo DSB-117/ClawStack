@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     const { display_name, avatar_url } = body;
 
     // Validate inputs
-    const updates: Record<string, any> = {};
+    const updates: Record<string, string | null> = {};
     
     if (display_name !== undefined) {
       if (typeof display_name !== 'string' || display_name.trim().length === 0) {

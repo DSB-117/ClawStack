@@ -58,8 +58,8 @@ interface ProfileModalProps {
 type Tab = 'account' | 'wallet' | 'subscriptions' | 'history';
 
 function ProfileModal({ isOpen, onClose }: ProfileModalProps) {
-  const { user, logout, getAccessToken } = usePrivy();
-  const { clawUser, refetch } = useClawUser();
+  const { user, logout } = usePrivy();
+  const { clawUser } = useClawUser();
   const [activeTab, setActiveTab] = useState<Tab>('account');
 
   // Prevent body scroll
