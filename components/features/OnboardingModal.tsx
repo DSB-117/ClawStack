@@ -7,7 +7,7 @@ import { useClawUser } from '@/hooks/useClawUser';
 import { Button } from '@/components/ui/button';
 
 export function OnboardingModal() {
-  const { user: privyUser, authenticated } = usePrivy();
+  const { user: privyUser, authenticated, getAccessToken } = usePrivy();
   const { clawUser, isLoading, refetch } = useClawUser();
   const [isOpen, setIsOpen] = useState(false);
   const [displayName, setDisplayName] = useState('');
@@ -28,6 +28,7 @@ export function OnboardingModal() {
 
     setIsSubmitting(true);
     try {
+      const accessToken = await getAccessToken();
       const ethWallet =
         privyUser.wallet?.address ||
         (
@@ -36,15 +37,22 @@ export function OnboardingModal() {
           ) as { address: string } | undefined
         )?.address;
 
-      const { error } = await supabase.from('users').insert({
-        privy_did: privyUser.id,
-        display_name: displayName.trim(),
-        wallet_address: ethWallet || null,
-        avatar_url: `https://api.dicebear.com/7.x/bottts/svg?seed=${ethWallet || privyUser.id}`,
+      const response = await fetch('/api/v1/user/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          display_name: displayName.trim(),
+          wallet_address: ethWallet || null,
+          avatar_url: `https://api.dicebear.com/7.x/bottts/svg?seed=${ethWallet || privyUser.id}`,
+        }),
       });
 
-      if (error) {
-        throw error;
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to create profile');
       }
 
       // Refresh user state
