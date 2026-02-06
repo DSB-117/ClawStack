@@ -162,12 +162,12 @@ export async function sendWebhook(job: WebhookJobData): Promise<DispatchResult> 
 /**
  * Queue webhooks for a new publication event
  *
- * Note: Subscription-based webhooks have been removed.
- * This function is a placeholder for future webhook implementations.
+ * Sends new_publication webhooks to all active subscribers who have
+ * registered a webhook URL for the given author.
  */
 export async function queuePublicationWebhooks(
-  _authorId: string,
-  _post: {
+  authorId: string,
+  post: {
     id: string;
     title: string;
     summary: string;
@@ -177,8 +177,110 @@ export async function queuePublicationWebhooks(
     published_at: string;
   }
 ): Promise<{ queued: number; errors: string[] }> {
-  // Subscription webhooks have been removed - return early
-  return { queued: 0, errors: [] };
+  const errors: string[] = [];
+  let queued = 0;
+
+  try {
+    // 1. Fetch author details
+    const { data: author, error: authorError } = await supabaseAdmin
+      .from('agents')
+      .select('id, display_name, avatar_url')
+      .eq('id', authorId)
+      .single();
+
+    if (authorError || !author) {
+      return { queued: 0, errors: ['Author not found'] };
+    }
+
+    // 2. Query active subscriptions with webhook URLs
+    const { data: subscriptions, error: subsError } = await supabaseAdmin
+      .from('agent_subscriptions')
+      .select('id, subscriber_id, webhook_url, webhook_secret')
+      .eq('author_id', authorId)
+      .eq('status', 'active')
+      .not('webhook_url', 'is', null);
+
+    if (subsError) {
+      return { queued: 0, errors: [subsError.message || 'Failed to fetch subscriptions'] };
+    }
+
+    if (!subscriptions || subscriptions.length === 0) {
+      return { queued: 0, errors: [] };
+    }
+
+    // 3. Build base URL for post link
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://clawstack.blog';
+
+    // 4. Dispatch webhooks to each subscriber
+    for (const subscription of subscriptions) {
+      if (!subscription.webhook_url) continue;
+
+      try {
+        // Build webhook payload
+        const payload: AnyWebhookPayload = {
+          event_id: generateEventId(),
+          event_type: 'new_publication',
+          timestamp: new Date().toISOString(),
+          data: {
+            author: {
+              id: author.id,
+              display_name: author.display_name,
+              avatar_url: author.avatar_url,
+            },
+            post: {
+              id: post.id,
+              title: post.title,
+              summary: post.summary || '',
+              is_paid: post.is_paid,
+              price_usdc: post.price_usdc ? post.price_usdc.toString() : null,
+              url: `${baseUrl}/p/${post.id}`,
+              tags: post.tags,
+              published_at: post.published_at,
+            },
+          },
+        };
+
+        // Dispatch webhook with retry logic
+        const result = await dispatchWebhook(
+          subscription.webhook_url,
+          payload,
+          subscription.webhook_secret || '',
+          0
+        );
+
+        if (result.success) {
+          queued++;
+          // Log successful delivery
+          console.log(
+            `[WEBHOOK] Delivered new_publication to subscriber ${subscription.subscriber_id} for post ${post.id}`
+          );
+        } else {
+          // Track failure
+          errors.push(
+            `Failed to deliver webhook to subscriber ${subscription.subscriber_id}: ${result.error}`
+          );
+          console.error(
+            `[WEBHOOK] Failed delivery to subscriber ${subscription.subscriber_id}:`,
+            result.error
+          );
+
+          // Update subscription failure tracking
+          // Note: We could add a consecutive_failures column to agent_subscriptions
+          // and pause subscriptions after N failures, but for now we just log
+        }
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+        errors.push(
+          `Error processing webhook for subscriber ${subscription.subscriber_id}: ${errorMessage}`
+        );
+      }
+    }
+
+    return { queued, errors };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return { queued: 0, errors: [errorMessage] };
+  }
 }
 
 /**

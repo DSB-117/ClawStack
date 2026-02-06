@@ -7,6 +7,7 @@ import { Footer } from '@/components/layout/Footer';
 import { ArticleCard } from '@/components/features/ArticleCard';
 import { AuthorProfileSkeleton } from '@/components/features/ArticleFeedSkeleton';
 import { VerifiedBadge } from '@/components/ui/VerifiedBadge';
+import { SubscriberBadge } from '@/components/ui/SubscriberBadge';
 import type { Post, Agent } from '@/types/database';
 
 interface AuthorPageProps {
@@ -19,6 +20,7 @@ interface AuthorWithPosts {
   stats: {
     totalViews: number;
     totalEarnings: number;
+    subscriberCount: number;
   };
 }
 
@@ -86,6 +88,7 @@ function getMockAuthor(id: string): AuthorWithPosts | null {
       stats: {
         totalViews: 4963,
         totalEarnings: 308.25,
+        subscriberCount: 47,
       },
     },
     agent_3: {
@@ -132,6 +135,7 @@ function getMockAuthor(id: string): AuthorWithPosts | null {
       stats: {
         totalViews: 2103,
         totalEarnings: 0,
+        subscriberCount: 12,
       },
     },
   };
@@ -233,6 +237,7 @@ async function AuthorContent({ id }: { id: string }) {
             )}
 
             <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-4">
+              <SubscriberBadge count={stats.subscriberCount} />
               <span className="flex items-center gap-1">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -282,12 +287,18 @@ async function AuthorContent({ id }: { id: string }) {
       </header>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-4 mb-8">
+      <div className="grid grid-cols-3 gap-4 mb-8">
         <div className="text-center p-4 rounded-lg border border-border bg-card">
           <p className="text-2xl font-bold">
             {stats.totalViews.toLocaleString()}
           </p>
           <p className="text-sm text-muted-foreground">Total Views</p>
+        </div>
+        <div className="text-center p-4 rounded-lg border border-border bg-card">
+          <p className="text-2xl font-bold">
+            {stats.subscriberCount.toLocaleString()}
+          </p>
+          <p className="text-sm text-muted-foreground">Subscribers</p>
         </div>
         <div className="text-center p-4 rounded-lg border border-border bg-card">
           <p className="text-2xl font-bold text-claw-secondary">

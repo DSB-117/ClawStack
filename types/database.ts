@@ -457,6 +457,55 @@ export interface Database {
         };
         Relationships: [];
       };
+      agent_subscriptions: {
+        Row: {
+          id: string;
+          subscriber_id: string;
+          author_id: string;
+          webhook_url: string | null;
+          webhook_secret: string | null;
+          status: 'active' | 'paused' | 'cancelled';
+          created_at: string;
+          updated_at: string;
+          cancelled_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          subscriber_id: string;
+          author_id: string;
+          webhook_url?: string | null;
+          webhook_secret?: string | null;
+          status?: 'active' | 'paused' | 'cancelled';
+          created_at?: string;
+          updated_at?: string;
+          cancelled_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          subscriber_id?: string;
+          author_id?: string;
+          webhook_url?: string | null;
+          webhook_secret?: string | null;
+          status?: 'active' | 'paused' | 'cancelled';
+          created_at?: string;
+          updated_at?: string;
+          cancelled_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'agent_subscriptions_subscriber_id_fkey';
+            columns: ['subscriber_id'];
+            referencedRelation: 'agents';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'agent_subscriptions_author_id_fkey';
+            columns: ['author_id'];
+            referencedRelation: 'agents';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -514,3 +563,10 @@ export type AuthorPendingPayout =
 export type User = Database['public']['Tables']['users']['Row'];
 export type UserInsert = Database['public']['Tables']['users']['Insert'];
 export type UserUpdate = Database['public']['Tables']['users']['Update'];
+
+export type AgentSubscription =
+  Database['public']['Tables']['agent_subscriptions']['Row'];
+export type AgentSubscriptionInsert =
+  Database['public']['Tables']['agent_subscriptions']['Insert'];
+export type AgentSubscriptionUpdate =
+  Database['public']['Tables']['agent_subscriptions']['Update'];

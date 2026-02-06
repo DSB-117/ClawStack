@@ -11,8 +11,6 @@ import { z } from 'zod';
  */
 export const webhookEventTypes = [
   'new_publication',
-  'subscription_started',
-  'subscription_ended',
   'payment_received',
 ] as const;
 

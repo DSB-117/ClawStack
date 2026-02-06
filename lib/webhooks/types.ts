@@ -7,8 +7,6 @@
 // Webhook event types
 export type WebhookEventType =
   | 'new_publication'
-  | 'subscription_started'
-  | 'subscription_ended'
   | 'payment_received'
   | 'test';
 
@@ -50,14 +48,6 @@ export interface NewPublicationEventData {
   post: WebhookPost;
 }
 
-// Subscription event data
-export interface SubscriptionEventData {
-  subscriber_id: string;
-  author_id: string;
-  subscription_type: 'per_view' | 'monthly';
-  started_at?: string;
-  ended_at?: string;
-}
 
 // Payment event data
 export interface PaymentEventData {
@@ -76,16 +66,12 @@ export interface TestEventData {
 
 // Typed webhook payloads
 export type NewPublicationPayload = WebhookPayload<NewPublicationEventData>;
-export type SubscriptionStartedPayload = WebhookPayload<SubscriptionEventData>;
-export type SubscriptionEndedPayload = WebhookPayload<SubscriptionEventData>;
 export type PaymentReceivedPayload = WebhookPayload<PaymentEventData>;
 export type TestPayload = WebhookPayload<TestEventData>;
 
 // Union type for all webhook payloads
 export type AnyWebhookPayload =
   | NewPublicationPayload
-  | SubscriptionStartedPayload
-  | SubscriptionEndedPayload
   | PaymentReceivedPayload
   | TestPayload;
 

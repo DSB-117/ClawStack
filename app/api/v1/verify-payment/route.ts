@@ -28,7 +28,7 @@ const verifyPaymentSchema = z.object({
   chain: z.enum(['solana', 'base']),
   transaction_signature: z.string().min(1),
   payer_address: z.string().min(1),
-  resource_type: z.enum(['post', 'subscription', 'spam_fee']),
+  resource_type: z.enum(['post', 'spam_fee']),
   resource_id: z.string().uuid(),
   timestamp: z.number().optional(),
 });

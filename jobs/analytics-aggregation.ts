@@ -238,6 +238,58 @@ async function calculatePostsPublished(
 }
 
 /**
+ * Calculate subscription metrics for an agent within a date range.
+ * Task 6.1.5: Calculate subscriber metrics from agent_subscriptions
+ */
+async function calculateSubscriptionMetrics(
+  agentId: string,
+  startDate: Date,
+  endDate: Date
+): Promise<{ new_subscribers: number; lost_subscribers: number; total_subscribers: number }> {
+  // Get new subscribers in the period (subscriptions created in the date range)
+  const { count: newSubscribers, error: newError } = await supabaseAdmin
+    .from('agent_subscriptions')
+    .select('*', { count: 'exact', head: true })
+    .eq('author_id', agentId)
+    .gte('created_at', startDate.toISOString())
+    .lte('created_at', endDate.toISOString());
+
+  if (newError) {
+    console.warn(`Failed to fetch new subscribers for agent ${agentId}: ${newError.message}`);
+  }
+
+  // Get lost subscribers in the period (subscriptions cancelled in the date range)
+  const { count: lostSubscribers, error: lostError } = await supabaseAdmin
+    .from('agent_subscriptions')
+    .select('*', { count: 'exact', head: true })
+    .eq('author_id', agentId)
+    .eq('status', 'cancelled')
+    .gte('cancelled_at', startDate.toISOString())
+    .lte('cancelled_at', endDate.toISOString());
+
+  if (lostError) {
+    console.warn(`Failed to fetch lost subscribers for agent ${agentId}: ${lostError.message}`);
+  }
+
+  // Get total active subscribers (current snapshot)
+  const { count: totalSubscribers, error: totalError } = await supabaseAdmin
+    .from('agent_subscriptions')
+    .select('*', { count: 'exact', head: true })
+    .eq('author_id', agentId)
+    .eq('status', 'active');
+
+  if (totalError) {
+    console.warn(`Failed to fetch total subscribers for agent ${agentId}: ${totalError.message}`);
+  }
+
+  return {
+    new_subscribers: newSubscribers || 0,
+    lost_subscribers: lostSubscribers || 0,
+    total_subscribers: totalSubscribers || 0,
+  };
+}
+
+/**
  * Identify top performing posts for an agent in a date range.
  * Task 6.1.6: Identify top performing posts
  */
@@ -315,11 +367,12 @@ async function aggregateAgentData(
   startDate: Date,
   endDate: Date
 ): Promise<AgentAggregateData> {
-  const [views, earnings, postsPublished, topPosts] = await Promise.all([
+  const [views, earnings, postsPublished, topPosts, subscriptionMetrics] = await Promise.all([
     calculateViews(agentId, startDate, endDate),
     calculateEarnings(agentId, startDate, endDate),
     calculatePostsPublished(agentId, startDate, endDate),
     getTopPosts(agentId, startDate, endDate),
+    calculateSubscriptionMetrics(agentId, startDate, endDate),
   ]);
 
   return {
@@ -329,9 +382,9 @@ async function aggregateAgentData(
     free_views: views.free_views,
     earnings_solana_raw: earnings.solana_raw,
     earnings_base_raw: earnings.base_raw,
-    new_subscribers: 0,
-    lost_subscribers: 0,
-    total_subscribers: 0,
+    new_subscribers: subscriptionMetrics.new_subscribers,
+    lost_subscribers: subscriptionMetrics.lost_subscribers,
+    total_subscribers: subscriptionMetrics.total_subscribers,
     posts_published: postsPublished,
     top_posts: topPosts,
   };
