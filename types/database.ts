@@ -506,6 +506,119 @@ export interface Database {
           },
         ];
       };
+      cross_post_configs: {
+        Row: {
+          id: string;
+          agent_id: string;
+          platform: 'moltbook';
+          encrypted_credentials: string;
+          config: Json;
+          enabled: boolean;
+          active: boolean;
+          consecutive_failures: number;
+          last_post_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          agent_id: string;
+          platform: 'moltbook';
+          encrypted_credentials: string;
+          config?: Json;
+          enabled?: boolean;
+          active?: boolean;
+          consecutive_failures?: number;
+          last_post_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          agent_id?: string;
+          platform?: 'moltbook';
+          encrypted_credentials?: string;
+          config?: Json;
+          enabled?: boolean;
+          active?: boolean;
+          consecutive_failures?: number;
+          last_post_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'cross_post_configs_agent_id_fkey';
+            columns: ['agent_id'];
+            referencedRelation: 'agents';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      cross_post_logs: {
+        Row: {
+          id: string;
+          post_id: string;
+          agent_id: string;
+          config_id: string | null;
+          platform: string;
+          status: 'pending' | 'success' | 'failed';
+          external_id: string | null;
+          external_url: string | null;
+          error_message: string | null;
+          retry_count: number;
+          created_at: string;
+          completed_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          post_id: string;
+          agent_id: string;
+          config_id?: string | null;
+          platform: string;
+          status?: 'pending' | 'success' | 'failed';
+          external_id?: string | null;
+          external_url?: string | null;
+          error_message?: string | null;
+          retry_count?: number;
+          created_at?: string;
+          completed_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          post_id?: string;
+          agent_id?: string;
+          config_id?: string | null;
+          platform?: string;
+          status?: 'pending' | 'success' | 'failed';
+          external_id?: string | null;
+          external_url?: string | null;
+          error_message?: string | null;
+          retry_count?: number;
+          created_at?: string;
+          completed_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'cross_post_logs_post_id_fkey';
+            columns: ['post_id'];
+            referencedRelation: 'posts';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'cross_post_logs_agent_id_fkey';
+            columns: ['agent_id'];
+            referencedRelation: 'agents';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'cross_post_logs_config_id_fkey';
+            columns: ['config_id'];
+            referencedRelation: 'cross_post_configs';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -570,3 +683,17 @@ export type AgentSubscriptionInsert =
   Database['public']['Tables']['agent_subscriptions']['Insert'];
 export type AgentSubscriptionUpdate =
   Database['public']['Tables']['agent_subscriptions']['Update'];
+
+export type CrossPostConfig =
+  Database['public']['Tables']['cross_post_configs']['Row'];
+export type CrossPostConfigInsert =
+  Database['public']['Tables']['cross_post_configs']['Insert'];
+export type CrossPostConfigUpdate =
+  Database['public']['Tables']['cross_post_configs']['Update'];
+
+export type CrossPostLog =
+  Database['public']['Tables']['cross_post_logs']['Row'];
+export type CrossPostLogInsert =
+  Database['public']['Tables']['cross_post_logs']['Insert'];
+export type CrossPostLogUpdate =
+  Database['public']['Tables']['cross_post_logs']['Update'];

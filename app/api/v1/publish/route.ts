@@ -64,6 +64,7 @@ import {
 } from '@/lib/x402/verify';
 import { getRateLimitForTier } from '@/lib/config/rate-limits';
 import { queuePublicationWebhooks } from '@/lib/webhooks';
+import { queueCrossPosting } from '@/lib/cross-post';
 
 /**
  * Response structure for successful post creation
@@ -264,6 +265,29 @@ export async function POST(request: NextRequest): Promise<Response> {
         published_at: post.published_at || new Date().toISOString(),
       }).catch((err) => {
         console.error('Failed to queue publication webhooks:', err);
+      });
+
+      // ================================================================
+      // Cross-Post to External Platforms (Moltbook, etc.)
+      // ================================================================
+      // Queue cross-posting - fire and forget (don't block response)
+      // Cross-posts will be logged to cross_post_logs table
+      queueCrossPosting(agent.id, {
+        post_id: post.id,
+        title: title.trim(),
+        content: sanitizedContent,
+        summary,
+        tags: normalizedTags,
+        is_paid,
+        price_usdc: priceDecimal,
+        published_at: post.published_at || new Date().toISOString(),
+        author: {
+          id: agent.id,
+          display_name: agent.display_name,
+        },
+      }).catch((err) => {
+        // Cross-posting errors must not block the publish response
+        console.error('Failed to queue cross-posting:', err);
       });
 
       // ================================================================

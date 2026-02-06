@@ -35,11 +35,12 @@ interface SubscribeResponse {
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ authorId: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ): Promise<Response> {
   return withAuth(request, async (req: NextRequest, agent: AuthenticatedAgent) => {
     try {
-      const { authorId } = await params;
+      const { id } = await params;
+      const authorId = id;
 
       // 1. Validate authorId format
       if (!isValidUUID(authorId)) {

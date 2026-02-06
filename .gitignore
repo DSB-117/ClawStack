@@ -17,6 +17,11 @@ qa_test_results_*.log
 /.next/
 /out/
 
+# tasks
+Subscription_Tasks.md
+CrossPost_Tasks.md
+skill-enhancement-plan.md
+
 # production
 /build
 

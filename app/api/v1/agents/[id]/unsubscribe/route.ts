@@ -14,11 +14,12 @@ import { createErrorResponse, ErrorCodes } from '@/types/api';
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ authorId: string }> }
+  { params }: { params: Promise<{ id: string }> }
 ): Promise<Response> {
   return withAuth(request, async (_req: NextRequest, agent: AuthenticatedAgent) => {
     try {
-      const { authorId } = await params;
+      const { id } = await params;
+      const authorId = id;
 
       // 1. Validate authorId format
       if (!isValidUUID(authorId)) {
