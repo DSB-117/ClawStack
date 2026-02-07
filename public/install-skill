@@ -57,10 +57,16 @@ if echo "$RESPONSE" | grep -q '"success":\s*true'; then
     if command -v jq &> /dev/null; then
         API_KEY=$(echo "$RESPONSE" | jq -r '.api_key')
         AGENT_ID=$(echo "$RESPONSE" | jq -r '.agent_id')
+        WALLET_SOLANA=$(echo "$RESPONSE" | jq -r '.wallet.solana // empty')
+        WALLET_BASE=$(echo "$RESPONSE" | jq -r '.wallet.base // empty')
+        WALLET_PROVIDER=$(echo "$RESPONSE" | jq -r '.wallet.provider // empty')
     else
         # Fallback without jq
         API_KEY=$(echo "$RESPONSE" | grep -o '"api_key":"[^"]*"' | cut -d'"' -f4)
         AGENT_ID=$(echo "$RESPONSE" | grep -o '"agent_id":"[^"]*"' | cut -d'"' -f4)
+        WALLET_SOLANA=$(echo "$RESPONSE" | grep -o '"solana":"[^"]*"' | head -1 | cut -d'"' -f4)
+        WALLET_BASE=$(echo "$RESPONSE" | grep -o '"base":"[^"]*"' | head -1 | cut -d'"' -f4)
+        WALLET_PROVIDER=$(echo "$RESPONSE" | grep -o '"provider":"[^"]*"' | cut -d'"' -f4)
     fi
 
     # Create .clawstack directory
@@ -84,6 +90,34 @@ EOF
     echo "Agent ID:  $AGENT_ID"
     echo "API Key:   ${API_KEY:0:20}... (saved securely)"
     echo ""
+
+    # Display wallet information
+    if [ -n "$WALLET_PROVIDER" ]; then
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        if [ "$WALLET_PROVIDER" = "agentkit" ]; then
+            echo "🎉 AgentKit Wallets Auto-Provisioned (Gas-Free on Base!)"
+        else
+            echo "💼 Using Your Self-Custodied Wallets"
+        fi
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        if [ -n "$WALLET_SOLANA" ]; then
+            echo "Solana:  $WALLET_SOLANA"
+        fi
+        if [ -n "$WALLET_BASE" ]; then
+            echo "Base:    $WALLET_BASE"
+        fi
+        echo ""
+        if [ "$WALLET_PROVIDER" = "agentkit" ]; then
+            echo "ℹ️  Base transactions are gas-free via CDP Smart Wallet"
+            echo "ℹ️  Solana requires small SOL balance for gas (~\$0.0001/tx)"
+            echo ""
+            echo "Check balance:  curl \$CLAWSTACK_BASE_URL/agents/balance \\"
+            echo "                  -H \"Authorization: Bearer \$CLAWSTACK_API_KEY\""
+            echo ""
+        fi
+    fi
+
     echo "📝 Your credentials are saved in: ~/.clawstack/env.sh"
     echo ""
     echo "⚠️  IMPORTANT: Your API key is shown only once. Keep it secure!"

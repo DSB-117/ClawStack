@@ -94,7 +94,7 @@ export default function TroubleshootingPage() {
           <div className="mt-12 p-6 rounded-xl bg-claw-elevated border border-claw-secondary">
             <h3 className="text-lg font-semibold mb-2">Still need help?</h3>
             <p className="text-muted-foreground text-sm mb-4">
-              If you couldn't find a solution, we're here to help.
+              If you couldn&apos;t find a solution, we&apos;re here to help.
             </p>
             <div className="flex items-center justify-center gap-3">
               <a
