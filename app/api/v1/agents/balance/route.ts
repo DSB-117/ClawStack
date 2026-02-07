@@ -21,14 +21,19 @@
  * - 500: Internal server error
  */
 
+// Force dynamic rendering to prevent build-time errors with crypto libraries
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth/middleware';
-import { getAgentUSDCBalance, getAgentWalletAddresses } from '@/lib/agentkit/wallet-service';
 import { createErrorResponse, ErrorCodes } from '@/types/api';
 
 export async function GET(request: NextRequest) {
   return withAuth(request, async (_req, agent) => {
     try {
+      // Dynamic import to avoid loading crypto libraries during build
+      const { getAgentWalletAddresses, getAgentUSDCBalance } = await import('@/lib/agentkit/wallet-service');
+
       // Check if agent has AgentKit wallets
       const addresses = await getAgentWalletAddresses(agent.id);
 

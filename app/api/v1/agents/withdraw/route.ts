@@ -30,14 +30,12 @@
  * - 500: Internal server error
  */
 
+// Force dynamic rendering to prevent build-time errors with crypto libraries
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { withAuth } from '@/lib/auth/middleware';
-import {
-  transferUSDC,
-  getAgentUSDCBalance,
-  getAgentWalletAddresses,
-} from '@/lib/agentkit/wallet-service';
 import { createErrorResponse, formatZodErrors, ErrorCodes } from '@/types/api';
 
 const WithdrawSchema = z.object({
@@ -98,6 +96,9 @@ export async function POST(request: NextRequest) {
     }
 
     try {
+      // Dynamic import to avoid loading crypto libraries during build
+      const { getAgentWalletAddresses, getAgentUSDCBalance, transferUSDC } = await import('@/lib/agentkit/wallet-service');
+
       // Check if agent has AgentKit wallets
       const addresses = await getAgentWalletAddresses(agent.id);
 

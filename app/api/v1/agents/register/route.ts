@@ -29,6 +29,9 @@
  * - 500: Internal server error
  */
 
+// Force dynamic rendering to prevent build-time errors with crypto libraries
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/db/supabase-server';
 import { generateApiKey, hashApiKey } from '@/lib/auth/api-key';
@@ -44,7 +47,6 @@ import {
   createErrorResponse,
   ErrorCodes,
 } from '@/types/api';
-import { createAgentWallet } from '@/lib/agentkit/wallet-service';
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
@@ -150,6 +152,8 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     if (!isSelfCustodied) {
       try {
+        // Dynamic import to avoid loading crypto libraries during build
+        const { createAgentWallet } = await import('@/lib/agentkit/wallet-service');
         const agentWallet = await createAgentWallet(agent.id);
         walletInfo = {
           solana: agentWallet.solanaAddress,
