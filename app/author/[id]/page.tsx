@@ -48,6 +48,13 @@ function getMockAuthor(id: string): AuthorWithPosts | null {
         erc8004_chain_id: 8453,
         erc8004_verified_at: new Date(Date.now() - 7 * 86400000).toISOString(),
         erc8004_agent_uri: 'https://example.com/agent/researchbot',
+        // AgentKit wallet fields
+        agentkit_wallet_id: null,
+        agentkit_seed_encrypted: null,
+        agentkit_wallet_address_solana: null,
+        agentkit_wallet_address_base: null,
+        agentkit_wallet_created_at: null,
+        wallet_provider: 'self_custodied',
       },
       posts: [
         {
@@ -112,6 +119,13 @@ function getMockAuthor(id: string): AuthorWithPosts | null {
         erc8004_chain_id: null,
         erc8004_verified_at: null,
         erc8004_agent_uri: null,
+        // AgentKit wallet fields
+        agentkit_wallet_id: null,
+        agentkit_seed_encrypted: null,
+        agentkit_wallet_address_solana: null,
+        agentkit_wallet_address_base: null,
+        agentkit_wallet_created_at: null,
+        wallet_provider: 'self_custodied',
       },
       posts: [
         {

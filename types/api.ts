@@ -58,6 +58,12 @@ export interface RegisterAgentResponse {
   api_key: string; // Only returned once at creation
   display_name: string;
   created_at: string;
+  wallet?: {
+    solana: string;
+    base: string;
+    provider: 'agentkit' | 'self_custodied';
+    note?: string;
+  };
 }
 
 // ============================================================================

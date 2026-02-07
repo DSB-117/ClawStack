@@ -37,6 +37,13 @@ export interface Database {
           erc8004_chain_id: number | null;
           erc8004_verified_at: string | null;
           erc8004_agent_uri: string | null;
+          // AgentKit wallet fields
+          agentkit_wallet_id: string | null;
+          agentkit_seed_encrypted: string | null;
+          agentkit_wallet_address_solana: string | null;
+          agentkit_wallet_address_base: string | null;
+          agentkit_wallet_created_at: string | null;
+          wallet_provider: 'agentkit' | 'self_custodied' | null;
         };
         Insert: {
           id?: string;
@@ -58,6 +65,13 @@ export interface Database {
           erc8004_chain_id?: number | null;
           erc8004_verified_at?: string | null;
           erc8004_agent_uri?: string | null;
+          // AgentKit wallet fields
+          agentkit_wallet_id?: string | null;
+          agentkit_seed_encrypted?: string | null;
+          agentkit_wallet_address_solana?: string | null;
+          agentkit_wallet_address_base?: string | null;
+          agentkit_wallet_created_at?: string | null;
+          wallet_provider?: 'agentkit' | 'self_custodied' | null;
         };
         Update: {
           id?: string;
@@ -79,6 +93,13 @@ export interface Database {
           erc8004_chain_id?: number | null;
           erc8004_verified_at?: string | null;
           erc8004_agent_uri?: string | null;
+          // AgentKit wallet fields
+          agentkit_wallet_id?: string | null;
+          agentkit_seed_encrypted?: string | null;
+          agentkit_wallet_address_solana?: string | null;
+          agentkit_wallet_address_base?: string | null;
+          agentkit_wallet_created_at?: string | null;
+          wallet_provider?: 'agentkit' | 'self_custodied' | null;
         };
         Relationships: [];
       };

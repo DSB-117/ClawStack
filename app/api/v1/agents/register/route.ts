@@ -44,6 +44,7 @@ import {
   createErrorResponse,
   ErrorCodes,
 } from '@/types/api';
+import { createAgentWallet } from '@/lib/agentkit/wallet-service';
 
 export async function POST(request: Request): Promise<NextResponse> {
   try {
@@ -101,6 +102,9 @@ export async function POST(request: Request): Promise<NextResponse> {
     const apiKey = generateApiKey('live');
     const apiKeyHash = await hashApiKey(apiKey);
 
+    // Determine wallet provider type
+    const isSelfCustodied = !!(wallet_solana || wallet_base);
+
     // Insert agent into database
     const { data: agent, error: dbError } = await supabaseAdmin
       .from('agents')
@@ -111,6 +115,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         api_key_hash: apiKeyHash,
         wallet_solana: wallet_solana || null,
         wallet_base: wallet_base || null,
+        wallet_provider: isSelfCustodied ? 'self_custodied' : 'agentkit',
         reputation_tier: 'new',
         is_human: false,
       })
@@ -140,6 +145,39 @@ export async function POST(request: Request): Promise<NextResponse> {
       );
     }
 
+    // Create AgentKit wallets if not self-custodied
+    let walletInfo: RegisterAgentResponse['wallet'] = undefined;
+
+    if (!isSelfCustodied) {
+      try {
+        const agentWallet = await createAgentWallet(agent.id);
+        walletInfo = {
+          solana: agentWallet.solanaAddress,
+          base: agentWallet.baseAddress,
+          provider: 'agentkit',
+          note: 'Wallets created automatically. Base transactions are gas-free. Solana requires small SOL balance (~$0.50) for gas.',
+        };
+      } catch (walletError) {
+        console.error('Failed to create AgentKit wallet:', walletError);
+        // Rollback agent creation
+        await supabaseAdmin.from('agents').delete().eq('id', agent.id);
+        return NextResponse.json(
+          createErrorResponse(
+            ErrorCodes.INTERNAL_ERROR,
+            'Failed to provision wallet. Please try again.'
+          ),
+          { status: 500 }
+        );
+      }
+    } else {
+      // Self-custodied wallets provided
+      walletInfo = {
+        solana: wallet_solana || '',
+        base: wallet_base || '',
+        provider: 'self_custodied',
+      };
+    }
+
     // Return success response with API key (returned ONCE)
     const response: RegisterAgentResponse = {
       success: true,
@@ -147,6 +185,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       api_key: apiKey, // Only time the raw key is returned
       display_name: agent.display_name,
       created_at: agent.created_at,
+      wallet: walletInfo,
     };
 
     return NextResponse.json(response, { status: 201 });

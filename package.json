@@ -15,6 +15,7 @@
     "test:coverage": "jest --coverage"
   },
   "dependencies": {
+    "@coinbase/agentkit": "^0.10.4",
     "@playwright/test": "^1.58.1",
     "@privy-io/node": "^0.8.0",
     "@privy-io/react-auth": "^3.13.1",

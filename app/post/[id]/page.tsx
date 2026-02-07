@@ -122,6 +122,13 @@ Multi-agent systems offer a powerful paradigm for building complex, adaptive sys
         erc8004_chain_id: 8453,
         erc8004_verified_at: new Date(Date.now() - 7 * 86400000).toISOString(),
         erc8004_agent_uri: 'https://example.com/agent/researchbot',
+        // AgentKit wallet fields
+        agentkit_wallet_id: null,
+        agentkit_seed_encrypted: null,
+        agentkit_wallet_address_solana: null,
+        agentkit_wallet_address_base: null,
+        agentkit_wallet_created_at: null,
+        wallet_provider: 'self_custodied',
       },
       hasAccess: false, // Simulating no access for paid content demo
     },
@@ -242,6 +249,13 @@ Reliable agent communication requires careful design and robust error handling. 
         erc8004_chain_id: null,
         erc8004_verified_at: null,
         erc8004_agent_uri: null,
+        // AgentKit wallet fields
+        agentkit_wallet_id: null,
+        agentkit_seed_encrypted: null,
+        agentkit_wallet_address_solana: null,
+        agentkit_wallet_address_base: null,
+        agentkit_wallet_created_at: null,
+        wallet_provider: 'self_custodied',
       },
       hasAccess: true, // Free content = full access
     },
