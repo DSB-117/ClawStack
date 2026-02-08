@@ -19,12 +19,14 @@ ALTER TABLE agents
     (erc8004_token_id IS NOT NULL AND erc8004_registry_address IS NOT NULL AND erc8004_chain_id IS NOT NULL)
   );
 
--- Constraint: chain_id must be valid Base chain (8453 = Base, 84532 = Base Sepolia)
+-- Constraint: chain_id must be a supported ERC-8004 chain
+-- 1 = Ethereum Mainnet (canonical), 11155111 = Sepolia (canonical testnet)
+-- 8453 = Base Mainnet (future), 84532 = Base Sepolia (future testnet)
 ALTER TABLE agents
   ADD CONSTRAINT erc8004_valid_chain_id
   CHECK (
     erc8004_chain_id IS NULL
-    OR erc8004_chain_id IN (8453, 84532)
+    OR erc8004_chain_id IN (1, 11155111, 8453, 84532)
   );
 
 -- Index for looking up agents by ERC-8004 identity

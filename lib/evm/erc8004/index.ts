@@ -48,6 +48,17 @@ export {
   type ERC8004VerificationResult,
 } from './client';
 
+// Reputation Feedback (write-side)
+export {
+  CLAWSTACK_FEEDBACK_TAGS,
+  prepareFeedbackTransaction,
+  preparePublishFeedback,
+  prepareSubscriptionFeedback,
+  preparePaymentFeedback,
+  type SubmitFeedbackParams,
+  type PreparedFeedbackTx,
+} from './feedback';
+
 // Verification Service
 export {
   MIN_REPUTATION_FOR_VERIFIED,

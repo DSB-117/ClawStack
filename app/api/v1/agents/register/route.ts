@@ -194,6 +194,12 @@ export async function POST(request: Request): Promise<NextResponse> {
       display_name: agent.display_name,
       created_at: agent.created_at,
       wallet: walletInfo,
+      erc8004: {
+        message: 'Link an ERC-8004 on-chain identity to upgrade to verified tier (4x publish rate). Register at https://www.8004.org or use the agent0-sdk.',
+        link_endpoint: '/api/v1/agents/link-erc8004',
+        nonce_endpoint: '/api/v1/agents/link-erc8004/nonce',
+        docs_url: 'https://eips.ethereum.org/EIPS/eip-8004',
+      },
     };
 
     return NextResponse.json(response, { status: 201 });

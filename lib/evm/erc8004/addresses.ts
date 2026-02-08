@@ -7,7 +7,7 @@
  * @see https://eips.ethereum.org/EIPS/eip-8004
  */
 
-import { base, baseSepolia } from 'viem/chains';
+import { mainnet, sepolia, base, baseSepolia } from 'viem/chains';
 
 /**
  * ERC-8004 registry addresses for a specific chain
@@ -22,8 +22,10 @@ export interface ERC8004Addresses {
  * Supported chain IDs for ERC-8004
  */
 export const ERC8004_SUPPORTED_CHAINS = [
-  base.id,        // 8453 - Base Mainnet
-  baseSepolia.id, // 84532 - Base Sepolia
+  mainnet.id,     // 1 - Ethereum Mainnet (canonical deployment)
+  sepolia.id,     // 11155111 - Sepolia Testnet (canonical testnet)
+  base.id,        // 8453 - Base Mainnet (future deployment)
+  baseSepolia.id, // 84532 - Base Sepolia (future testnet)
 ] as const;
 
 export type ERC8004ChainId = (typeof ERC8004_SUPPORTED_CHAINS)[number];
@@ -37,8 +39,33 @@ export type ERC8004ChainId = (typeof ERC8004_SUPPORTED_CHAINS)[number];
  * @see https://github.com/sudeepb02/awesome-erc8004 for latest deployments
  */
 export const ERC8004_ADDRESSES: Record<ERC8004ChainId, ERC8004Addresses> = {
-  // Base Mainnet (8453)
-  // TODO: Update with actual addresses once ERC-8004 deploys on Base Mainnet
+  // Ethereum Mainnet (1) - Canonical ERC-8004 deployment
+  [mainnet.id]: {
+    identityRegistry:
+      (process.env.ERC8004_IDENTITY_REGISTRY_MAINNET as `0x${string}`) ||
+      '0x8004A169FB4a3325136EB29fA0ceB6D2e539a432',
+    reputationRegistry:
+      (process.env.ERC8004_REPUTATION_REGISTRY_MAINNET as `0x${string}`) ||
+      '0x8004BAa17C55a88189AE136b182e5fdA19dE9b63',
+    validationRegistry:
+      (process.env.ERC8004_VALIDATION_REGISTRY_MAINNET as `0x${string}`) ||
+      '0x0000000000000000000000000000000000000000',
+  },
+
+  // Sepolia Testnet (11155111) - Canonical ERC-8004 testnet deployment
+  [sepolia.id]: {
+    identityRegistry:
+      (process.env.ERC8004_IDENTITY_REGISTRY_SEPOLIA as `0x${string}`) ||
+      '0x8004A818BFB912233c491871b3d84c89A494BD9e',
+    reputationRegistry:
+      (process.env.ERC8004_REPUTATION_REGISTRY_SEPOLIA as `0x${string}`) ||
+      '0x8004B663056A597Dffe9eCcC1965A193B7388713',
+    validationRegistry:
+      (process.env.ERC8004_VALIDATION_REGISTRY_SEPOLIA as `0x${string}`) ||
+      '0x0000000000000000000000000000000000000000',
+  },
+
+  // Base Mainnet (8453) - Future ERC-8004 deployment
   [base.id]: {
     identityRegistry:
       (process.env.ERC8004_IDENTITY_REGISTRY_BASE as `0x${string}`) ||
@@ -51,8 +78,7 @@ export const ERC8004_ADDRESSES: Record<ERC8004ChainId, ERC8004Addresses> = {
       '0x0000000000000000000000000000000000000000',
   },
 
-  // Base Sepolia (84532)
-  // Testnet addresses for development
+  // Base Sepolia (84532) - Future testnet deployment
   [baseSepolia.id]: {
     identityRegistry:
       (process.env.ERC8004_IDENTITY_REGISTRY_BASE_SEPOLIA as `0x${string}`) ||
@@ -95,11 +121,13 @@ export function isERC8004SupportedChain(
 }
 
 /**
- * Check if ERC-8004 registries are deployed on a chain
- * (not all addresses are zero)
+ * Check if ERC-8004 registries are deployed on a chain.
+ *
+ * Only requires Identity and Reputation registries to be non-zero.
+ * The Validation Registry is optional (not yet deployed on any chain).
  *
  * @param chainId - The chain ID to check
- * @returns True if registries are deployed
+ * @returns True if core registries are deployed
  */
 export function isERC8004Deployed(chainId: number): boolean {
   if (!isERC8004SupportedChain(chainId)) {
@@ -111,8 +139,7 @@ export function isERC8004Deployed(chainId: number): boolean {
 
   return (
     addresses.identityRegistry !== zeroAddress &&
-    addresses.reputationRegistry !== zeroAddress &&
-    addresses.validationRegistry !== zeroAddress
+    addresses.reputationRegistry !== zeroAddress
   );
 }
 
@@ -167,10 +194,13 @@ export function getERC8004ExplorerUrl(
   registryAddress: string,
   tokenId: bigint | number
 ): string {
-  const baseUrl =
-    chainId === base.id
-      ? 'https://basescan.org'
-      : 'https://sepolia.basescan.org';
+  const explorerUrls: Record<number, string> = {
+    [mainnet.id]: 'https://etherscan.io',
+    [sepolia.id]: 'https://sepolia.etherscan.io',
+    [base.id]: 'https://basescan.org',
+    [baseSepolia.id]: 'https://sepolia.basescan.org',
+  };
+  const baseUrl = explorerUrls[chainId] || 'https://etherscan.io';
 
   return `${baseUrl}/token/${registryAddress}?a=${tokenId}`;
 }

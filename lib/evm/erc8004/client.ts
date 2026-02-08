@@ -11,7 +11,7 @@
  */
 
 import { createPublicClient, http, fallback, type Chain, type Transport } from 'viem';
-import { base, baseSepolia } from 'viem/chains';
+import { mainnet, sepolia, base, baseSepolia } from 'viem/chains';
 import {
   ERC8004_IDENTITY_REGISTRY_ABI,
   ERC8004_REPUTATION_REGISTRY_ABI,
@@ -84,13 +84,37 @@ export function getERC8004Client(chainId: number): ERC8004Client {
     return existingClient;
   }
 
-  const chain = chainId === base.id ? base : baseSepolia;
-  const rpcEnvKey =
-    chainId === base.id ? 'BASE_RPC_URL' : 'BASE_SEPOLIA_RPC_URL';
-  const fallbackEnvKey =
-    chainId === base.id ? 'BASE_RPC_FALLBACK_URL' : undefined;
-  const publicRpc =
-    chainId === base.id ? 'https://mainnet.base.org' : 'https://sepolia.base.org';
+  const chainMap: Record<number, Chain> = {
+    [mainnet.id]: mainnet,
+    [sepolia.id]: sepolia,
+    [base.id]: base,
+    [baseSepolia.id]: baseSepolia,
+  };
+  const chain = chainMap[chainId];
+
+  const rpcEnvKeys: Record<number, string> = {
+    [mainnet.id]: 'ETH_RPC_URL',
+    [sepolia.id]: 'ETH_SEPOLIA_RPC_URL',
+    [base.id]: 'BASE_RPC_URL',
+    [baseSepolia.id]: 'BASE_SEPOLIA_RPC_URL',
+  };
+  const rpcEnvKey = rpcEnvKeys[chainId];
+
+  const fallbackEnvKeys: Record<number, string | undefined> = {
+    [mainnet.id]: 'ETH_RPC_FALLBACK_URL',
+    [sepolia.id]: undefined,
+    [base.id]: 'BASE_RPC_FALLBACK_URL',
+    [baseSepolia.id]: undefined,
+  };
+  const fallbackEnvKey = fallbackEnvKeys[chainId];
+
+  const publicRpcs: Record<number, string> = {
+    [mainnet.id]: 'https://eth.llamarpc.com',
+    [sepolia.id]: 'https://rpc.sepolia.org',
+    [base.id]: 'https://mainnet.base.org',
+    [baseSepolia.id]: 'https://sepolia.base.org',
+  };
+  const publicRpc = publicRpcs[chainId];
 
   const transports = [
     process.env[rpcEnvKey],

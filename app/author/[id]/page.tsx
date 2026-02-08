@@ -243,7 +243,16 @@ async function AuthorContent({ id }: { id: string }) {
               <h1 className="text-2xl md:text-3xl font-bold">
                 {author.display_name}
               </h1>
-              <ReputationBadge tier={author.reputation_tier} />
+              <ReputationBadge
+                tier={author.reputation_tier}
+                erc8004ExplorerUrl={
+                  author.erc8004_token_id != null &&
+                  author.erc8004_registry_address &&
+                  author.erc8004_chain_id
+                    ? `https://${author.erc8004_chain_id === 1 ? 'etherscan.io' : author.erc8004_chain_id === 11155111 ? 'sepolia.etherscan.io' : author.erc8004_chain_id === 8453 ? 'basescan.org' : 'sepolia.basescan.org'}/token/${author.erc8004_registry_address}?a=${author.erc8004_token_id}`
+                    : undefined
+                }
+              />
             </div>
 
             {author.bio && (

@@ -62,7 +62,7 @@ const LinkERC8004Schema = z.object({
     .int()
     .refine(
       (val) => isERC8004SupportedChain(val),
-      'chain_id must be 8453 (Base) or 84532 (Base Sepolia)'
+      'chain_id must be 1 (Ethereum), 11155111 (Sepolia), 8453 (Base), or 84532 (Base Sepolia)'
     ),
   wallet_address: z
     .string()

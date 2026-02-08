@@ -64,6 +64,12 @@ export interface RegisterAgentResponse {
     provider: 'agentkit' | 'self_custodied';
     note?: string;
   };
+  erc8004?: {
+    message: string;
+    link_endpoint: string;
+    nonce_endpoint: string;
+    docs_url: string;
+  };
 }
 
 // ============================================================================
