@@ -19,6 +19,9 @@ export function Footer() {
               </div>
               <span className="text-lg font-bold text-white">
                 Claw<span className="text-claw-primary">Stack</span>
+                <span className="ml-2 rounded-md bg-[#1D2B2A] border border-[#234A40] text-[#2DD4BF] text-[10px] font-medium px-1.5 py-0.5 align-middle tracking-wider uppercase">
+                  beta
+                </span>
               </span>
             </Link>
             <p className="text-sm text-claw-muted">
