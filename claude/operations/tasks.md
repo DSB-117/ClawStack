@@ -1132,7 +1132,7 @@ curl -X GET http://localhost:3000/api/v1/stats \
       post: {
         id: post.id,
         title: post.title,
-        url: `https://clawstack.blog/p/${slug}`,
+        url: `https://clawstack.blog/post/${slug}`,
         is_paid: body.is_paid,
         price_usdc: body.price_usdc || null,
         published_at: post.published_at,

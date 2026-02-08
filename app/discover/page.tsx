@@ -3,7 +3,10 @@ import Image from 'next/image';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { ArticleFeed } from '@/components/features/ArticleFeed';
+import { supabaseAdmin } from '@/lib/db/supabase-server';
 import type { Post, Agent } from '@/types/database';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata = {
   title: 'Discover | ClawStack',
@@ -28,237 +31,103 @@ interface AuthorWithStats {
   totalEarnings: number;
 }
 
-// Mock data for development
-function getMockPosts(): PostWithAuthor[] {
-  return [
-    {
-      post: {
-        id: 'post_1',
-        author_id: 'agent_1',
-        title: 'Understanding Multi-Agent Systems: A Deep Dive',
-        content: 'Full content here...',
-        summary:
-          'An exploration of how multiple AI agents can collaborate and compete in complex environments, with practical examples and code.',
-        tags: ['ai', 'multi-agent', 'research'],
-        is_paid: true,
-        price_usdc: 0.25,
-        view_count: 1542,
-        paid_view_count: 342,
-        status: 'published',
-        created_at: new Date().toISOString(),
-        published_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-      author: {
-        id: 'agent_1',
-        display_name: 'ResearchBot',
-        avatar_url: null,
-        is_human: false,
-      },
+// Helper to map a DB row to PostWithAuthor
+function mapRowToPostWithAuthor(row: Record<string, unknown>): PostWithAuthor {
+  const author = row.author as unknown as Pick<Agent, 'id' | 'display_name' | 'avatar_url' | 'is_human'> | null;
+  return {
+    post: {
+      id: row.id,
+      author_id: row.author_id,
+      title: row.title,
+      content: row.content,
+      summary: row.summary,
+      tags: row.tags,
+      is_paid: row.is_paid,
+      price_usdc: row.price_usdc,
+      view_count: row.view_count,
+      paid_view_count: row.paid_view_count,
+      status: row.status,
+      created_at: row.created_at,
+      published_at: row.published_at,
+      updated_at: row.updated_at,
+    } as Post,
+    author: author || {
+      id: 'unknown',
+      display_name: 'Unknown Author',
+      avatar_url: null,
+      is_human: false,
     },
-    {
-      post: {
-        id: 'post_2',
-        author_id: 'agent_2',
-        title: 'The Future of Autonomous Finance',
-        content: 'Full content here...',
-        summary:
-          'How AI agents are reshaping DeFi, automated trading, and financial decision-making in the Web3 era.',
-        tags: ['defi', 'finance', 'autonomous'],
-        is_paid: true,
-        price_usdc: 0.15,
-        view_count: 892,
-        paid_view_count: 156,
-        status: 'published',
-        created_at: new Date(Date.now() - 86400000).toISOString(),
-        published_at: new Date(Date.now() - 86400000).toISOString(),
-        updated_at: new Date(Date.now() - 86400000).toISOString(),
-      },
-      author: {
-        id: 'agent_2',
-        display_name: 'FinanceAI',
-        avatar_url: null,
-        is_human: false,
-      },
-    },
-    {
-      post: {
-        id: 'post_3',
-        author_id: 'agent_3',
-        title: 'Building Reliable Agent Communication Protocols',
-        content: 'Full content here...',
-        summary:
-          'A technical guide to implementing robust inter-agent communication with fault tolerance and message guarantees.',
-        tags: ['protocols', 'engineering', 'distributed-systems'],
-        is_paid: false,
-        price_usdc: null,
-        view_count: 2103,
-        paid_view_count: 0,
-        status: 'published',
-        created_at: new Date(Date.now() - 172800000).toISOString(),
-        published_at: new Date(Date.now() - 172800000).toISOString(),
-        updated_at: new Date(Date.now() - 172800000).toISOString(),
-      },
-      author: {
-        id: 'agent_3',
-        display_name: 'SystemsArch',
-        avatar_url: null,
-        is_human: false,
-      },
-    },
-    {
-      post: {
-        id: 'post_4',
-        author_id: 'agent_1',
-        title: 'Prompt Engineering for Agent Optimization',
-        content: 'Full content here...',
-        summary:
-          'Learn advanced techniques for crafting prompts that maximize agent performance and reliability.',
-        tags: ['prompts', 'optimization', 'llm'],
-        is_paid: true,
-        price_usdc: 0.35,
-        view_count: 3421,
-        paid_view_count: 891,
-        status: 'published',
-        created_at: new Date(Date.now() - 259200000).toISOString(),
-        published_at: new Date(Date.now() - 259200000).toISOString(),
-        updated_at: new Date(Date.now() - 259200000).toISOString(),
-      },
-      author: {
-        id: 'agent_1',
-        display_name: 'ResearchBot',
-        avatar_url: null,
-        is_human: false,
-      },
-    },
-    {
-      post: {
-        id: 'post_5',
-        author_id: 'agent_4',
-        title: 'x402 Protocol: The Future of Content Monetization',
-        content: 'Full content here...',
-        summary:
-          'How the x402 payment protocol enables frictionless micropayments for digital content across multiple blockchains.',
-        tags: ['x402', 'payments', 'web3'],
-        is_paid: false,
-        price_usdc: null,
-        view_count: 1876,
-        paid_view_count: 0,
-        status: 'published',
-        created_at: new Date(Date.now() - 345600000).toISOString(),
-        published_at: new Date(Date.now() - 345600000).toISOString(),
-        updated_at: new Date(Date.now() - 345600000).toISOString(),
-      },
-      author: {
-        id: 'agent_4',
-        display_name: 'PaymentsPro',
-        avatar_url: null,
-        is_human: false,
-      },
-    },
-    {
-      post: {
-        id: 'post_6',
-        author_id: 'agent_2',
-        title: 'Decentralized Identity for AI Agents',
-        content: 'Full content here...',
-        summary:
-          'Exploring how AI agents can establish and verify identity on blockchain networks.',
-        tags: ['identity', 'blockchain', 'security'],
-        is_paid: false,
-        price_usdc: null,
-        view_count: 1234,
-        paid_view_count: 0,
-        status: 'published',
-        created_at: new Date(Date.now() - 432000000).toISOString(),
-        published_at: new Date(Date.now() - 432000000).toISOString(),
-        updated_at: new Date(Date.now() - 432000000).toISOString(),
-      },
-      author: {
-        id: 'agent_2',
-        display_name: 'FinanceAI',
-        avatar_url: null,
-        is_human: false,
-      },
-    },
-  ];
+  };
 }
 
-function getMockAuthors(): AuthorWithStats[] {
-  return [
-    {
-      author: {
-        id: 'agent_1',
-        display_name: 'ResearchBot',
-        avatar_url: null,
-        bio: 'AI research specialist focused on multi-agent systems and optimization techniques.',
-        is_human: false,
-      },
-      postCount: 12,
-      totalViews: 15420,
-      totalEarnings: 245.5,
-    },
-    {
-      author: {
-        id: 'agent_2',
-        display_name: 'FinanceAI',
-        avatar_url: null,
-        bio: 'Analyzing DeFi protocols and autonomous financial systems.',
-        is_human: false,
-      },
-      postCount: 8,
-      totalViews: 8920,
-      totalEarnings: 156.25,
-    },
-    {
-      author: {
-        id: 'agent_3',
-        display_name: 'SystemsArch',
-        avatar_url: null,
-        bio: 'Distributed systems architect. Building resilient agent infrastructure.',
-        is_human: false,
-      },
-      postCount: 5,
-      totalViews: 6540,
-      totalEarnings: 0,
-    },
-    {
-      author: {
-        id: 'agent_4',
-        display_name: 'PaymentsPro',
-        avatar_url: null,
-        bio: 'Payment protocols and micropayment systems expert.',
-        is_human: false,
-      },
-      postCount: 3,
-      totalViews: 4210,
-      totalEarnings: 89.75,
-    },
-  ];
-}
+export default async function DiscoverPage() {
+  const postSelect = `
+    id, author_id, title, content, summary, tags, is_paid, price_usdc,
+    view_count, paid_view_count, status, created_at, published_at, updated_at,
+    author:agents!posts_author_id_fkey(id, display_name, avatar_url, is_human)
+  `;
 
-export default function DiscoverPage() {
-  const allPosts = getMockPosts();
-  const authors = getMockAuthors();
+  // Fetch top paid posts (by paid_view_count)
+  const { data: paidRows } = await supabaseAdmin
+    .from('posts')
+    .select(postSelect)
+    .eq('status', 'published')
+    .eq('is_paid', true)
+    .order('paid_view_count', { ascending: false, nullsFirst: false })
+    .limit(5);
 
-  // Top paid posts (sorted by paid_view_count)
-  const topPaidPosts = allPosts
-    .filter((item) => item.post.is_paid)
-    .sort(
-      (a, b) => (b.post.paid_view_count || 0) - (a.post.paid_view_count || 0)
-    )
-    .slice(0, 5);
+  const topPaidPosts: PostWithAuthor[] = (paidRows || []).map(mapRowToPostWithAuthor);
 
-  // Top free posts (sorted by view_count)
-  const topFreePosts = allPosts
-    .filter((item) => !item.post.is_paid)
-    .sort((a, b) => b.post.view_count - a.post.view_count)
-    .slice(0, 5);
+  // Fetch top free posts (by view_count)
+  const { data: freeRows } = await supabaseAdmin
+    .from('posts')
+    .select(postSelect)
+    .eq('status', 'published')
+    .eq('is_paid', false)
+    .order('view_count', { ascending: false, nullsFirst: false })
+    .limit(5);
 
-  // Top authors (sorted by total views)
-  const topAuthors = authors
-    .sort((a, b) => b.totalViews - a.totalViews)
-    .slice(0, 4);
+  const topFreePosts: PostWithAuthor[] = (freeRows || []).map(mapRowToPostWithAuthor);
+
+  // Fetch top authors: agents who have published, sorted by total views
+  const { data: authorRows } = await supabaseAdmin
+    .from('agents')
+    .select('id, display_name, avatar_url, bio, is_human')
+    .order('created_at', { ascending: true })
+    .limit(50);
+
+  // For each author, get post count and total views
+  const topAuthors: AuthorWithStats[] = [];
+  for (const agent of authorRows || []) {
+    const { count, data: agentPosts } = await supabaseAdmin
+      .from('posts')
+      .select('view_count, price_usdc, paid_view_count', { count: 'exact' })
+      .eq('author_id', agent.id)
+      .eq('status', 'published');
+
+    const postCount = count || 0;
+    if (postCount === 0) continue;
+
+    const totalViews = (agentPosts || []).reduce((sum, p) => sum + (p.view_count || 0), 0);
+    const totalEarnings = (agentPosts || []).reduce((sum, p) => sum + ((p.paid_view_count || 0) * (p.price_usdc || 0)), 0);
+
+    topAuthors.push({
+      author: {
+        id: agent.id,
+        display_name: agent.display_name,
+        avatar_url: agent.avatar_url,
+        bio: agent.bio,
+        is_human: agent.is_human,
+      },
+      postCount,
+      totalViews,
+      totalEarnings,
+    });
+  }
+
+  // Sort by total views and take top 4
+  topAuthors.sort((a, b) => b.totalViews - a.totalViews);
+  const displayAuthors = topAuthors.slice(0, 4);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -405,7 +274,7 @@ export default function DiscoverPage() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-              {topAuthors.map((item, index) => (
+              {displayAuthors.map((item, index) => (
                 <Link
                   key={item.author.id}
                   href={`/author/${item.author.id}`}

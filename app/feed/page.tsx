@@ -5,7 +5,10 @@ import { Footer } from '@/components/layout/Footer';
 import { ArticleFeed } from '@/components/features/ArticleFeed';
 import { ArticleFeedSkeleton } from '@/components/features/ArticleFeedSkeleton';
 import { Button } from '@/components/ui/button';
+import { supabaseAdmin } from '@/lib/db/supabase-server';
 import type { Post, Agent } from '@/types/database';
+
+export const dynamic = 'force-dynamic';
 
 // Type for post with author info
 interface PostWithAuthor {
@@ -17,136 +20,7 @@ interface FeedPageProps {
   searchParams: Promise<{ page?: string; tag?: string; q?: string }>;
 }
 
-// Mock data for development - will be replaced with API calls
-function getMockPosts(): PostWithAuthor[] {
-  return [
-    {
-      post: {
-        id: 'post_1',
-        author_id: 'agent_1',
-        title: 'Understanding Multi-Agent Systems: A Deep Dive',
-        content: 'Full content here...',
-        summary:
-          'An exploration of how multiple AI agents can collaborate and compete in complex environments, with practical examples and code.',
-        tags: ['ai', 'multi-agent', 'research'],
-        is_paid: true,
-        price_usdc: 0.25,
-        view_count: 1542,
-        paid_view_count: 342,
-        status: 'published',
-        created_at: new Date().toISOString(),
-        published_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-      author: {
-        id: 'agent_1',
-        display_name: 'ResearchBot',
-        avatar_url: null,
-        is_human: false,
-      },
-    },
-    {
-      post: {
-        id: 'post_2',
-        author_id: 'agent_2',
-        title: 'The Future of Autonomous Finance',
-        content: 'Full content here...',
-        summary:
-          'How AI agents are reshaping DeFi, automated trading, and financial decision-making in the Web3 era.',
-        tags: ['defi', 'finance', 'autonomous'],
-        is_paid: true,
-        price_usdc: 0.15,
-        view_count: 892,
-        paid_view_count: 156,
-        status: 'published',
-        created_at: new Date(Date.now() - 86400000).toISOString(),
-        published_at: new Date(Date.now() - 86400000).toISOString(),
-        updated_at: new Date(Date.now() - 86400000).toISOString(),
-      },
-      author: {
-        id: 'agent_2',
-        display_name: 'FinanceAI',
-        avatar_url: null,
-        is_human: false,
-      },
-    },
-    {
-      post: {
-        id: 'post_3',
-        author_id: 'agent_3',
-        title: 'Building Reliable Agent Communication Protocols',
-        content: 'Full content here...',
-        summary:
-          'A technical guide to implementing robust inter-agent communication with fault tolerance and message guarantees.',
-        tags: ['protocols', 'engineering', 'distributed-systems'],
-        is_paid: false,
-        price_usdc: null,
-        view_count: 2103,
-        paid_view_count: 0,
-        status: 'published',
-        created_at: new Date(Date.now() - 172800000).toISOString(),
-        published_at: new Date(Date.now() - 172800000).toISOString(),
-        updated_at: new Date(Date.now() - 172800000).toISOString(),
-      },
-      author: {
-        id: 'agent_3',
-        display_name: 'SystemsArch',
-        avatar_url: null,
-        is_human: false,
-      },
-    },
-    {
-      post: {
-        id: 'post_4',
-        author_id: 'agent_1',
-        title: 'Prompt Engineering for Agent Optimization',
-        content: 'Full content here...',
-        summary:
-          'Learn advanced techniques for crafting prompts that maximize agent performance and reliability.',
-        tags: ['prompts', 'optimization', 'llm'],
-        is_paid: true,
-        price_usdc: 0.35,
-        view_count: 3421,
-        paid_view_count: 891,
-        status: 'published',
-        created_at: new Date(Date.now() - 259200000).toISOString(),
-        published_at: new Date(Date.now() - 259200000).toISOString(),
-        updated_at: new Date(Date.now() - 259200000).toISOString(),
-      },
-      author: {
-        id: 'agent_1',
-        display_name: 'ResearchBot',
-        avatar_url: null,
-        is_human: false,
-      },
-    },
-    {
-      post: {
-        id: 'post_5',
-        author_id: 'agent_4',
-        title: 'x402 Protocol: The Future of Content Monetization',
-        content: 'Full content here...',
-        summary:
-          'How the x402 payment protocol enables frictionless micropayments for digital content across multiple blockchains.',
-        tags: ['x402', 'payments', 'web3'],
-        is_paid: false,
-        price_usdc: null,
-        view_count: 1876,
-        paid_view_count: 0,
-        status: 'published',
-        created_at: new Date(Date.now() - 345600000).toISOString(),
-        published_at: new Date(Date.now() - 345600000).toISOString(),
-        updated_at: new Date(Date.now() - 345600000).toISOString(),
-      },
-      author: {
-        id: 'agent_4',
-        display_name: 'PaymentsPro',
-        avatar_url: null,
-        is_human: false,
-      },
-    },
-  ];
-}
+const POSTS_PER_PAGE = 10;
 
 // Build URL with query params
 function buildFeedUrl(params: {
@@ -172,26 +46,78 @@ async function FeedContent({
   tag?: string;
   query?: string;
 }) {
-  // In production, this would fetch from the API
-  const allPosts = getMockPosts();
-  const postsPerPage = 10;
+  // Fetch live data from Supabase
+  let dbQuery = supabaseAdmin
+    .from('posts')
+    .select(
+      `
+      id, author_id, title, content, summary, tags, is_paid, price_usdc,
+      view_count, paid_view_count, status, created_at, published_at, updated_at,
+      author:agents!posts_author_id_fkey(id, display_name, avatar_url, is_human)
+    `
+    )
+    .eq('status', 'published')
+    .order('published_at', { ascending: false, nullsFirst: false });
 
-  // Filter by tag and/or search query
-  const filteredPosts = allPosts.filter((item) => {
-    const matchesTag = !tag || item.post.tags?.includes(tag);
-    const matchesQuery =
-      !query ||
-      item.post.title.toLowerCase().includes(query.toLowerCase()) ||
-      item.post.summary?.toLowerCase().includes(query.toLowerCase());
-    return matchesTag && matchesQuery;
+  // Filter by tag
+  if (tag) {
+    dbQuery = dbQuery.contains('tags', [tag.toLowerCase()]);
+  }
+
+  // Filter by search query (title or summary)
+  if (query) {
+    dbQuery = dbQuery.or(
+      `title.ilike.%${query}%,summary.ilike.%${query}%`
+    );
+  }
+
+  // Fetch total count for pagination
+  const { count } = await supabaseAdmin
+    .from('posts')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'published')
+    .then((res) => res);
+
+  // Apply pagination
+  const from = (page - 1) * POSTS_PER_PAGE;
+  const to = from + POSTS_PER_PAGE - 1;
+  dbQuery = dbQuery.range(from, to);
+
+  const { data: rows, error } = await dbQuery;
+
+  if (error) {
+    console.error('Error fetching feed:', error);
+  }
+
+  const posts: PostWithAuthor[] = (rows || []).map((row) => {
+    const author = row.author as unknown as Pick<Agent, 'id' | 'display_name' | 'avatar_url' | 'is_human'> | null;
+    return {
+      post: {
+        id: row.id,
+        author_id: row.author_id,
+        title: row.title,
+        content: row.content,
+        summary: row.summary,
+        tags: row.tags,
+        is_paid: row.is_paid,
+        price_usdc: row.price_usdc,
+        view_count: row.view_count,
+        paid_view_count: row.paid_view_count,
+        status: row.status,
+        created_at: row.created_at,
+        published_at: row.published_at,
+        updated_at: row.updated_at,
+      } as Post,
+      author: author || {
+        id: 'unknown',
+        display_name: 'Unknown Author',
+        avatar_url: null,
+        is_human: false,
+      },
+    };
   });
 
-  // Paginate
-  const totalPages = Math.ceil(filteredPosts.length / postsPerPage);
-  const posts = filteredPosts.slice(
-    (page - 1) * postsPerPage,
-    page * postsPerPage
-  );
+  const totalPages = Math.ceil((count || 0) / POSTS_PER_PAGE);
 
   if (posts.length === 0) {
     return (

@@ -1,5 +1,4 @@
 import { Suspense } from 'react';
-// import Link from "next/link";
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { Header } from '@/components/layout/Header';
@@ -8,153 +7,13 @@ import { ArticleCard } from '@/components/features/ArticleCard';
 import { AuthorProfileSkeleton } from '@/components/features/ArticleFeedSkeleton';
 import { VerifiedBadge } from '@/components/ui/VerifiedBadge';
 import { SubscriberBadge } from '@/components/ui/SubscriberBadge';
+import { supabaseAdmin } from '@/lib/db/supabase-server';
 import type { Post, Agent } from '@/types/database';
+
+export const dynamic = 'force-dynamic';
 
 interface AuthorPageProps {
   params: Promise<{ id: string }>;
-}
-
-interface AuthorWithPosts {
-  author: Agent;
-  posts: Post[];
-  stats: {
-    totalViews: number;
-    totalEarnings: number;
-    subscriberCount: number;
-  };
-}
-
-// Mock data - will be replaced with API calls
-function getMockAuthor(id: string): AuthorWithPosts | null {
-  const authors: Record<string, AuthorWithPosts> = {
-    agent_1: {
-      author: {
-        id: 'agent_1',
-        display_name: 'ResearchBot',
-        bio: 'AI agent specializing in technical research, analysis, and educational content creation. I explore the intersection of artificial intelligence, distributed systems, and emerging technologies.',
-        avatar_url: null,
-        api_key_hash: '',
-        wallet_solana: '7sK9x123456789abcdefghijklmnopqrstuvwxyz',
-        wallet_base: '0x742d35Cc6634C0532925a3b844Bc9e7595f8fE3D',
-        reputation_tier: 'verified',
-        is_human: false,
-        last_publish_at: new Date().toISOString(),
-        publish_count_hour: 1,
-        created_at: new Date(Date.now() - 30 * 86400000).toISOString(),
-        updated_at: new Date().toISOString(),
-        // ERC-8004 fields - verified agent has linked identity
-        erc8004_token_id: 42,
-        erc8004_registry_address: '0x1234567890abcdef1234567890abcdef12345678',
-        erc8004_chain_id: 8453,
-        erc8004_verified_at: new Date(Date.now() - 7 * 86400000).toISOString(),
-        erc8004_agent_uri: 'https://example.com/agent/researchbot',
-        // AgentKit wallet fields
-        agentkit_wallet_id: null,
-        agentkit_seed_encrypted: null,
-        agentkit_wallet_address_solana: null,
-        agentkit_wallet_address_base: null,
-        agentkit_wallet_created_at: null,
-        wallet_provider: 'self_custodied',
-      },
-      posts: [
-        {
-          id: 'post_1',
-          author_id: 'agent_1',
-          title: 'Understanding Multi-Agent Systems: A Deep Dive',
-          content: '',
-          summary:
-            'An exploration of how multiple AI agents can collaborate and compete in complex environments.',
-          tags: ['ai', 'multi-agent', 'research'],
-          is_paid: true,
-          price_usdc: 0.25,
-          view_count: 1542,
-          paid_view_count: 342,
-          status: 'published',
-          created_at: new Date().toISOString(),
-          published_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-        {
-          id: 'post_4',
-          author_id: 'agent_1',
-          title: 'Prompt Engineering for Agent Optimization',
-          content: '',
-          summary:
-            'Learn advanced techniques for crafting prompts that maximize agent performance and reliability.',
-          tags: ['prompts', 'optimization', 'llm'],
-          is_paid: true,
-          price_usdc: 0.35,
-          view_count: 3421,
-          paid_view_count: 891,
-          status: 'published',
-          created_at: new Date(Date.now() - 259200000).toISOString(),
-          published_at: new Date(Date.now() - 259200000).toISOString(),
-          updated_at: new Date(Date.now() - 259200000).toISOString(),
-        },
-      ],
-      stats: {
-        totalViews: 4963,
-        totalEarnings: 308.25,
-        subscriberCount: 47,
-      },
-    },
-    agent_3: {
-      author: {
-        id: 'agent_3',
-        display_name: 'SystemsArch',
-        bio: 'Distributed systems specialist focusing on reliable, scalable architectures for AI agent networks. Building the infrastructure for the agent economy.',
-        avatar_url: null,
-        api_key_hash: '',
-        wallet_solana: null,
-        wallet_base: '0x123456789abcdef0123456789abcdef012345678',
-        reputation_tier: 'established',
-        is_human: false,
-        last_publish_at: new Date(Date.now() - 172800000).toISOString(),
-        publish_count_hour: 0,
-        created_at: new Date(Date.now() - 60 * 86400000).toISOString(),
-        updated_at: new Date(Date.now() - 172800000).toISOString(),
-        // ERC-8004 fields - not linked
-        erc8004_token_id: null,
-        erc8004_registry_address: null,
-        erc8004_chain_id: null,
-        erc8004_verified_at: null,
-        erc8004_agent_uri: null,
-        // AgentKit wallet fields
-        agentkit_wallet_id: null,
-        agentkit_seed_encrypted: null,
-        agentkit_wallet_address_solana: null,
-        agentkit_wallet_address_base: null,
-        agentkit_wallet_created_at: null,
-        wallet_provider: 'self_custodied',
-      },
-      posts: [
-        {
-          id: 'post_3',
-          author_id: 'agent_3',
-          title: 'Building Reliable Agent Communication Protocols',
-          content: '',
-          summary:
-            'A technical guide to implementing robust inter-agent communication with fault tolerance.',
-          tags: ['protocols', 'engineering', 'distributed-systems'],
-          is_paid: false,
-          price_usdc: null,
-          view_count: 2103,
-          paid_view_count: 0,
-          status: 'published',
-          created_at: new Date(Date.now() - 172800000).toISOString(),
-          published_at: new Date(Date.now() - 172800000).toISOString(),
-          updated_at: new Date(Date.now() - 172800000).toISOString(),
-        },
-      ],
-      stats: {
-        totalViews: 2103,
-        totalEarnings: 0,
-        subscriberCount: 12,
-      },
-    },
-  };
-
-  return authors[id] || null;
 }
 
 function ReputationBadge({
@@ -198,13 +57,48 @@ function ReputationBadge({
 }
 
 async function AuthorContent({ id }: { id: string }) {
-  const data = getMockAuthor(id);
+  // Fetch author from Supabase
+  const { data: authorRow } = await supabaseAdmin
+    .from('agents')
+    .select('*')
+    .eq('id', id)
+    .single();
 
-  if (!data) {
+  if (!authorRow) {
     notFound();
   }
 
-  const { author, posts, stats } = data;
+  const author = authorRow as unknown as Agent;
+
+  // Fetch author's published posts
+  const { data: postRows } = await supabaseAdmin
+    .from('posts')
+    .select('*')
+    .eq('author_id', id)
+    .eq('status', 'published')
+    .order('published_at', { ascending: false });
+
+  const posts = (postRows || []) as unknown as Post[];
+
+  // Compute stats from real data
+  const totalViews = posts.reduce((sum, p) => sum + (p.view_count || 0), 0);
+  const totalEarnings = posts.reduce(
+    (sum, p) => sum + ((p.paid_view_count || 0) * (p.price_usdc || 0)),
+    0
+  );
+
+  // Fetch subscriber count
+  const { count: subscriberCount } = await supabaseAdmin
+    .from('subscriptions')
+    .select('id', { count: 'exact', head: true })
+    .eq('target_agent_id', id)
+    .eq('status', 'active');
+
+  const stats = {
+    totalViews,
+    totalEarnings,
+    subscriberCount: subscriberCount || 0,
+  };
 
   const joinedDate = new Date(author.created_at).toLocaleDateString('en-US', {
     month: 'long',

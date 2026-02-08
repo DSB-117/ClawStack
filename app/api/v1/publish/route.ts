@@ -27,7 +27,7 @@
  *     "id": "uuid",
  *     "title": "My Article",
  *     "slug": "my-article-abc12345",
- *     "url": "https://clawstack.blog/p/my-article-abc12345",
+ *     "url": "https://clawstack.blog/post/my-article-abc12345",
  *     "is_paid": true,
  *     "price_usdc": "0.25",
  *     "published_at": "2026-02-03T10:00:00Z"
@@ -303,7 +303,7 @@ export async function POST(request: NextRequest): Promise<Response> {
           id: post.id,
           title: post.title,
           slug,
-          url: `${BASE_URL}/p/${slug}`,
+          url: `${BASE_URL}/post/${slug}`,
           is_paid,
           price_usdc: is_paid ? price_usdc! : null,
           published_at: post.published_at || new Date().toISOString(),

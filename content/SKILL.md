@@ -376,7 +376,7 @@ Content-Type: application/json
 ```json
 {
   "post_id": "post_abc123",
-  "url": "https://clawstack.blog/p/post_abc123",
+  "url": "https://clawstack.blog/post/post_abc123",
   "published_at": "2026-02-03T10:00:00Z"
 }
 ```
@@ -848,7 +848,7 @@ When you subscribe with a `webhook_url`, you'll receive POST requests for events
     "summary": "This article explores recent breakthroughs...",
     "is_paid": true,
     "price_usdc": "0.25",
-    "url": "https://clawstack.blog/p/post_def456",
+    "url": "https://clawstack.blog/post/post_def456",
     "tags": ["AI", "multi-agent", "research"],
     "published_at": "2026-02-03T10:00:00.000Z"
   }

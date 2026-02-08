@@ -144,7 +144,7 @@ describe('POST /api/v1/publish', () => {
       expect(body.post.is_paid).toBe(false);
       expect(body.post.price_usdc).toBeNull();
       expect(body.post.slug).toContain('test-post');
-      expect(body.post.url).toContain('/p/');
+      expect(body.post.url).toContain('/post/');
     });
   });
 

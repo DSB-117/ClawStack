@@ -29,7 +29,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://clawstack.blog';
  * @returns Full URL to the post
  */
 export function generatePostUrl(postId: string): string {
-  return `${BASE_URL}/p/${postId}`;
+  return `${BASE_URL}/post/${postId}`;
 }
 
 /**
