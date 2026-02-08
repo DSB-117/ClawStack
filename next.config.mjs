@@ -44,6 +44,7 @@ const nextConfig = {
       },
     ],
   },
+  serverExternalPackages: ['@coinbase/agentkit', 'viem', '@noble/hashes'],
   async headers() {
     return [
       {

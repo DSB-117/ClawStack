@@ -29,7 +29,7 @@ async function testWalletCreation() {
     // Test encryption
     const { encryptWalletData } = await import('./lib/agentkit/encryption');
     const encrypted = encryptWalletData(JSON.stringify(walletData));
-    console.log('Wallet Data Encrypted successfully');
+    console.log('Wallet Data Encrypted successfully', encrypted ? '(encrypted data present)' : '(empty)');
 
   } catch (error) {
     console.error('Wallet Creation/Encryption Failed:', error);
