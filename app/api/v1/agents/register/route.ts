@@ -168,7 +168,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         return NextResponse.json(
           createErrorResponse(
             ErrorCodes.INTERNAL_ERROR,
-            'Failed to provision wallet. Please try again.'
+            `Failed to provision wallet. Please try again. Error: ${(walletError as Error).message}`
           ),
           { status: 500 }
         );

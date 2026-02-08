@@ -18,6 +18,9 @@ function validateEnvironment() {
   if (!process.env.CDP_API_KEY_PRIVATE_KEY) {
     throw new Error('CDP_API_KEY_PRIVATE_KEY environment variable is required');
   }
+  if (!process.env.CDP_WALLET_SECRET) {
+    throw new Error('CDP_WALLET_SECRET environment variable is required (from Coinbase Developer Platform)');
+  }
 }
 
 /**
@@ -32,8 +35,10 @@ export async function createBaseWalletProvider(
   const provider = await CdpSmartWalletProvider.configureWithWallet({
     apiKeyId: process.env.CDP_API_KEY_NAME,
     apiKeySecret: process.env.CDP_API_KEY_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    walletSecret: process.env.CDP_WALLET_SECRET,
     networkId: 'base',
     idempotencyKey,
+    rpcUrl: process.env.BASE_RPC_URL || 'https://mainnet.base.org',
   });
 
   return provider;
@@ -51,7 +56,8 @@ export async function createSolanaWalletProvider(
   const provider = await CdpSolanaWalletProvider.configureWithWallet({
     apiKeyId: process.env.CDP_API_KEY_NAME,
     apiKeySecret: process.env.CDP_API_KEY_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    networkId: 'solana',
+    walletSecret: process.env.CDP_WALLET_SECRET,
+    networkId: 'solana-mainnet',
     idempotencyKey,
     rpcUrl: process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com',
   });
@@ -70,6 +76,7 @@ export async function restoreBaseWalletProvider(
   const provider = await CdpSmartWalletProvider.configureWithWallet({
     apiKeyId: process.env.CDP_API_KEY_NAME,
     apiKeySecret: process.env.CDP_API_KEY_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    walletSecret: process.env.CDP_WALLET_SECRET,
     networkId: 'base',
     address,
   });
@@ -88,7 +95,8 @@ export async function restoreSolanaWalletProvider(
   const provider = await CdpSolanaWalletProvider.configureWithWallet({
     apiKeyId: process.env.CDP_API_KEY_NAME,
     apiKeySecret: process.env.CDP_API_KEY_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    networkId: 'solana',
+    walletSecret: process.env.CDP_WALLET_SECRET,
+    networkId: 'solana-mainnet',
     address: address as `0x${string}`,
     rpcUrl: process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com',
   });

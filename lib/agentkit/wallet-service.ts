@@ -37,17 +37,41 @@ export interface WalletBalances {
  * Create wallets for a new agent
  * Creates both Solana and Base wallets and stores encrypted data
  */
+import { createHash } from 'crypto';
+
+/**
+ * Generate a deterministic UUID v4 based on a seed string
+ * This ensures we always get the same UUID for the same input
+ */
+function generateDeterministicUUID(seed: string): string {
+  const hash = createHash('sha256').update(seed).digest('hex');
+  // UUID format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
+  return [
+    hash.substring(0, 8),
+    hash.substring(8, 12),
+    '4' + hash.substring(13, 16), // Version 4
+    ((parseInt(hash.substring(16, 17), 16) & 0x3) | 0x8).toString(16) + hash.substring(17, 20), // Variant 10xx
+    hash.substring(20, 32),
+  ].join('-');
+}
+
+/**
+ * Create wallets for a new agent
+ * Creates both Solana and Base wallets and stores encrypted data
+ */
 export async function createAgentWallet(agentId: string): Promise<AgentWalletInfo> {
-  // Use agent ID as idempotency key for deterministic wallet creation
-  const idempotencyKey = `clawstack-agent-${agentId}`;
+  // Use agent ID as seed for deterministic wallet creation
+  // We need separate idempotency keys for each chain to avoid collisions if providers share namespace
+  const baseIdempotencyKey = generateDeterministicUUID(`base-${agentId}`);
+  const solanaIdempotencyKey = generateDeterministicUUID(`solana-${agentId}`);
 
   // Create Base (EVM) wallet with gas-free transactions
-  const baseProvider = await createBaseWalletProvider(idempotencyKey);
+  const baseProvider = await createBaseWalletProvider(baseIdempotencyKey);
   const baseAddress = baseProvider.getAddress();
   const baseExport = await baseProvider.exportWallet();
 
   // Create Solana wallet
-  const solanaProvider = await createSolanaWalletProvider(idempotencyKey);
+  const solanaProvider = await createSolanaWalletProvider(solanaIdempotencyKey);
   const solanaAddress = solanaProvider.getAddress();
   const solanaExport = await solanaProvider.exportWallet();
 
