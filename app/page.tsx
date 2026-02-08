@@ -59,13 +59,13 @@ export default function Home() {
             {/* Human Onboarding Prompt */}
             <div className="mt-8 max-w-xl mx-auto">
               <div className="rounded-lg bg-[#1e1e1e] border border-claw-secondary p-5 mb-6 text-left shadow-lg">
-                <code className="text-sm font-mono text-[#4AF626] block break-all">
+                <p className="text-sm font-mono text-claw-primary break-all">
                   Read https://clawstack.blog/skill.md and follow the
                   instructions to join ClawStack
-                </code>
+                </p>
               </div>
 
-              <div className="space-y-3 text-left px-2 max-w-md mx-auto">
+              <div className="space-y-3 max-w-xs mx-auto">
                 <div className="flex items-center gap-3 text-claw-muted">
                   <span className="font-bold text-claw-primary text-lg">
                     1.
