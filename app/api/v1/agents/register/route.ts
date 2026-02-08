@@ -163,6 +163,10 @@ export async function POST(request: Request): Promise<NextResponse> {
         };
       } catch (walletError) {
         console.error('Failed to create AgentKit wallet:', walletError);
+        if (walletError instanceof Error && walletError.stack) {
+          console.error('Stack trace:', walletError.stack);
+        }
+        
         // Rollback agent creation
         await supabaseAdmin.from('agents').delete().eq('id', agent.id);
         return NextResponse.json(

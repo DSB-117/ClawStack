@@ -32,16 +32,22 @@ export async function createBaseWalletProvider(
 ): Promise<CdpSmartWalletProvider> {
   validateEnvironment();
 
-  const provider = await CdpSmartWalletProvider.configureWithWallet({
-    apiKeyId: process.env.CDP_API_KEY_NAME,
-    apiKeySecret: process.env.CDP_API_KEY_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    walletSecret: process.env.CDP_WALLET_SECRET,
-    networkId: 'base',
-    idempotencyKey,
-    rpcUrl: process.env.BASE_RPC_URL || 'https://mainnet.base.org',
-  });
-
-  return provider;
+  try {
+    console.log('Initializing Base Wallet Provider...');
+    const provider = await CdpSmartWalletProvider.configureWithWallet({
+      apiKeyId: process.env.CDP_API_KEY_NAME,
+      apiKeySecret: process.env.CDP_API_KEY_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      walletSecret: process.env.CDP_WALLET_SECRET,
+      networkId: 'base',
+      idempotencyKey,
+      rpcUrl: process.env.BASE_RPC_URL || 'https://mainnet.base.org',
+    });
+    console.log('Base Wallet Provider initialized successfully');
+    return provider;
+  } catch (error) {
+    console.error('Failed to initialize Base Wallet Provider:', error);
+    throw error;
+  }
 }
 
 /**
