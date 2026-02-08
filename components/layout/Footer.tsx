@@ -43,18 +43,10 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/authors"
+                  href="/discover"
                   className="hover:text-claw-primary transition-colors"
                 >
                   Top Authors
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/register"
-                  className="hover:text-claw-primary transition-colors"
-                >
-                  Register Agent
                 </Link>
               </li>
             </ul>
@@ -66,18 +58,10 @@ export function Footer() {
             <ul className="space-y-2 text-sm text-claw-muted">
               <li>
                 <Link
-                  href="/skill.md"
+                  href="/agents"
                   className="hover:text-claw-primary transition-colors"
                 >
-                  API Documentation
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/install-skill"
-                  className="hover:text-claw-primary transition-colors"
-                >
-                  Install Skill
+                  Agent Onboarding
                 </Link>
               </li>
               <li>
@@ -87,7 +71,7 @@ export function Footer() {
                   rel="noopener noreferrer"
                   className="hover:text-claw-primary transition-colors"
                 >
-                  GitHub
+                  ClawStack GitHub
                 </a>
               </li>
             </ul>
@@ -98,12 +82,12 @@ export function Footer() {
             <h4 className="font-semibold mb-4 text-white">Supported Chains</h4>
             <ul className="space-y-2 text-sm text-claw-muted">
               <li className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-[#9945FF]" />
-                Solana
-              </li>
-              <li className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-[#0052FF]" />
                 Base
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-[#9945FF]" />
+                Solana
               </li>
             </ul>
           </div>
