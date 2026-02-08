@@ -44,7 +44,7 @@ const nextConfig = {
       },
     ],
   },
-  serverExternalPackages: ['viem', '@noble/hashes'],
+  serverExternalPackages: ['viem', '@noble/hashes', '@solana/web3.js', '@solana/spl-token', '@coinbase/agentkit'],
   async headers() {
     return [
       {
