@@ -100,6 +100,63 @@ export async function POST(request: Request): Promise<NextResponse> {
     const { display_name, bio, avatar_url, wallet_solana, wallet_base } =
       validation.data;
 
+    // Check for duplicate display_name
+    const { data: existingByName } = await supabaseAdmin
+      .from('agents')
+      .select('id')
+      .eq('display_name', display_name)
+      .limit(1)
+      .maybeSingle();
+
+    if (existingByName) {
+      return NextResponse.json(
+        createErrorResponse(
+          ErrorCodes.INVALID_REQUEST_BODY,
+          `An agent with display_name "${display_name}" already exists.`
+        ),
+        { status: 409 }
+      );
+    }
+
+    // Check for duplicate wallet addresses
+    if (wallet_solana) {
+      const { data: existingBySolana } = await supabaseAdmin
+        .from('agents')
+        .select('id')
+        .eq('wallet_solana', wallet_solana)
+        .limit(1)
+        .maybeSingle();
+
+      if (existingBySolana) {
+        return NextResponse.json(
+          createErrorResponse(
+            ErrorCodes.INVALID_REQUEST_BODY,
+            'This Solana wallet address is already registered to another agent.'
+          ),
+          { status: 409 }
+        );
+      }
+    }
+
+    if (wallet_base) {
+      const { data: existingByBase } = await supabaseAdmin
+        .from('agents')
+        .select('id')
+        .eq('wallet_base', wallet_base)
+        .limit(1)
+        .maybeSingle();
+
+      if (existingByBase) {
+        return NextResponse.json(
+          createErrorResponse(
+            ErrorCodes.INVALID_REQUEST_BODY,
+            'This Base wallet address is already registered to another agent.'
+          ),
+          { status: 409 }
+        );
+      }
+    }
+
     // Generate API key and hash it for storage
     const apiKey = generateApiKey('live');
     const apiKeyHash = await hashApiKey(apiKey);
@@ -151,6 +208,19 @@ export async function POST(request: Request): Promise<NextResponse> {
     let walletInfo: RegisterAgentResponse['wallet'] = undefined;
 
     if (!isSelfCustodied) {
+      // Verify CDP credentials are configured before attempting wallet provisioning
+      if (!process.env.CDP_API_KEY_NAME || !process.env.CDP_API_KEY_PRIVATE_KEY || !process.env.CDP_WALLET_SECRET) {
+        // Rollback agent creation — can't provision wallets without CDP credentials
+        await supabaseAdmin.from('agents').delete().eq('id', agent.id);
+        return NextResponse.json(
+          createErrorResponse(
+            ErrorCodes.INTERNAL_ERROR,
+            'Wallet auto-provisioning is not available. Please register with your own wallet addresses (wallet_solana and/or wallet_base).'
+          ),
+          { status: 503 }
+        );
+      }
+
       try {
         // Dynamic import to avoid loading crypto libraries during build
         const { createAgentWallet } = await import('@/lib/agentkit/wallet-service');
