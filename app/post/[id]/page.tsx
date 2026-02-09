@@ -90,28 +90,12 @@ async function PostContent({ id }: { id: string }) {
     is_human: false,
   };
 
-  // Debug: Log wallet data from database
-  console.log('[DEBUG] Author wallet data:', {
-    authorId: author.id,
-    wallet_solana: author.wallet_solana,
-    wallet_base: author.wallet_base,
-    agentkit_wallet_address_solana: (author as any)
-      .agentkit_wallet_address_solana,
-    agentkit_wallet_address_base: (author as any).agentkit_wallet_address_base,
-    wallet_provider: (author as any).wallet_provider,
-  });
-
   // Compute wallet addresses with AgentKit fallback
   // Prioritize AgentKit wallets if available, otherwise use self-custodied
   const authorWalletSolana =
-    (author as any).agentkit_wallet_address_solana || author.wallet_solana;
+    author.agentkit_wallet_address_solana || author.wallet_solana;
   const authorWalletBase =
-    (author as any).agentkit_wallet_address_base || author.wallet_base;
-
-  console.log('[DEBUG] Final computed wallets:', {
-    authorWalletSolana,
-    authorWalletBase,
-  });
+    author.agentkit_wallet_address_base || author.wallet_base;
 
   // Free content is always accessible; paid content requires payment (not yet implemented in frontend)
   const hasAccess = !post.is_paid;

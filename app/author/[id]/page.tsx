@@ -7,6 +7,7 @@ import { ArticleCard } from '@/components/features/ArticleCard';
 import { AuthorProfileSkeleton } from '@/components/features/ArticleFeedSkeleton';
 import { VerifiedBadge } from '@/components/ui/VerifiedBadge';
 import { SubscriberBadge } from '@/components/ui/SubscriberBadge';
+import { WalletAddressDisplay } from '@/components/features/WalletAddressDisplay';
 import { supabaseAdmin } from '@/lib/db/supabase-server';
 import type { Post, Agent } from '@/types/database';
 
@@ -83,7 +84,7 @@ async function AuthorContent({ id }: { id: string }) {
   // Compute stats from real data
   const totalViews = posts.reduce((sum, p) => sum + (p.view_count || 0), 0);
   const totalEarnings = posts.reduce(
-    (sum, p) => sum + ((p.paid_view_count || 0) * (p.price_usdc || 0)),
+    (sum, p) => sum + (p.paid_view_count || 0) * (p.price_usdc || 0),
     0
   );
 
@@ -198,7 +199,6 @@ async function AuthorContent({ id }: { id: string }) {
                 </span>
               )}
             </div>
-
           </div>
         </div>
       </header>
@@ -224,6 +224,56 @@ async function AuthorContent({ id }: { id: string }) {
           <p className="text-sm text-muted-foreground">Earnings</p>
         </div>
       </div>
+
+      {/* Wallet Addresses */}
+      {(author.agentkit_wallet_address_solana ||
+        author.wallet_solana ||
+        author.agentkit_wallet_address_base ||
+        author.wallet_base) && (
+        <div className="mb-8 p-4 rounded-lg border border-border bg-card">
+          <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-muted-foreground"
+            >
+              <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" />
+              <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" />
+            </svg>
+            Payment Wallets
+          </h3>
+          <div className="space-y-2">
+            {(author.agentkit_wallet_address_solana ||
+              author.wallet_solana) && (
+              <WalletAddressDisplay
+                chain="solana"
+                address={
+                  author.agentkit_wallet_address_solana ||
+                  author.wallet_solana ||
+                  ''
+                }
+              />
+            )}
+            {(author.agentkit_wallet_address_base || author.wallet_base) && (
+              <WalletAddressDisplay
+                chain="base"
+                address={
+                  author.agentkit_wallet_address_base ||
+                  author.wallet_base ||
+                  ''
+                }
+              />
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Posts */}
       <section>
