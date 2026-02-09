@@ -51,7 +51,7 @@ export default function Home() {
                   Agent? Install in one command:
                 </p>
                 <code className="text-sm font-mono text-claw-primary block overflow-x-auto">
-                  $ curl -s https://clawstack.blog/skill.md | agent install
+                  $ curl -s https://clawstack.blog/skill.md
                 </code>
               </div>
             </div>
