@@ -1,14 +1,12 @@
 /**
- * Coinbase AgentKit Client Setup
+ * Coinbase CDP Client Setup
  *
- * Provides wallet providers for Base (EVM) and Solana chains
- * using Coinbase Developer Platform infrastructure.
+ * Provides wallet creation and management for Base (EVM) and Solana chains
+ * using @coinbase/cdp-sdk directly (bypasses @coinbase/agentkit to avoid
+ * ESM compatibility issues in Vercel's serverless runtime).
  */
 
-import {
-  CdpSmartWalletProvider,
-  CdpSolanaWalletProvider,
-} from '@coinbase/agentkit';
+import { CdpClient } from '@coinbase/cdp-sdk';
 
 // Validate required environment variables
 function validateEnvironment() {
@@ -24,88 +22,101 @@ function validateEnvironment() {
 }
 
 /**
- * Create a new Base (EVM) Smart Wallet with gas-free transactions
- * Uses CDP Smart Wallet API for gasless operations
+ * Get a configured CDP client instance
  */
-export async function createBaseWalletProvider(
-  idempotencyKey?: string
-): Promise<CdpSmartWalletProvider> {
+export function getCdpClient(): CdpClient {
   validateEnvironment();
-
-  try {
-    console.log('Initializing Base Wallet Provider...');
-    const provider = await CdpSmartWalletProvider.configureWithWallet({
-      apiKeyId: process.env.CDP_API_KEY_NAME,
-      apiKeySecret: process.env.CDP_API_KEY_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-      walletSecret: process.env.CDP_WALLET_SECRET,
-      networkId: 'base',
-      idempotencyKey,
-      rpcUrl: process.env.BASE_RPC_URL || 'https://mainnet.base.org',
-    });
-    console.log('Base Wallet Provider initialized successfully');
-    return provider;
-  } catch (error) {
-    console.error('Failed to initialize Base Wallet Provider:', error);
-    throw error;
-  }
+  return new CdpClient({
+    apiKeyId: process.env.CDP_API_KEY_NAME!,
+    apiKeySecret: process.env.CDP_API_KEY_PRIVATE_KEY!.replace(/\\n/g, '\n'),
+    walletSecret: process.env.CDP_WALLET_SECRET!,
+  });
 }
 
 /**
- * Create a new Solana Wallet
- * Note: Solana transactions require SOL for gas fees
+ * Create a new Base (EVM) account
  */
-export async function createSolanaWalletProvider(
+export async function createBaseAccount(
   idempotencyKey?: string
-): Promise<CdpSolanaWalletProvider> {
-  validateEnvironment();
-
-  const provider = await CdpSolanaWalletProvider.configureWithWallet({
-    apiKeyId: process.env.CDP_API_KEY_NAME,
-    apiKeySecret: process.env.CDP_API_KEY_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    walletSecret: process.env.CDP_WALLET_SECRET,
-    networkId: 'solana-mainnet',
+): Promise<{ address: string }> {
+  const cdp = getCdpClient();
+  console.log('Creating Base (EVM) account...');
+  const account = await cdp.evm.createAccount({
     idempotencyKey,
-    rpcUrl: process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com',
   });
-
-  return provider;
+  console.log('Base account created:', account.address);
+  return { address: account.address };
 }
 
 /**
- * Restore an existing Base wallet from stored address
+ * Create a new Solana account
  */
-export async function restoreBaseWalletProvider(
-  address: `0x${string}`
-): Promise<CdpSmartWalletProvider> {
-  validateEnvironment();
-
-  const provider = await CdpSmartWalletProvider.configureWithWallet({
-    apiKeyId: process.env.CDP_API_KEY_NAME,
-    apiKeySecret: process.env.CDP_API_KEY_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    walletSecret: process.env.CDP_WALLET_SECRET,
-    networkId: 'base',
-    address,
+export async function createSolanaAccount(
+  idempotencyKey?: string
+): Promise<{ address: string }> {
+  const cdp = getCdpClient();
+  console.log('Creating Solana account...');
+  const account = await cdp.solana.createAccount({
+    idempotencyKey,
   });
-
-  return provider;
+  console.log('Solana account created:', account.address);
+  return { address: account.address };
 }
 
 /**
- * Restore an existing Solana wallet from stored address
+ * Send a transaction on Base (EVM)
  */
-export async function restoreSolanaWalletProvider(
-  address: string
-): Promise<CdpSolanaWalletProvider> {
-  validateEnvironment();
+export async function sendBaseTransaction(
+  fromAddress: string,
+  to: string,
+  data: string,
+  value?: string
+): Promise<{ transactionHash: string }> {
+  const cdp = getCdpClient();
+  const result = await cdp.evm.sendTransaction({
+    address: fromAddress as `0x${string}`,
+    transaction: {
+      to: to as `0x${string}`,
+      data: data as `0x${string}`,
+      value: value ? BigInt(value) : undefined,
+    },
+    network: 'base',
+  });
+  return { transactionHash: result.transactionHash };
+}
 
-  const provider = await CdpSolanaWalletProvider.configureWithWallet({
-    apiKeyId: process.env.CDP_API_KEY_NAME,
-    apiKeySecret: process.env.CDP_API_KEY_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    walletSecret: process.env.CDP_WALLET_SECRET,
-    networkId: 'solana-mainnet',
+/**
+ * Sign and send a transaction on Solana
+ */
+export async function sendSolanaTransaction(
+  transactionBase64: string
+): Promise<{ signature: string }> {
+  const cdp = getCdpClient();
+  const result = await cdp.solana.sendTransaction({
+    transaction: transactionBase64,
+    network: 'solana',
+  });
+  return { signature: result.signature };
+}
+
+/**
+ * Get EVM token balances for an address
+ */
+export async function getEvmTokenBalances(address: string) {
+  const cdp = getCdpClient();
+  return cdp.evm.listTokenBalances({
     address: address as `0x${string}`,
-    rpcUrl: process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com',
+    network: 'base',
   });
+}
 
-  return provider;
+/**
+ * Get Solana token balances for an address
+ */
+export async function getSolanaTokenBalances(address: string) {
+  const cdp = getCdpClient();
+  return cdp.solana.listTokenBalances({
+    address,
+    network: 'solana',
+  });
 }

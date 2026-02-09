@@ -1,21 +1,21 @@
 /**
- * AgentKit Wallet Service
+ * CDP Wallet Service
  *
  * Handles wallet creation, address retrieval, balance checks, and USDC transfers
- * for agent wallets using Coinbase AgentKit.
+ * for agent wallets using @coinbase/cdp-sdk directly.
+ *
+ * NOTE: This intentionally does NOT use @coinbase/agentkit because that package
+ * has ESM-only transitive dependencies that break in Vercel's serverless runtime.
  */
 
+import { createHash } from 'crypto';
 import { supabaseAdmin } from '@/lib/db/supabase-server';
 import { encryptWalletData } from './encryption';
 import {
-  createBaseWalletProvider,
-  createSolanaWalletProvider,
-  restoreBaseWalletProvider,
-  restoreSolanaWalletProvider,
+  createBaseAccount,
+  createSolanaAccount,
+  getCdpClient,
 } from './client';
-import { erc20ActionProvider, CdpSmartWalletProvider, CdpSolanaWalletProvider } from '@coinbase/agentkit';
-import { Connection, PublicKey, VersionedTransaction, TransactionMessage } from '@solana/web3.js';
-import { createTransferInstruction, getAssociatedTokenAddress } from '@solana/spl-token';
 
 // USDC contract addresses
 const USDC_BASE = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
@@ -32,12 +32,6 @@ export interface WalletBalances {
   solana: string;
   base: string;
 }
-
-/**
- * Create wallets for a new agent
- * Creates both Solana and Base wallets and stores encrypted data
- */
-import { createHash } from 'crypto';
 
 /**
  * Generate a deterministic UUID v4 based on a seed string
@@ -61,24 +55,21 @@ function generateDeterministicUUID(seed: string): string {
  */
 export async function createAgentWallet(agentId: string): Promise<AgentWalletInfo> {
   // Use agent ID as seed for deterministic wallet creation
-  // We need separate idempotency keys for each chain to avoid collisions if providers share namespace
   const baseIdempotencyKey = generateDeterministicUUID(`base-${agentId}`);
   const solanaIdempotencyKey = generateDeterministicUUID(`solana-${agentId}`);
 
-  // Create Base (EVM) wallet with gas-free transactions
-  const baseProvider = await createBaseWalletProvider(baseIdempotencyKey);
-  const baseAddress = baseProvider.getAddress();
-  const baseExport = await baseProvider.exportWallet();
+  // Create Base (EVM) account
+  const baseAccount = await createBaseAccount(baseIdempotencyKey);
+  const baseAddress = baseAccount.address;
 
-  // Create Solana wallet
-  const solanaProvider = await createSolanaWalletProvider(solanaIdempotencyKey);
-  const solanaAddress = solanaProvider.getAddress();
-  const solanaExport = await solanaProvider.exportWallet();
+  // Create Solana account
+  const solanaAccount = await createSolanaAccount(solanaIdempotencyKey);
+  const solanaAddress = solanaAccount.address;
 
-  // Store wallet data (encrypted)
+  // Store wallet data (encrypted) — store account references for future use
   const walletData = {
-    base: baseExport,
-    solana: solanaExport,
+    base: { address: baseAddress },
+    solana: { address: solanaAddress },
   };
   const encryptedWalletData = encryptWalletData(JSON.stringify(walletData));
 
@@ -136,55 +127,25 @@ export async function getAgentWalletAddresses(agentId: string) {
 }
 
 /**
- * Get the wallet providers for an agent (for transactions)
- */
-async function getAgentWalletProviders(
-  agentId: string
-): Promise<{ base: CdpSmartWalletProvider; solana: CdpSolanaWalletProvider }> {
-  const { data: agent, error } = await supabaseAdmin
-    .from('agents')
-    .select('agentkit_wallet_address_base, agentkit_wallet_address_solana, wallet_provider')
-    .eq('id', agentId)
-    .single();
-
-  if (error || !agent) {
-    throw new Error('Agent not found');
-  }
-
-  if (agent.wallet_provider !== 'agentkit') {
-    throw new Error('Agent does not have AgentKit wallets');
-  }
-
-  if (!agent.agentkit_wallet_address_base || !agent.agentkit_wallet_address_solana) {
-    throw new Error('Agent wallet addresses not found');
-  }
-
-  // Restore wallet providers using stored addresses
-  const baseProvider = await restoreBaseWalletProvider(
-    agent.agentkit_wallet_address_base as `0x${string}`
-  );
-  const solanaProvider = await restoreSolanaWalletProvider(
-    agent.agentkit_wallet_address_solana
-  );
-
-  return { base: baseProvider, solana: solanaProvider };
-}
-
-/**
- * Get USDC balance on Base chain
+ * Get USDC balance on Base chain using CDP SDK
  */
 async function getBaseUSDCBalance(address: string): Promise<string> {
   try {
-    const provider = await restoreBaseWalletProvider(address as `0x${string}`);
-    const erc20Provider = erc20ActionProvider();
-
-    const result = await erc20Provider.getBalance(provider, {
-      tokenAddress: USDC_BASE,
+    const cdp = getCdpClient();
+    const balances = await cdp.evm.listTokenBalances({
+      address: address as `0x${string}`,
+      network: 'base',
     });
 
-    // Parse the balance from the result string
-    const match = result.match(/Balance: ([\d.]+)/);
-    return match ? match[1] : '0';
+    // Find USDC in the token list
+    for (const token of balances.balances || []) {
+      const tokenInfo = token.token as unknown as Record<string, unknown> | undefined;
+      if (String(tokenInfo?.contractAddress || '').toLowerCase() === USDC_BASE.toLowerCase()) {
+        const amount = parseFloat(String(token.amount ?? '0')) / 1e6;
+        return amount.toFixed(2);
+      }
+    }
+    return '0';
   } catch (error) {
     console.error('Failed to get Base USDC balance:', error);
     return '0';
@@ -192,27 +153,25 @@ async function getBaseUSDCBalance(address: string): Promise<string> {
 }
 
 /**
- * Get USDC balance on Solana chain
+ * Get USDC balance on Solana chain using CDP SDK
  */
 async function getSolanaUSDCBalance(address: string): Promise<string> {
   try {
-    const connection = new Connection(
-      process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com'
-    );
+    const cdp = getCdpClient();
+    const balances = await cdp.solana.listTokenBalances({
+      address,
+      network: 'solana',
+    });
 
-    const publicKey = new PublicKey(address);
-    const usdcMint = new PublicKey(USDC_SOLANA);
-
-    // Get associated token account
-    const tokenAccount = await getAssociatedTokenAddress(usdcMint, publicKey);
-
-    try {
-      const balance = await connection.getTokenAccountBalance(tokenAccount);
-      return balance.value.uiAmountString || '0';
-    } catch {
-      // Token account might not exist yet (no USDC received)
-      return '0';
+    // Find USDC in the token list
+    for (const token of balances.balances || []) {
+      const tokenInfo = token.token as unknown as Record<string, unknown> | undefined;
+      if (String(tokenInfo?.mint || '') === USDC_SOLANA) {
+        const amount = parseFloat(String(token.amount ?? '0')) / 1e6;
+        return amount.toFixed(2);
+      }
     }
+    return '0';
   } catch (error) {
     console.error('Failed to get Solana USDC balance:', error);
     return '0';
@@ -241,80 +200,52 @@ export async function getAgentUSDCBalance(agentId: string): Promise<WalletBalanc
 }
 
 /**
- * Transfer USDC on Base (gas-free via CDP Smart Wallet)
+ * Transfer USDC on Base using CDP SDK
  */
 async function transferBaseUSDC(
   agentId: string,
   destinationAddress: string,
   amountUsdc: string
 ): Promise<{ txHash: string; gasless: boolean }> {
-  const { base: provider } = await getAgentWalletProviders(agentId);
-  const erc20Provider = erc20ActionProvider();
+  const addresses = await getAgentWalletAddresses(agentId);
+  if (!addresses.base) throw new Error('No Base wallet address found');
 
-  const result = await erc20Provider.transfer(provider, {
-    tokenAddress: USDC_BASE,
-    destinationAddress: destinationAddress,
-    amount: amountUsdc,
+  const cdp = getCdpClient();
+
+  // ERC-20 transfer function selector + encoded params
+  const amount = BigInt(Math.floor(parseFloat(amountUsdc) * 1e6));
+  const paddedTo = destinationAddress.slice(2).padStart(64, '0');
+  const paddedAmount = amount.toString(16).padStart(64, '0');
+  const data = `0xa9059cbb${paddedTo}${paddedAmount}`;
+
+  const result = await cdp.evm.sendTransaction({
+    address: addresses.base as `0x${string}`,
+    transaction: {
+      to: USDC_BASE as `0x${string}`,
+      data: data as `0x${string}`,
+      value: BigInt(0),
+    },
+    network: 'base',
   });
 
-  // Parse transaction hash from result
-  const match = result.match(/Transaction hash: (0x[a-fA-F0-9]+)/);
-  const txHash = match ? match[1] : '';
-
-  return { txHash, gasless: true };
+  return { txHash: result.transactionHash, gasless: true };
 }
 
 /**
- * Transfer USDC on Solana (requires SOL for gas)
+ * Transfer USDC on Solana using CDP SDK
  */
 async function transferSolanaUSDC(
   agentId: string,
   destinationAddress: string,
   amountUsdc: string
 ): Promise<{ signature: string; gasless: boolean }> {
-  const { solana: provider } = await getAgentWalletProviders(agentId);
-
-  // For Solana, we need to manually create and send the transfer transaction
-  // This is more complex - using the SPL token program
-  const connection = provider.getConnection();
-  const fromPubkey = provider.getPublicKey();
-  const toPubkey = new PublicKey(destinationAddress);
-  const usdcMint = new PublicKey(USDC_SOLANA);
-
-  // Get token accounts
-  const fromTokenAccount = await getAssociatedTokenAddress(usdcMint, fromPubkey);
-  const toTokenAccount = await getAssociatedTokenAddress(usdcMint, toPubkey);
-
-  // Convert USDC amount to lamports (6 decimals)
-  const amount = Math.floor(parseFloat(amountUsdc) * 1_000_000);
-
-  // Create transfer instruction
-  const transferIx = createTransferInstruction(
-    fromTokenAccount,
-    toTokenAccount,
-    fromPubkey,
-    amount
+  // Solana USDC transfers require building SPL token instructions
+  // For now, this is a placeholder — full implementation requires
+  // building the transaction client-side and sending via CDP SDK
+  throw new Error(
+    'Solana USDC transfers via CDP SDK are not yet implemented. ' +
+    'Please use Base chain for transfers.'
   );
-
-  // Get latest blockhash
-  const { blockhash } = await connection.getLatestBlockhash();
-
-  // Create versioned transaction
-  const messageV0 = new TransactionMessage({
-    payerKey: fromPubkey,
-    recentBlockhash: blockhash,
-    instructions: [transferIx],
-  }).compileToV0Message();
-
-  const transaction = new VersionedTransaction(messageV0);
-
-  // Sign and send
-  const signature = await provider.signAndSendTransaction(transaction);
-
-  // Wait for confirmation
-  await provider.waitForSignatureResult(signature);
-
-  return { signature, gasless: false };
 }
 
 /**
