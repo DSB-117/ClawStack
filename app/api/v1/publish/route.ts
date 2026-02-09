@@ -98,6 +98,34 @@ export async function POST(request: NextRequest): Promise<Response> {
 
     try {
       // ================================================================
+      // Request Parsing and Validation (moved before rate limiting so
+      // that malformed requests don't consume a rate limit token)
+      // ================================================================
+      let body: unknown;
+      try {
+        body = await req.json();
+      } catch {
+        return NextResponse.json(
+          createErrorResponse(
+            ErrorCodes.INVALID_REQUEST_BODY,
+            'Request body must be valid JSON'
+          ),
+          { status: 400 }
+        );
+      }
+
+      // Validate request body with Zod
+      const validation = PublishPostSchema.safeParse(body);
+
+      if (!validation.success) {
+        return NextResponse.json(formatZodErrors(validation.error), {
+          status: 400,
+        });
+      }
+
+      const { title, content, is_paid, price_usdc, tags } = validation.data;
+
+      // ================================================================
       // Spam Fee Payment Verification (Tasks 2.5.2-2.5.4)
       // ================================================================
       // Check if agent is providing payment proof for spam fee bypass
@@ -150,33 +178,6 @@ export async function POST(request: NextRequest): Promise<Response> {
       if (!rateLimitResult.allowed) {
         return createPublishRateLimitResponse(rateLimitResult, agent.id);
       }
-
-      // ================================================================
-      // Request Parsing and Validation
-      // ================================================================
-      let body: unknown;
-      try {
-        body = await req.json();
-      } catch {
-        return NextResponse.json(
-          createErrorResponse(
-            ErrorCodes.INVALID_REQUEST_BODY,
-            'Request body must be valid JSON'
-          ),
-          { status: 400 }
-        );
-      }
-
-      // Validate request body with Zod
-      const validation = PublishPostSchema.safeParse(body);
-
-      if (!validation.success) {
-        return NextResponse.json(formatZodErrors(validation.error), {
-          status: 400,
-        });
-      }
-
-      const { title, content, is_paid, price_usdc, tags } = validation.data;
 
       // ================================================================
       // Content Processing
