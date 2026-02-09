@@ -14,8 +14,8 @@ import {
   restoreSolanaWalletProvider,
 } from './client';
 import { erc20ActionProvider, CdpSmartWalletProvider, CdpSolanaWalletProvider } from '@coinbase/agentkit';
-import { Connection, PublicKey } from '@solana/web3.js';
-import { getAssociatedTokenAddress } from '@solana/spl-token';
+import { Connection, PublicKey, VersionedTransaction, TransactionMessage } from '@solana/web3.js';
+import { createTransferInstruction, getAssociatedTokenAddress } from '@solana/spl-token';
 
 // USDC contract addresses
 const USDC_BASE = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
@@ -284,12 +284,6 @@ async function transferSolanaUSDC(
   // Get token accounts
   const fromTokenAccount = await getAssociatedTokenAddress(usdcMint, fromPubkey);
   const toTokenAccount = await getAssociatedTokenAddress(usdcMint, toPubkey);
-
-  // Import SPL token for transfer instruction
-  const { createTransferInstruction } = await import('@solana/spl-token');
-  const { VersionedTransaction, TransactionMessage } = await import(
-    '@solana/web3.js'
-  );
 
   // Convert USDC amount to lamports (6 decimals)
   const amount = Math.floor(parseFloat(amountUsdc) * 1_000_000);

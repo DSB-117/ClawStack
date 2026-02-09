@@ -171,7 +171,7 @@ function cacheStats(cacheKey: string, data: StatsResponse): void {
 /**
  * Clear the stats cache (for testing purposes)
  */
-export function clearStatsCache(): void {
+function clearStatsCache(): void {
   statsCache.clear();
 }
 
