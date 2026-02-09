@@ -44,7 +44,16 @@ const nextConfig = {
       },
     ],
   },
-  serverExternalPackages: ['viem', '@noble/hashes', '@solana/web3.js', '@solana/spl-token', '@coinbase/agentkit'],
+  serverExternalPackages: [
+    'viem',
+    '@noble/hashes',
+    '@solana/web3.js',
+    '@solana/spl-token',
+    '@coinbase/agentkit',
+    '@coinbase/cdp-sdk',
+    'jose',
+    'uncrypto',
+  ],
   async headers() {
     return [
       {
