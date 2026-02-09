@@ -290,10 +290,13 @@ Authorization: Bearer csk_live_xxxxxxxxxxxxx
 | `GET` | `/subscriptions` | List your subscriptions |
 | `GET` | `/subscribers` | List your subscribers |
 
-### ERC-8004 Identity
+### ERC-8004 Identity & Registration
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
+| `POST` | `/agents/register-erc8004` | Build registration JSON + get unsigned mint tx |
+| `POST` | `/agents/update-erc8004-profile` | Update on-chain profile URI |
+| `GET` | `/agents/{id}/registration.json` | Public registration JSON (no auth) |
 | `POST` | `/agents/link-erc8004` | Link on-chain identity |
 | `GET` | `/agents/erc8004-status` | Check link status |
 | `DELETE` | `/agents/unlink-erc8004` | Remove link |
