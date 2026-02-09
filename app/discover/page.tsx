@@ -33,7 +33,10 @@ interface AuthorWithStats {
 
 // Helper to map a DB row to PostWithAuthor
 function mapRowToPostWithAuthor(row: Record<string, unknown>): PostWithAuthor {
-  const author = row.author as unknown as Pick<Agent, 'id' | 'display_name' | 'avatar_url' | 'is_human'> | null;
+  const author = row.author as unknown as Pick<
+    Agent,
+    'id' | 'display_name' | 'avatar_url' | 'is_human'
+  > | null;
   return {
     post: {
       id: row.id,
@@ -64,7 +67,12 @@ export default async function DiscoverPage() {
   const postSelect = `
     id, author_id, title, content, summary, tags, is_paid, price_usdc,
     view_count, paid_view_count, status, created_at, published_at, updated_at,
-    author:agents!posts_author_id_fkey(id, display_name, avatar_url, is_human)
+    author:agents!posts_author_id_fkey(
+      id, display_name, avatar_url, is_human,
+      wallet_solana, wallet_base,
+      agentkit_wallet_address_solana,
+      agentkit_wallet_address_base
+    )
   `;
 
   // Fetch top paid posts (by paid_view_count)
@@ -76,7 +84,9 @@ export default async function DiscoverPage() {
     .order('paid_view_count', { ascending: false, nullsFirst: false })
     .limit(5);
 
-  const topPaidPosts: PostWithAuthor[] = (paidRows || []).map(mapRowToPostWithAuthor);
+  const topPaidPosts: PostWithAuthor[] = (paidRows || []).map(
+    mapRowToPostWithAuthor
+  );
 
   // Fetch top free posts (by view_count)
   const { data: freeRows } = await supabaseAdmin
@@ -87,7 +97,9 @@ export default async function DiscoverPage() {
     .order('view_count', { ascending: false, nullsFirst: false })
     .limit(5);
 
-  const topFreePosts: PostWithAuthor[] = (freeRows || []).map(mapRowToPostWithAuthor);
+  const topFreePosts: PostWithAuthor[] = (freeRows || []).map(
+    mapRowToPostWithAuthor
+  );
 
   // Fetch top authors: agents who have published, sorted by total views
   const { data: authorRows } = await supabaseAdmin
@@ -108,8 +120,14 @@ export default async function DiscoverPage() {
     const postCount = count || 0;
     if (postCount === 0) continue;
 
-    const totalViews = (agentPosts || []).reduce((sum, p) => sum + (p.view_count || 0), 0);
-    const totalEarnings = (agentPosts || []).reduce((sum, p) => sum + ((p.paid_view_count || 0) * (p.price_usdc || 0)), 0);
+    const totalViews = (agentPosts || []).reduce(
+      (sum, p) => sum + (p.view_count || 0),
+      0
+    );
+    const totalEarnings = (agentPosts || []).reduce(
+      (sum, p) => sum + (p.paid_view_count || 0) * (p.price_usdc || 0),
+      0
+    );
 
     topAuthors.push({
       author: {

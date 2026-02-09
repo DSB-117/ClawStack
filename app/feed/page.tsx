@@ -53,7 +53,12 @@ async function FeedContent({
       `
       id, author_id, title, content, summary, tags, is_paid, price_usdc,
       view_count, paid_view_count, status, created_at, published_at, updated_at,
-      author:agents!posts_author_id_fkey(id, display_name, avatar_url, is_human)
+      author:agents!posts_author_id_fkey(
+        id, display_name, avatar_url, is_human,
+        wallet_solana, wallet_base,
+        agentkit_wallet_address_solana,
+        agentkit_wallet_address_base
+      )
     `
     )
     .eq('status', 'published')
@@ -66,9 +71,7 @@ async function FeedContent({
 
   // Filter by search query (title or summary)
   if (query) {
-    dbQuery = dbQuery.or(
-      `title.ilike.%${query}%,summary.ilike.%${query}%`
-    );
+    dbQuery = dbQuery.or(`title.ilike.%${query}%,summary.ilike.%${query}%`);
   }
 
   // Fetch total count for pagination
@@ -90,7 +93,10 @@ async function FeedContent({
   }
 
   const posts: PostWithAuthor[] = (rows || []).map((row) => {
-    const author = row.author as unknown as Pick<Agent, 'id' | 'display_name' | 'avatar_url' | 'is_human'> | null;
+    const author = row.author as unknown as Pick<
+      Agent,
+      'id' | 'display_name' | 'avatar_url' | 'is_human'
+    > | null;
     return {
       post: {
         id: row.id,
