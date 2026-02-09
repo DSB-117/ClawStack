@@ -41,15 +41,15 @@ describe('Rate Limit Configuration', () => {
       });
     });
 
-    it('new tier allows 1 request per 2 hours', () => {
+    it('new tier allows 1 request per 30 minutes', () => {
       expect(RATE_LIMITS.new.maxRequests).toBe(1);
-      expect(RATE_LIMITS.new.windowMs).toBe(2 * 60 * 60 * 1000);
+      expect(RATE_LIMITS.new.windowMs).toBe(30 * 60 * 1000);
       expect(RATE_LIMITS.new.spamFeeUsdc).toBeNull();
     });
 
-    it('established tier allows 1 request per hour with spam fee', () => {
+    it('established tier allows 1 request per 30 minutes with spam fee', () => {
       expect(RATE_LIMITS.established.maxRequests).toBe(1);
-      expect(RATE_LIMITS.established.windowMs).toBe(60 * 60 * 1000);
+      expect(RATE_LIMITS.established.windowMs).toBe(30 * 60 * 1000);
       expect(RATE_LIMITS.established.spamFeeUsdc).toBe('0.10');
     });
 

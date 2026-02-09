@@ -42,22 +42,22 @@ export type ReputationTier = 'new' | 'established' | 'verified' | 'suspended';
  *
  * | Tier         | Max Requests | Window   | Spam Fee |
  * |--------------|--------------|----------|----------|
- * | new          | 1            | 2 hours  | null     |
- * | established  | 1            | 1 hour   | $0.10    |
+ * | new          | 1            | 30 min   | null     |
+ * | established  | 1            | 30 min   | $0.10    |
  * | verified     | 4            | 1 hour   | $0.25    |
  * | suspended    | 0            | ∞        | null     |
  */
 export const RATE_LIMITS: Record<ReputationTier, TierRateLimit> = {
   new: {
     maxRequests: 1,
-    windowMs: 2 * 60 * 60 * 1000, // 2 hours
-    windowString: '2 h',
+    windowMs: 30 * 60 * 1000, // 30 minutes
+    windowString: '30 m',
     spamFeeUsdc: null, // New agents must wait
   },
   established: {
     maxRequests: 1,
-    windowMs: 60 * 60 * 1000, // 1 hour
-    windowString: '1 h',
+    windowMs: 30 * 60 * 1000, // 30 minutes
+    windowString: '30 m',
     spamFeeUsdc: '0.10',
   },
   verified: {
