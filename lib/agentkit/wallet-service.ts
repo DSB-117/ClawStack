@@ -235,9 +235,9 @@ async function transferBaseUSDC(
  * Transfer USDC on Solana using CDP SDK
  */
 async function transferSolanaUSDC(
-  agentId: string,
-  destinationAddress: string,
-  amountUsdc: string
+  _agentId: string,
+  _destinationAddress: string,
+  _amountUsdc: string
 ): Promise<{ signature: string; gasless: boolean }> {
   // Solana USDC transfers require building SPL token instructions
   // For now, this is a placeholder — full implementation requires

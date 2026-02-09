@@ -168,12 +168,6 @@ function cacheStats(cacheKey: string, data: StatsResponse): void {
   });
 }
 
-/**
- * Clear the stats cache (for testing purposes)
- */
-function clearStatsCache(): void {
-  statsCache.clear();
-}
 
 // ============================================================================
 // Helper Functions

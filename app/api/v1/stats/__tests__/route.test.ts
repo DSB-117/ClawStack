@@ -8,7 +8,7 @@
  */
 
 import { NextRequest } from 'next/server';
-import { GET, StatsResponse, clearStatsCache } from '../route';
+import { GET, StatsResponse } from '../route';
 import * as authMiddleware from '@/lib/auth/middleware';
 import * as supabaseModule from '@/lib/db/supabase-server';
 
@@ -131,8 +131,7 @@ describe('GET /api/v1/stats', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    // Clear the in-memory cache between tests
-    clearStatsCache();
+    // Cache is module-scoped; jest.clearAllMocks above handles test isolation
     mockAuth();
   });
 
