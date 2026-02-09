@@ -73,3 +73,28 @@ export {
   type LinkERC8004Result,
   type StoredERC8004Link,
 } from './verify';
+
+// Registration JSON Builder
+export {
+  buildRegistrationJSON,
+  buildRegistrationFromAgent,
+  encodeRegistrationAsDataURI,
+  type ERC8004RegistrationJSON,
+  type ERC8004Service,
+  type ERC8004RegistrationRef,
+  type BuildRegistrationParams,
+} from './registration';
+
+// On-Chain Registration (write-side)
+export {
+  prepareRegistrationTransaction,
+  prepareMinimalRegistration,
+  type RegistrationURIStrategy,
+  type PreparedRegistrationTx,
+} from './register';
+
+// Profile Update (write-side)
+export {
+  prepareProfileUpdateTransaction,
+  type PreparedProfileUpdateTx,
+} from './update-profile';
