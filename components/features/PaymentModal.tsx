@@ -226,10 +226,13 @@ function PaymentModalDialog({
     setPaymentError(null);
   }, [paymentMethod]);
 
-  const handlePaymentMethodSelect = useCallback((method: 'privy' | 'external') => {
-    setPaymentMethod(method);
-    setPaymentError(null);
-  }, []);
+  const handlePaymentMethodSelect = useCallback(
+    (method: 'privy' | 'external') => {
+      setPaymentMethod(method);
+      setPaymentError(null);
+    },
+    []
+  );
 
   const handleDismissError = useCallback(() => {
     setPaymentError(null);
@@ -316,7 +319,9 @@ function PaymentModalDialog({
               </div>
             </div>
             <h3 className="text-xl font-bold mb-2">Payment Successful!</h3>
-            <p className="text-muted-foreground text-sm">Unlocking content...</p>
+            <p className="text-muted-foreground text-sm">
+              Unlocking content...
+            </p>
             <div className="mt-4 flex justify-center">
               <div className="flex gap-1">
                 <div
@@ -364,7 +369,10 @@ function PaymentModalDialog({
               <div className="mt-2">
                 <p
                   className="text-3xl font-bold"
-                  style={{ color: '#FF8533', textShadow: '0 0 20px rgba(255, 133, 51, 0.4)' }}
+                  style={{
+                    color: '#FF8533',
+                    textShadow: '0 0 20px rgba(255, 133, 51, 0.4)',
+                  }}
                 >
                   ${priceUsdc.toFixed(2)}{' '}
                   <span className="text-lg font-normal">USDC</span>
@@ -397,10 +405,9 @@ function PaymentModalDialog({
                   strokeLinejoin="round"
                   className="text-muted-foreground"
                 >
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M12 6v6l4 2" />
+                  <path d="M12 12c-2-2.67-4-4-6-4a4 4 0 1 0 0 8c2 0 4-1.33 6-4Zm0 0c2 2.67 4 4 6 4a4 4 0 0 0 0-8c-2 0-4 1.33-6 4Z" />
                 </svg>
-                <span className="font-medium">24-hour access</span>
+                <span className="font-medium">Unlimited access</span>
               </div>
             </div>
 
@@ -591,7 +598,8 @@ function PaymentModalDialog({
                       <div className="flex-1 text-left">
                         <p className="font-medium">Connect Wallet</p>
                         <p className="text-xs text-muted-foreground">
-                          Use {selectedChainConfig?.name} wallet (Phantom, MetaMask, etc.)
+                          Use {selectedChainConfig?.name} wallet (Phantom,
+                          MetaMask, etc.)
                         </p>
                       </div>
                       <svg
@@ -646,7 +654,9 @@ function PaymentModalDialog({
                     onError={handlePaymentError}
                   />
                 </div>
-              ) : paymentMethod === 'external' && selectedChain === 'solana' && authorWalletSolana ? (
+              ) : paymentMethod === 'external' &&
+                selectedChain === 'solana' &&
+                authorWalletSolana ? (
                 // Step 3b: External Solana Wallet
                 <div>
                   <button
@@ -676,7 +686,9 @@ function PaymentModalDialog({
                     onError={handlePaymentError}
                   />
                 </div>
-              ) : paymentMethod === 'external' && selectedChain === 'base' && authorWalletBase ? (
+              ) : paymentMethod === 'external' &&
+                selectedChain === 'base' &&
+                authorWalletBase ? (
                 // Step 3b: External EVM Wallet
                 <div>
                   <button

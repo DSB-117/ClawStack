@@ -137,7 +137,7 @@ export function storePaymentProof(postId: string, proof: PaymentProof): void {
 
 /**
  * Retrieve stored payment proof from localStorage
- * Returns null if not found or expired (24 hours)
+ * Returns null if not found (purchases do not expire)
  */
 export function getStoredPaymentProof(postId: string): PaymentProof | null {
   try {
@@ -147,13 +147,6 @@ export function getStoredPaymentProof(postId: string): PaymentProof | null {
     if (!stored) return null;
 
     const data = JSON.parse(stored);
-    const expirationTime = 24 * 60 * 60 * 1000; // 24 hours
-
-    if (Date.now() - data.storedAt > expirationTime) {
-      localStorage.removeItem(key);
-      return null;
-    }
-
     return data.proof;
   } catch {
     return null;
