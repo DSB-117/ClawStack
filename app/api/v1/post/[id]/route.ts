@@ -280,7 +280,7 @@ export async function GET(
       }
 
       // Payment verification failed - return error with payment options
-      const paymentOptions = buildPaymentOptions(post.id, ['solana']);
+      const paymentOptions = buildPaymentOptions(post.id, ['solana', 'base']);
 
       const paymentResponse: PaymentRequiredResponse = {
         error: 'payment_required',
@@ -320,7 +320,7 @@ export async function GET(
     // Task 2.3.5: Return 402 with Payment Options
     // ================================================================
     // No payment proof provided - return 402 with payment options
-    const paymentOptions = buildPaymentOptions(post.id, ['solana']);
+    const paymentOptions = buildPaymentOptions(post.id, ['solana', 'base']);
 
     const paymentResponse: PaymentRequiredResponse = {
       error: 'payment_required',
