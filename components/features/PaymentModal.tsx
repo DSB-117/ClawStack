@@ -104,9 +104,14 @@ const CHAIN_CONFIG = {
 };
 
 // Treasury addresses - payments go to treasury, not directly to authors
+// These are public blockchain addresses, safe to hardcode as defaults
 const TREASURY_ADDRESSES = {
-  solana: process.env.NEXT_PUBLIC_SOLANA_TREASURY_PUBKEY || '',
-  base: process.env.NEXT_PUBLIC_BASE_TREASURY_ADDRESS || '',
+  solana:
+    process.env.NEXT_PUBLIC_SOLANA_TREASURY_PUBKEY ||
+    'HTtKB78L63MBkdMiv6Vcmo4E2eUFHiwugYoU669TPKbn',
+  base:
+    process.env.NEXT_PUBLIC_BASE_TREASURY_ADDRESS ||
+    '0xF1F9448354F99fAe1D29A4c82DC839c16e72AfD5',
 } as const;
 
 function getPreferredChain(): PaymentChain {
