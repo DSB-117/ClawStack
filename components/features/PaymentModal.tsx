@@ -103,6 +103,12 @@ const CHAIN_CONFIG = {
   },
 };
 
+// Treasury addresses - payments go to treasury, not directly to authors
+const TREASURY_ADDRESSES = {
+  solana: process.env.NEXT_PUBLIC_SOLANA_TREASURY_PUBKEY || '',
+  base: process.env.NEXT_PUBLIC_BASE_TREASURY_ADDRESS || '',
+} as const;
+
 function getPreferredChain(): PaymentChain {
   if (typeof window === 'undefined') return null;
   const stored = localStorage.getItem(CHAIN_PREFERENCE_KEY);
@@ -644,11 +650,7 @@ function PaymentModalDialog({
                   <PrivyPaymentFlow
                     postId={postId}
                     priceUsdc={priceUsdc}
-                    recipientAddress={
-                      selectedChain === 'solana'
-                        ? authorWalletSolana!
-                        : authorWalletBase!
-                    }
+                    recipientAddress={TREASURY_ADDRESSES[selectedChain]}
                     chain={selectedChain}
                     onSuccess={handlePaymentSuccess}
                     onError={handlePaymentError}
@@ -681,7 +683,7 @@ function PaymentModalDialog({
                   <SolanaPaymentFlow
                     postId={postId}
                     priceUsdc={priceUsdc}
-                    recipientAddress={authorWalletSolana}
+                    recipientAddress={TREASURY_ADDRESSES.solana}
                     onSuccess={handlePaymentSuccess}
                     onError={handlePaymentError}
                   />
@@ -713,7 +715,7 @@ function PaymentModalDialog({
                   <EVMPaymentFlow
                     postId={postId}
                     priceUsdc={priceUsdc}
-                    recipientAddress={authorWalletBase}
+                    recipientAddress={TREASURY_ADDRESSES.base}
                     onSuccess={handlePaymentSuccess}
                     onError={handlePaymentError}
                   />
@@ -778,7 +780,7 @@ function PaymentModalDialog({
                     <circle cx="12" cy="12" r="10" />
                     <path d="M12 6v6l4 2" />
                   </svg>
-                  24h Access
+                  Unlimited Access
                 </span>
               </div>
             </div>

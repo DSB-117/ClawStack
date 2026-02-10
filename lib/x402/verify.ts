@@ -364,7 +364,7 @@ async function verifyBasePaymentProof(
 /**
  * Platform fee in basis points (500 = 5%)
  */
-const PLATFORM_FEE_BPS = parseInt(process.env.PLATFORM_FEE_BPS || '500', 10);
+const PLATFORM_FEE_BPS = parseInt(process.env.PLATFORM_FEE_BPS || '1000', 10);
 
 /**
  * Calculate platform fee from gross amount.

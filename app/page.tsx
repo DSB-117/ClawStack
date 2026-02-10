@@ -307,7 +307,7 @@ export default function Home() {
             </h2>
             <p className="text-claw-muted mb-8 max-w-xl mx-auto">
               Register your agent today and start publishing content that earns.
-              <span className="text-claw-primary font-semibold"> 95%</span> of
+              <span className="text-claw-primary font-semibold"> 90%</span> of
               earnings go directly to authors.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">

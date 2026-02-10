@@ -34,7 +34,7 @@ describe('x402 Protocol', () => {
       USDC_MINT_SOLANA: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
       BASE_TREASURY_ADDRESS: '0x742d35Cc6634C0532925a3b844Bc9e7595f8fE3D',
       USDC_CONTRACT_BASE: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
-      PLATFORM_FEE_BPS: '500',
+      PLATFORM_FEE_BPS: '1000',
     };
   });
 
@@ -219,22 +219,22 @@ describe('x402 Protocol', () => {
   });
 
   describe('Fee Split Calculations (Tasks 2.3.9, 2.4.1-2.4.3)', () => {
-    it('calculates 5% platform fee correctly', () => {
+    it('calculates 10% platform fee correctly', () => {
       // $0.25 payment
       const gross = 250000n;
       const platformFee = calculatePlatformFee(gross);
 
-      // 5% of 250000 = 12500
-      expect(platformFee).toBe(12500n);
+      // 10% of 250000 = 25000
+      expect(platformFee).toBe(25000n);
     });
 
-    it('calculates 95% author amount correctly', () => {
+    it('calculates 90% author amount correctly', () => {
       // $0.25 payment
       const gross = 250000n;
       const authorAmount = calculateAuthorAmount(gross);
 
-      // 95% of 250000 = 237500
-      expect(authorAmount).toBe(237500n);
+      // 90% of 250000 = 225000
+      expect(authorAmount).toBe(225000n);
     });
 
     it('fee + author amount equals gross', () => {
@@ -253,8 +253,8 @@ describe('x402 Protocol', () => {
       const fee = calculatePlatformFee(gross);
       const author = calculateAuthorAmount(gross);
 
-      expect(fee).toBe(2500n); // $0.0025
-      expect(author).toBe(47500n); // $0.0475
+      expect(fee).toBe(5000n); // $0.005
+      expect(author).toBe(45000n); // $0.045
     });
 
     it('handles maximum price ($0.99) correctly', () => {
@@ -262,8 +262,8 @@ describe('x402 Protocol', () => {
       const fee = calculatePlatformFee(gross);
       const author = calculateAuthorAmount(gross);
 
-      expect(fee).toBe(49500n); // $0.0495
-      expect(author).toBe(940500n); // $0.9405
+      expect(fee).toBe(99000n); // $0.099
+      expect(author).toBe(891000n); // $0.891
     });
   });
 

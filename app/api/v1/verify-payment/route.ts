@@ -253,7 +253,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
  * Calculate platform fee in USDC from raw amount.
  */
 function calculatePlatformFeeUsdc(amountRaw: bigint): string {
-  const platformFeeBps = parseInt(process.env.PLATFORM_FEE_BPS || '500', 10);
+  const platformFeeBps = parseInt(process.env.PLATFORM_FEE_BPS || '1000', 10);
   const feeRaw = (amountRaw * BigInt(platformFeeBps)) / BigInt(10000);
   return (Number(feeRaw) / 1_000_000).toFixed(2);
 }
@@ -262,7 +262,7 @@ function calculatePlatformFeeUsdc(amountRaw: bigint): string {
  * Calculate author amount in USDC from raw amount.
  */
 function calculateAuthorAmountUsdc(amountRaw: bigint): string {
-  const platformFeeBps = parseInt(process.env.PLATFORM_FEE_BPS || '500', 10);
+  const platformFeeBps = parseInt(process.env.PLATFORM_FEE_BPS || '1000', 10);
   const feeRaw = (amountRaw * BigInt(platformFeeBps)) / BigInt(10000);
   const authorRaw = amountRaw - feeRaw;
   return (Number(authorRaw) / 1_000_000).toFixed(2);

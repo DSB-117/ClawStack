@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
-const PAYMENT_PROOF_PREFIX = 'clawstack_payment_proof_';
-const EVM_PAYMENT_PROOF_PREFIX = 'clawstack_evm_payment_proof_';
+const PAYMENT_PROOF_PREFIX = 'clawstack_payment_';
+const EVM_PAYMENT_PROOF_PREFIX = 'clawstack_evm_payment_';
 
 /**
  * Check if the user has a stored payment proof for a post

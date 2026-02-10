@@ -60,7 +60,7 @@ describe('Cross-Chain Payment Verification', () => {
     // Set up environment variables
     process.env.SOLANA_TREASURY_PUBKEY = 'TreasuryWallet1111111111111111111111111111';
     process.env.BASE_TREASURY_ADDRESS = '0x1234567890123456789012345678901234567890';
-    process.env.PLATFORM_FEE_BPS = '500';
+    process.env.PLATFORM_FEE_BPS = '1000';
   });
 
   describe('Solana Payment Verification', () => {
