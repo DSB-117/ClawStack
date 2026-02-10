@@ -68,14 +68,10 @@ export interface VerifiedPayment {
 /**
  * Options for verifying a payment.
  */
-/**
- * Options for verifying a payment.
- */
 export interface VerifyPaymentOptions {
   signature: string;
   expectedPostId: string;
   expectedAmountRaw: bigint;
-  expectedAuthorAddress?: string | null; // Optional for split payments
   requestTimestamp?: number;
   memoExpirationSeconds?: number;
 }
@@ -204,6 +200,86 @@ export function parseTokenTransfers(
   }
 
   return transfers;
+}
+
+// ============================================
+// 2.2.3: Validate USDC Mint Address
+// ============================================
+
+/**
+ * Find a USDC transfer from the list of token transfers.
+ * Uses the USDC mint address from environment variable.
+ *
+ * @param transfers - Array of parsed token transfers
+ * @returns The USDC transfer if found
+ * @throws PaymentVerificationError if no USDC transfer found
+ */
+export function findUsdcTransfer(transfers: TokenTransfer[]): TokenTransfer {
+  const usdcMint = process.env.USDC_MINT_SOLANA;
+
+  if (!usdcMint) {
+    throw new Error('USDC_MINT_SOLANA environment variable is not set');
+  }
+
+  const usdcTransfer = transfers.find((t) => t.mint === usdcMint);
+
+  if (!usdcTransfer) {
+    throw new PaymentVerificationError(
+      'No USDC transfer found in transaction',
+      'NO_USDC_TRANSFER'
+    );
+  }
+
+  return usdcTransfer;
+}
+
+// ============================================
+// 2.2.4: Validate Recipient Matches Expected
+// ============================================
+
+/**
+ * Validate that the USDC transfer recipient matches the expected treasury address.
+ *
+ * @param transfer - The USDC transfer to validate
+ * @throws PaymentVerificationError if recipient doesn't match
+ */
+export function validateRecipient(transfer: TokenTransfer): void {
+  const expectedRecipient = process.env.SOLANA_TREASURY_PUBKEY;
+
+  if (!expectedRecipient) {
+    throw new Error('SOLANA_TREASURY_PUBKEY environment variable is not set');
+  }
+
+  if (transfer.destination !== expectedRecipient) {
+    throw new PaymentVerificationError(
+      `Payment sent to wrong recipient: expected ${expectedRecipient}, got ${transfer.destination}`,
+      'WRONG_RECIPIENT'
+    );
+  }
+}
+
+// ============================================
+// 2.2.5: Validate Amount Meets Minimum
+// ============================================
+
+/**
+ * Validate that the payment amount meets the minimum required.
+ * Accepts overpayment but rejects underpayment.
+ *
+ * @param transfer - The USDC transfer to validate
+ * @param expectedAmountRaw - Expected amount in raw units (6 decimals for USDC)
+ * @throws PaymentVerificationError if amount is insufficient
+ */
+export function validateAmount(
+  transfer: TokenTransfer,
+  expectedAmountRaw: bigint
+): void {
+  if (transfer.amount < expectedAmountRaw) {
+    throw new PaymentVerificationError(
+      `Insufficient payment: expected ${expectedAmountRaw}, got ${transfer.amount}`,
+      'INSUFFICIENT_AMOUNT'
+    );
+  }
 }
 
 // ============================================
@@ -418,14 +494,21 @@ export function validateTransactionSuccess(
   }
 }
 
+// ============================================
+// Main Verification Function (combines all checks)
+// ============================================
 
 /**
  * Complete payment verification for a Solana USDC transaction.
- * Verifies that:
- * 1. Transaction exists and succeeded
- * 2. Contains a USDC transfer to the author for the expected amount
- * 3. Memo is valid and matches the post
- * 4. Transaction is confirmed/finalized
+ * Performs all validation checks in sequence:
+ * 1. Fetch transaction with fallback
+ * 2. Check transaction success (no errors)
+ * 3. Parse token transfers
+ * 4. Find USDC transfer
+ * 5. Validate recipient
+ * 6. Validate amount
+ * 7. Parse and validate memo
+ * 8. Check transaction finality
  *
  * @param options - Verification options
  * @returns Verified payment details
@@ -438,7 +521,6 @@ export async function verifyPayment(
     signature,
     expectedPostId,
     expectedAmountRaw,
-    expectedAuthorAddress,
     requestTimestamp,
     memoExpirationSeconds = 300,
   } = options;
@@ -446,46 +528,30 @@ export async function verifyPayment(
   // 1. Fetch transaction (also checks for on-chain errors)
   const tx = await fetchTransaction(signature);
 
-  // 2. Validate transaction success
+  // 2. Validate transaction success (explicit double-check)
   validateTransactionSuccess(tx);
 
   // 3. Parse all token transfers
   const transfers = parseTokenTransfers(tx);
 
-  // 4. Find the USDC transfer to the author
-  const usdcMint = process.env.USDC_MINT_SOLANA;
-  if (!usdcMint) throw new Error('USDC_MINT_SOLANA environment variable is not set');
+  // 4. Find USDC transfer
+  const usdcTransfer = findUsdcTransfer(transfers);
 
-  const recipientAddress = expectedAuthorAddress || process.env.SOLANA_TREASURY_PUBKEY;
-  if (!recipientAddress) throw new Error('No recipient address for verification');
+  // 5. Validate recipient
+  validateRecipient(usdcTransfer);
 
-  const usdcTransfer = transfers.find(
-    (t) => t.mint === usdcMint && t.destination === recipientAddress
-  );
+  // 6. Validate amount
+  validateAmount(usdcTransfer, expectedAmountRaw);
 
-  if (!usdcTransfer) {
-    throw new PaymentVerificationError(
-      `No USDC transfer found to recipient ${recipientAddress}`,
-      'NO_USDC_TRANSFER'
-    );
-  }
-
-  // 5. Validate amount
-  if (usdcTransfer.amount < expectedAmountRaw) {
-    throw new PaymentVerificationError(
-      `Insufficient payment: expected ${expectedAmountRaw}, got ${usdcTransfer.amount}`,
-      'INSUFFICIENT_AMOUNT'
-    );
-  }
-
-  // 6. Parse and validate memo
+  // 7. Parse and validate memo
   const memoStr = parseMemo(tx);
   const parsedMemo = parseMemoFormat(memoStr);
   validateMemo(parsedMemo, expectedPostId, requestTimestamp, memoExpirationSeconds);
 
-  // 7. Check transaction finality
+  // 8. Check transaction finality
   const confirmationStatus = await checkTransactionFinality(signature);
 
+  // Return verified payment details
   return {
     signature,
     payer: usdcTransfer.source,

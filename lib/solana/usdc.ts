@@ -99,13 +99,7 @@ export interface PaymentTransactionResult {
 }
 
 /**
- * SPL Memo Program ID
- */
-export const MEMO_PROGRAM_ID = new PublicKey("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcQb");
-
-/**
- * Create a USDC payment transaction.
- * Sends the full amount to a single recipient (the author).
+ * Create a USDC payment transaction
  * @returns Transaction ready to be signed and sent
  */
 export async function createUsdcPaymentTransaction({
@@ -113,23 +107,12 @@ export async function createUsdcPaymentTransaction({
   payerPublicKey,
   recipientAddress,
   amountUsdc,
-  memo,
+  memo: _memo,
 }: CreatePaymentTransactionParams): Promise<PaymentTransactionResult> {
-  const transaction = new Transaction();
+  const recipientPubkey = new PublicKey(recipientAddress);
   const amountRaw = usdcToAtomic(amountUsdc);
 
-  // 1. Add Memo Instruction
-  if (memo) {
-    transaction.add({
-      keys: [{ pubkey: payerPublicKey, isSigner: true, isWritable: true }],
-      programId: MEMO_PROGRAM_ID,
-      data: Buffer.from(memo, "utf-8"),
-    });
-  }
-
-  // 2. Add single USDC transfer to the recipient (author)
-  const recipientPubkey = new PublicKey(recipientAddress);
-
+  // Get associated token accounts
   const payerTokenAccount = await getAssociatedTokenAddress(
     USDC_MINT,
     payerPublicKey
@@ -140,6 +123,7 @@ export async function createUsdcPaymentTransaction({
     recipientPubkey
   );
 
+  // Create the transfer instruction
   const transferInstruction = createTransferInstruction(
     payerTokenAccount,
     recipientTokenAccount,
@@ -149,14 +133,23 @@ export async function createUsdcPaymentTransaction({
     TOKEN_PROGRAM_ID
   );
 
-  transaction.add(transferInstruction);
+  // Create memo instruction for payment tracking
+  // Using a simple memo via SystemProgram.transfer with 0 lamports
+  // In production, use the SPL Memo program for proper memo support
+  // const memoData = Buffer.from(memo, "utf-8");
 
-  // 3. Finalize Transaction
+  // Build the transaction
+  const transaction = new Transaction();
+
+  // Add recent blockhash and fee payer
   const { blockhash, lastValidBlockHeight } =
     await connection.getLatestBlockhash("confirmed");
   transaction.recentBlockhash = blockhash;
   transaction.lastValidBlockHeight = lastValidBlockHeight;
   transaction.feePayer = payerPublicKey;
+
+  // Add the transfer instruction
+  transaction.add(transferInstruction);
 
   return {
     transaction,

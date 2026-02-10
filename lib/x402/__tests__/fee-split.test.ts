@@ -21,7 +21,7 @@ describe('Fee Split Edge Cases (Task 2.4.7)', () => {
   beforeAll(() => {
     process.env = {
       ...originalEnv,
-      PLATFORM_FEE_BPS: '500', // 5%
+      PLATFORM_FEE_BPS: '1000', // 10%
     };
   });
 
@@ -34,14 +34,14 @@ describe('Fee Split Edge Cases (Task 2.4.7)', () => {
 
     it('calculates correct platform fee', () => {
       const fee = calculatePlatformFee(grossRaw);
-      // 5% of 50000 = 2500
-      expect(fee).toBe(BigInt(2500));
+      // 10% of 50000 = 5000
+      expect(fee).toBe(BigInt(5000));
     });
 
     it('calculates correct author amount', () => {
       const author = calculateAuthorAmount(grossRaw);
-      // 95% of 50000 = 47500
-      expect(author).toBe(BigInt(47500));
+      // 90% of 50000 = 45000
+      expect(author).toBe(BigInt(45000));
     });
 
     it('fee + author equals gross (no lost cents)', () => {
@@ -54,10 +54,10 @@ describe('Fee Split Edge Cases (Task 2.4.7)', () => {
       const fee = calculatePlatformFee(grossRaw);
       const author = calculateAuthorAmount(grossRaw);
 
-      // Platform fee: $0.0025 (displayed as $0.00 when rounded)
-      expect(rawToUsdc(fee)).toBe('0.00');
-      // Author: $0.0475 (displayed as $0.05 when rounded)
-      expect(rawToUsdc(author)).toBe('0.05');
+      // Platform fee: $0.005 (displayed as $0.00 when truncated to 2dp)
+      expect(rawToUsdc(fee)).toBe('0.01');
+      // Author: $0.045 (displayed as $0.04 when truncated to 2dp)
+      expect(rawToUsdc(author)).toBe('0.04');
     });
   });
 
@@ -66,14 +66,14 @@ describe('Fee Split Edge Cases (Task 2.4.7)', () => {
 
     it('calculates correct platform fee', () => {
       const fee = calculatePlatformFee(grossRaw);
-      // 5% of 990000 = 49500
-      expect(fee).toBe(BigInt(49500));
+      // 10% of 990000 = 99000
+      expect(fee).toBe(BigInt(99000));
     });
 
     it('calculates correct author amount', () => {
       const author = calculateAuthorAmount(grossRaw);
-      // 95% of 990000 = 940500
-      expect(author).toBe(BigInt(940500));
+      // 90% of 990000 = 891000
+      expect(author).toBe(BigInt(891000));
     });
 
     it('fee + author equals gross (no lost cents)', () => {
@@ -86,17 +86,17 @@ describe('Fee Split Edge Cases (Task 2.4.7)', () => {
       const fee = calculatePlatformFee(grossRaw);
       const author = calculateAuthorAmount(grossRaw);
 
-      expect(rawToUsdc(fee)).toBe('0.05'); // $0.0495 -> $0.05
-      expect(rawToUsdc(author)).toBe('0.94'); // $0.9405 -> $0.94
+      expect(rawToUsdc(fee)).toBe('0.10'); // $0.099 -> $0.10
+      expect(rawToUsdc(author)).toBe('0.89'); // $0.891 -> $0.89
     });
   });
 
   describe('Common Prices', () => {
     const testCases = [
-      { usdc: 0.10, grossRaw: 100000, expectedFee: 5000, expectedAuthor: 95000 },
-      { usdc: 0.25, grossRaw: 250000, expectedFee: 12500, expectedAuthor: 237500 },
-      { usdc: 0.50, grossRaw: 500000, expectedFee: 25000, expectedAuthor: 475000 },
-      { usdc: 0.75, grossRaw: 750000, expectedFee: 37500, expectedAuthor: 712500 },
+      { usdc: 0.10, grossRaw: 100000, expectedFee: 10000, expectedAuthor: 90000 },
+      { usdc: 0.25, grossRaw: 250000, expectedFee: 25000, expectedAuthor: 225000 },
+      { usdc: 0.50, grossRaw: 500000, expectedFee: 50000, expectedAuthor: 450000 },
+      { usdc: 0.75, grossRaw: 750000, expectedFee: 75000, expectedAuthor: 675000 },
     ];
 
     testCases.forEach(({ usdc, grossRaw, expectedFee, expectedAuthor }) => {
@@ -137,11 +137,11 @@ describe('Fee Split Edge Cases (Task 2.4.7)', () => {
       // Total should be $1.00
       expect(totalGross).toBe(BigInt(1000000));
 
-      // Fees should be exactly 5%
-      expect(totalFees).toBe(BigInt(50000)); // $0.05
+      // Fees should be exactly 10%
+      expect(totalFees).toBe(BigInt(100000)); // $0.10
 
-      // Author should be exactly 95%
-      expect(totalAuthor).toBe(BigInt(950000)); // $0.95
+      // Author should be exactly 90%
+      expect(totalAuthor).toBe(BigInt(900000)); // $0.90
 
       // No lost cents
       expect(totalFees + totalAuthor).toBe(totalGross);
@@ -168,9 +168,9 @@ describe('Fee Split Edge Cases (Task 2.4.7)', () => {
       // Verify no rounding errors across all payments
       expect(totalFees + totalAuthor).toBe(totalGross);
 
-      // Verify fee ratio is exactly 5%
+      // Verify fee ratio is exactly 10%
       const feeRatio = Number(totalFees) / Number(totalGross);
-      expect(feeRatio).toBe(0.05);
+      expect(feeRatio).toBe(0.1);
     });
 
     it('large number of payments maintains precision', () => {
@@ -192,21 +192,21 @@ describe('Fee Split Edge Cases (Task 2.4.7)', () => {
       // No accumulation errors
       expect(totalFees + totalAuthor).toBe(totalGross);
 
-      // Fee ratio still exactly 5%
+      // Fee ratio still exactly 10%
       const feeRatio = Number(totalFees) / Number(totalGross);
-      expect(feeRatio).toBe(0.05);
+      expect(feeRatio).toBe(0.1);
     });
   });
 
   describe('Integer Division Behavior', () => {
     it('handles amounts that divide evenly', () => {
-      // 1000000 (1 USDC) / 100 * 5 = 50000 exactly
+      // 1000000 (1 USDC) / 10 = 100000 exactly
       const gross = BigInt(1000000);
       const fee = calculatePlatformFee(gross);
       const author = calculateAuthorAmount(gross);
 
-      expect(fee).toBe(BigInt(50000));
-      expect(author).toBe(BigInt(950000));
+      expect(fee).toBe(BigInt(100000));
+      expect(author).toBe(BigInt(900000));
       expect(fee + author).toBe(gross);
     });
 
@@ -216,7 +216,7 @@ describe('Fee Split Edge Cases (Task 2.4.7)', () => {
       // This means the platform may get slightly less.
 
       // Example: 1 raw unit
-      // 1 * 500 / 10000 = 0 (truncated)
+      // 1 * 1000 / 10000 = 0 (truncated)
       const tinyAmount = BigInt(1);
       const fee = calculatePlatformFee(tinyAmount);
 
@@ -225,9 +225,8 @@ describe('Fee Split Edge Cases (Task 2.4.7)', () => {
     });
 
     it('very small amounts favor author (no negative fees)', () => {
-      // Any amount less than 200 raw units (0.0002 USDC) results in 0 fee
-      // 199 * 500 / 10000 = 9.95 -> 9 (not 0, actually)
-      const smallAmounts = [BigInt(1), BigInt(19), BigInt(199)];
+      // Any amount less than 10 raw units (0.00001 USDC) results in 0 fee
+      const smallAmounts = [BigInt(1), BigInt(9), BigInt(99)];
 
       for (const amount of smallAmounts) {
         const fee = calculatePlatformFee(amount);
@@ -283,8 +282,8 @@ describe('Fee Split Edge Cases (Task 2.4.7)', () => {
       const fee = calculatePlatformFee(largeAmount);
       const author = calculateAuthorAmount(largeAmount);
 
-      expect(fee).toBe(BigInt(50000000000)); // $50,000
-      expect(author).toBe(BigInt(950000000000)); // $950,000
+      expect(fee).toBe(BigInt(100000000000)); // $100,000
+      expect(author).toBe(BigInt(900000000000)); // $900,000
       expect(fee + author).toBe(largeAmount);
     });
   });

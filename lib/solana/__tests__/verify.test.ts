@@ -13,6 +13,9 @@ import {
   PaymentVerificationError,
   fetchTransaction,
   parseTokenTransfers,
+  findUsdcTransfer,
+  validateRecipient,
+  validateAmount,
   parseMemo,
   parseMemoFormat,
   validateMemo,
@@ -228,9 +231,112 @@ describe('Solana Payment Verification', () => {
     });
   });
 
+  // ============================================
+  // 2.2.3: findUsdcTransfer Tests (Wrong mint → error)
+  // ============================================
+  describe('findUsdcTransfer', () => {
+    it('finds USDC transfer when present', () => {
+      const transfers: TokenTransfer[] = [
+        {
+          source: 'src',
+          destination: 'dst',
+          amount: BigInt(1000000),
+          mint: MOCK_USDC_MINT,
+        },
+      ];
 
+      const result = findUsdcTransfer(transfers);
 
+      expect(result.mint).toBe(MOCK_USDC_MINT);
+    });
 
+    it('throws NO_USDC_TRANSFER when no USDC transfer found', () => {
+      const transfers: TokenTransfer[] = [
+        {
+          source: 'src',
+          destination: 'dst',
+          amount: BigInt(1000000),
+          mint: 'wrong-mint-address',
+        },
+      ];
+
+      expect(() => findUsdcTransfer(transfers)).toThrow(PaymentVerificationError);
+      expect(() => findUsdcTransfer(transfers)).toThrow('No USDC transfer found');
+    });
+
+    it('throws NO_USDC_TRANSFER for empty transfers array', () => {
+      const transfers: TokenTransfer[] = [];
+
+      expect(() => findUsdcTransfer(transfers)).toThrow(PaymentVerificationError);
+    });
+  });
+
+  // ============================================
+  // 2.2.4: validateRecipient Tests (Wrong recipient → error)
+  // ============================================
+  describe('validateRecipient', () => {
+    it('passes when recipient matches treasury', () => {
+      const transfer: TokenTransfer = {
+        source: 'src',
+        destination: MOCK_TREASURY_PUBKEY,
+        amount: BigInt(1000000),
+        mint: MOCK_USDC_MINT,
+      };
+
+      expect(() => validateRecipient(transfer)).not.toThrow();
+    });
+
+    it('throws WRONG_RECIPIENT when recipient does not match', () => {
+      const transfer: TokenTransfer = {
+        source: 'src',
+        destination: 'wrong-recipient-address',
+        amount: BigInt(1000000),
+        mint: MOCK_USDC_MINT,
+      };
+
+      expect(() => validateRecipient(transfer)).toThrow(PaymentVerificationError);
+      expect(() => validateRecipient(transfer)).toThrow('Payment sent to wrong recipient');
+    });
+  });
+
+  // ============================================
+  // 2.2.5: validateAmount Tests (Insufficient amount → error)
+  // ============================================
+  describe('validateAmount', () => {
+    it('passes when amount meets expected', () => {
+      const transfer: TokenTransfer = {
+        source: 'src',
+        destination: 'dst',
+        amount: BigInt(1000000), // 1 USDC
+        mint: MOCK_USDC_MINT,
+      };
+
+      expect(() => validateAmount(transfer, BigInt(1000000))).not.toThrow();
+    });
+
+    it('passes when amount exceeds expected (overpayment)', () => {
+      const transfer: TokenTransfer = {
+        source: 'src',
+        destination: 'dst',
+        amount: BigInt(2000000), // 2 USDC
+        mint: MOCK_USDC_MINT,
+      };
+
+      expect(() => validateAmount(transfer, BigInt(1000000))).not.toThrow();
+    });
+
+    it('throws INSUFFICIENT_AMOUNT when amount is less than expected', () => {
+      const transfer: TokenTransfer = {
+        source: 'src',
+        destination: 'dst',
+        amount: BigInt(500000), // 0.5 USDC
+        mint: MOCK_USDC_MINT,
+      };
+
+      expect(() => validateAmount(transfer, BigInt(1000000))).toThrow(PaymentVerificationError);
+      expect(() => validateAmount(transfer, BigInt(1000000))).toThrow('Insufficient payment');
+    });
+  });
 
   // ============================================
   // 2.2.6 & 2.2.7: parseMemo Tests (Invalid memo → error)

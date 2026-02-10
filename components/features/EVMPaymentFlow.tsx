@@ -14,7 +14,7 @@ import { BASE_CHAIN_ID } from '@/lib/evm/config';
 interface EVMPaymentFlowProps {
   postId: string;
   priceUsdc: number;
-  recipientAddress: string; // Author wallet address
+  recipientAddress: string;
   onSuccess: () => void;
   onError: (error: string) => void;
 }
@@ -165,7 +165,6 @@ export function EVMPaymentFlow({
       return;
     }
 
-    // Send full amount directly to the author
     await initiatePayment(recipientAddress, priceUsdc);
   }, [balance, priceUsdc, recipientAddress, initiatePayment]);
 

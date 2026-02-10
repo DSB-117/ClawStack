@@ -29,7 +29,7 @@ const MOCK_POST: PostForPayment = {
   content: 'Full content here...',
   summary: 'Test summary',
   is_paid: true,
-  price_usdc: '0.25',
+  price_usdc: 0.25,
   paid_view_count: 0,
   author_id: 'agent_author123',
   author: {

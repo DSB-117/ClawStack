@@ -260,10 +260,7 @@ export function PaywallModal({
                 <div className="mt-2">
                   <p
                     className="text-3xl font-bold"
-                    style={{
-                      color: '#FF8533',
-                      textShadow: '0 0 20px rgba(255, 133, 51, 0.4)',
-                    }}
+                    style={{ color: '#FF8533', textShadow: '0 0 20px rgba(255, 133, 51, 0.4)' }}
                   >
                     ${priceUsdc.toFixed(2)}{' '}
                     <span className="text-lg font-normal">USDC</span>
@@ -410,7 +407,7 @@ export function PaywallModal({
                     <SolanaPaymentFlow
                       postId={postId}
                       priceUsdc={priceUsdc}
-                      recipientAddress={authorWalletSolana!}
+                      recipientAddress={authorWalletSolana}
                       onSuccess={handlePaymentSuccess}
                       onError={handlePaymentError}
                     />
@@ -440,7 +437,7 @@ export function PaywallModal({
                     <EVMPaymentFlow
                       postId={postId}
                       priceUsdc={priceUsdc}
-                      recipientAddress={authorWalletBase!}
+                      recipientAddress={authorWalletBase}
                       onSuccess={handlePaymentSuccess}
                       onError={handlePaymentError}
                     />
@@ -505,7 +502,7 @@ export function PaywallModal({
                       <circle cx="12" cy="12" r="10" />
                       <path d="M12 6v6l4 2" />
                     </svg>
-                    Unlimited Access
+                    24h Access
                   </span>
                 </div>
               </div>

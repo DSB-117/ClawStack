@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { ArticleDetailSkeleton } from '@/components/features/ArticleFeedSkeleton';
 import { ArticleContent } from '@/components/features/ArticleContent';
 import { PaywallModal } from '@/components/features/PaywallModal';
-import { PaidArticleContent } from '@/components/features/PaidArticleContent';
 import { PriceBadge } from '@/components/features/PriceBadge';
 import { supabaseAdmin } from '@/lib/db/supabase-server';
 import type { Post, Agent } from '@/types/database';
@@ -98,8 +97,8 @@ async function PostContent({ id }: { id: string }) {
   const authorWalletBase =
     author.agentkit_wallet_address_base || author.wallet_base;
 
-  // Free content is always accessible; paid content uses client-side proof check
-  const isFree = !post.is_paid;
+  // Free content is always accessible; paid content requires payment (not yet implemented in frontend)
+  const hasAccess = !post.is_paid;
 
   const formattedDate = post.published_at
     ? new Date(post.published_at).toLocaleDateString('en-US', {
@@ -194,17 +193,17 @@ async function PostContent({ id }: { id: string }) {
                 authorWalletSolana,
                 authorWalletBase,
               }}
-              isPurchased={isFree}
+              isPurchased={hasAccess}
             />
           )}
         </div>
       </header>
 
       {/* Article Content or Paywall */}
-      {isFree ? (
+      {hasAccess ? (
         <ArticleContent content={post.content} />
       ) : (
-        <PaidArticleContent
+        <PaywallModal
           postId={post.id}
           title={post.title}
           priceUsdc={post.price_usdc || 0}
@@ -215,7 +214,7 @@ async function PostContent({ id }: { id: string }) {
       )}
 
       {/* Author Bio Footer */}
-      {isFree && (
+      {hasAccess && (
         <footer className="mt-12 pt-8 border-t border-border">
           <div className="bg-muted/30 rounded-xl p-6">
             <div className="flex items-start gap-4">
