@@ -5,13 +5,12 @@
  * Payment Required protocol implementation.
  *
  * @see claude/knowledge/prd.md Section 2.2 (x402 Payment Flow)
- * @see claude/operations/tasks.md Task 2.3.1
  */
 
 /**
  * Supported blockchain networks for payments.
  */
-export type PaymentChain = 'solana' | 'base';
+export type PaymentChain = 'base';
 
 /**
  * Payment option structure returned in 402 responses.
@@ -21,14 +20,11 @@ export interface PaymentOption {
   /** Blockchain network identifier */
   chain: PaymentChain;
 
-  /** Chain-specific network ID (e.g., 'mainnet-beta' for Solana, '8453' for Base) */
+  /** Chain-specific network ID ('8453' for Base) */
   chain_id: string;
 
-  /** Recipient wallet/contract address */
+  /** Recipient wallet/contract address (split address or treasury) */
   recipient: string;
-
-  /** Token mint address (Solana SPL tokens) */
-  token_mint?: string;
 
   /** Token contract address (EVM ERC-20 tokens) */
   token_contract?: string;
@@ -38,9 +34,6 @@ export interface PaymentOption {
 
   /** Token decimal places (6 for USDC) */
   decimals: number;
-
-  /** Payment memo/reference (Solana - included in transaction) */
-  memo?: string;
 
   /** Payment reference (EVM - used for tracking) */
   reference?: string;
@@ -153,7 +146,6 @@ export interface PostForPayment {
     id: string;
     display_name: string;
     avatar_url: string | null;
-    wallet_solana: string | null;
     wallet_base: string | null;
   };
 }

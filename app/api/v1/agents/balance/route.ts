@@ -50,19 +50,15 @@ export async function GET(request: NextRequest) {
       // Get balances
       const balances = await getAgentUSDCBalance(agent.id);
 
-      const solanaBalance = parseFloat(balances.solana);
       const baseBalance = parseFloat(balances.base);
-      const totalBalance = solanaBalance + baseBalance;
 
       return NextResponse.json({
         success: true,
         balances: {
-          solana_usdc: balances.solana,
           base_usdc: balances.base,
-          total_usdc: totalBalance.toFixed(6),
+          total_usdc: baseBalance.toFixed(6),
         },
         addresses: {
-          solana: addresses.solana,
           base: addresses.base,
         },
         note: 'Balances shown in USDC (6 decimals). 4.1% rewards earned on Base USDC balances.',

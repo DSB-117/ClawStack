@@ -9,37 +9,11 @@
  * - Implements x402 protocol for paid content
  *
  * Flow for paid posts:
- * 1. First request without payment → 402 with payment_options
- * 2. Client makes payment on-chain (Solana/Base)
+ * 1. First request without payment → check persistent access → 402 with payment_options
+ * 2. Client makes payment on-chain (Base USDC)
  * 3. Second request with X-Payment-Proof header → 200 with content
  *
  * @see claude/knowledge/prd.md Section 2.2 (x402 Payment Flow)
- * @see claude/operations/tasks.md Tasks 1.6.1-1.6.6, 2.3.5, 2.3.10
- *
- * Response (200 OK - Free Post or Verified Payment):
- * {
- *   "post": {
- *     "id": "uuid",
- *     "title": "My Article",
- *     "content": "...",
- *     ...
- *   }
- * }
- *
- * Response (402 Payment Required - Paid Post):
- * {
- *   "error": "payment_required",
- *   "resource_id": "uuid",
- *   "price_usdc": "0.25",
- *   "valid_until": "2026-02-03T12:30:00Z",
- *   "payment_options": [{ chain: "solana", ... }],
- *   "preview": { ... }
- * }
- *
- * Errors:
- * - 402: Payment required (with verification failure details if proof invalid)
- * - 404: Post not found
- * - 500: Internal server error
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -91,8 +65,44 @@ interface AuthorWithWallets {
   id: string;
   display_name: string;
   avatar_url: string | null;
-  wallet_solana: string | null;
   wallet_base: string | null;
+}
+
+/**
+ * Check if a payer has persistent access to a post
+ */
+async function checkPersistentAccess(
+  postId: string,
+  payerAddress: string
+): Promise<boolean> {
+  try {
+    const { data } = await supabaseAdmin
+      .from('article_access')
+      .select('id')
+      .eq('post_id', postId)
+      .eq('payer_address', payerAddress.toLowerCase())
+      .single();
+    return !!data;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Get the split address for an author (if one exists)
+ */
+async function getAuthorSplitAddress(authorId: string): Promise<string | null> {
+  try {
+    const { data } = await supabaseAdmin
+      .from('author_splits')
+      .select('split_address')
+      .eq('author_id', authorId)
+      .eq('chain', 'base')
+      .single();
+    return data?.split_address || null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -106,7 +116,7 @@ export async function GET(
     const { id: postIdentifier } = await params;
 
     // ================================================================
-    // Query based on ID or Slug (Tasks 1.6.2, 1.6.3)
+    // Query based on ID or Slug
     // ================================================================
     const isUuid = UUID_PATTERN.test(postIdentifier);
 
@@ -117,7 +127,7 @@ export async function GET(
         `
         id, title, content, summary, tags, is_paid, price_usdc,
         view_count, paid_view_count, status, published_at, author_id,
-        author:agents!posts_author_id_fkey(id, display_name, avatar_url, wallet_solana, wallet_base)
+        author:agents!posts_author_id_fkey(id, display_name, avatar_url, wallet_base)
       `
       )
       .eq('status', 'published');
@@ -133,7 +143,7 @@ export async function GET(
     const { data: post, error } = await query.single();
 
     // ================================================================
-    // Handle Not Found (Task 1.6.2)
+    // Handle Not Found
     // ================================================================
     if (error || !post) {
       return NextResponse.json(
@@ -154,9 +164,8 @@ export async function GET(
     }
 
     // ================================================================
-    // Increment View Count (Task 1.6.6)
+    // Increment View Count
     // ================================================================
-    // Fire-and-forget for non-critical view count increment
     void (async () => {
       try {
         await supabaseAdmin
@@ -169,7 +178,7 @@ export async function GET(
     })();
 
     // ================================================================
-    // Return Free Posts Immediately (Task 1.6.4)
+    // Return Free Posts Immediately
     // ================================================================
     if (!post.is_paid) {
       const response: GetPostResponse = {
@@ -195,14 +204,49 @@ export async function GET(
     }
 
     // ================================================================
-    // Handle Paid Posts - Check for Payment Proof (Tasks 2.3.5, 2.3.10)
+    // Check Persistent Access (before requiring payment)
+    // ================================================================
+    const payerAddress = request.headers.get('X-Payer-Address');
+    if (payerAddress) {
+      const hasAccess = await checkPersistentAccess(post.id, payerAddress);
+      if (hasAccess) {
+        const response: GetPostResponse = {
+          post: {
+            id: post.id,
+            title: post.title,
+            content: post.content,
+            summary: post.summary,
+            tags: post.tags || [],
+            is_paid: true,
+            price_usdc: post.price_usdc?.toFixed(2) || null,
+            view_count: post.view_count || 0,
+            published_at: post.published_at,
+            author: {
+              id: author.id,
+              display_name: author.display_name,
+              avatar_url: author.avatar_url,
+            },
+          },
+        };
+
+        return NextResponse.json(response, {
+          status: 200,
+          headers: {
+            [X402_CONFIG.HEADERS.VERSION]: X402_CONFIG.PROTOCOL_VERSION,
+            'X-Access-Type': 'persistent',
+          },
+        });
+      }
+    }
+
+    // ================================================================
+    // Handle Paid Posts - Check for Payment Proof
     // ================================================================
     const proofHeader = request.headers.get(X402_CONFIG.HEADERS.PROOF);
     const proof = parsePaymentProof(proofHeader);
 
     // If payment proof provided, verify it
     if (proof) {
-      // Build post object for verification
       const postForPayment: PostForPayment = {
         id: post.id,
         title: post.title,
@@ -216,7 +260,6 @@ export async function GET(
           id: author.id,
           display_name: author.display_name,
           avatar_url: author.avatar_url,
-          wallet_solana: author.wallet_solana,
           wallet_base: author.wallet_base,
         },
       };
@@ -224,9 +267,7 @@ export async function GET(
       const verificationResult = await verifyPayment(proof, postForPayment);
 
       if (verificationResult.success) {
-        // ================================================================
-        // Task 2.3.9: Record Payment Event
-        // ================================================================
+        // Record Payment Event (also grants persistent access and triggers split distribution)
         const paymentEventId = await recordPaymentEvent(
           proof,
           postForPayment,
@@ -234,7 +275,6 @@ export async function GET(
         );
 
         if (paymentEventId) {
-          // Increment paid view count
           void (async () => {
             try {
               await supabaseAdmin
@@ -247,9 +287,6 @@ export async function GET(
           })();
         }
 
-        // ================================================================
-        // Task 2.3.10: Return Content After Successful Payment
-        // ================================================================
         const response: GetPostResponse = {
           post: {
             id: post.id,
@@ -280,7 +317,8 @@ export async function GET(
       }
 
       // Payment verification failed - return error with payment options
-      const paymentOptions = buildPaymentOptions(post.id, ['solana', 'base']);
+      const splitAddress = await getAuthorSplitAddress(post.author_id);
+      const paymentOptions = buildPaymentOptions(post.id, ['base'], splitAddress || undefined);
 
       const paymentResponse: PaymentRequiredResponse = {
         error: 'payment_required',
@@ -317,10 +355,10 @@ export async function GET(
     }
 
     // ================================================================
-    // Task 2.3.5: Return 402 with Payment Options
+    // Return 402 with Payment Options (Base only, with split address)
     // ================================================================
-    // No payment proof provided - return 402 with payment options
-    const paymentOptions = buildPaymentOptions(post.id, ['solana', 'base']);
+    const splitAddress = await getAuthorSplitAddress(post.author_id);
+    const paymentOptions = buildPaymentOptions(post.id, ['base'], splitAddress || undefined);
 
     const paymentResponse: PaymentRequiredResponse = {
       error: 'payment_required',

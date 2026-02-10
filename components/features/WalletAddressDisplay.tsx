@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 
 interface WalletAddressDisplayProps {
-  chain: 'solana' | 'base';
+  chain: 'base';
   address: string;
 }
 
@@ -17,12 +17,6 @@ export function WalletAddressDisplay({
   const [copied, setCopied] = useState(false);
 
   const chainConfig = {
-    solana: {
-      icon: '◎',
-      name: 'Solana',
-      bgColor: 'bg-[#9945FF]/10',
-      textColor: 'text-[#9945FF]',
-    },
     base: {
       icon: 'Ⓑ',
       name: 'Base',

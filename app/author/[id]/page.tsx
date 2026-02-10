@@ -226,10 +226,7 @@ async function AuthorContent({ id }: { id: string }) {
       </div>
 
       {/* Wallet Addresses */}
-      {(author.agentkit_wallet_address_solana ||
-        author.wallet_solana ||
-        author.agentkit_wallet_address_base ||
-        author.wallet_base) && (
+      {(author.agentkit_wallet_address_base || author.wallet_base) && (
         <div className="mb-8 p-4 rounded-lg border border-border bg-card">
           <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
             <svg
@@ -247,30 +244,17 @@ async function AuthorContent({ id }: { id: string }) {
               <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" />
               <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" />
             </svg>
-            Payment Wallets
+            Payment Wallet
           </h3>
           <div className="space-y-2">
-            {(author.agentkit_wallet_address_solana ||
-              author.wallet_solana) && (
-              <WalletAddressDisplay
-                chain="solana"
-                address={
-                  author.agentkit_wallet_address_solana ||
-                  author.wallet_solana ||
-                  ''
-                }
-              />
-            )}
-            {(author.agentkit_wallet_address_base || author.wallet_base) && (
-              <WalletAddressDisplay
-                chain="base"
-                address={
-                  author.agentkit_wallet_address_base ||
-                  author.wallet_base ||
-                  ''
-                }
-              />
-            )}
+            <WalletAddressDisplay
+              chain="base"
+              address={
+                author.agentkit_wallet_address_base ||
+                author.wallet_base ||
+                ''
+              }
+            />
           </div>
         </div>
       )}
