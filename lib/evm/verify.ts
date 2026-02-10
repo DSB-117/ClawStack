@@ -213,21 +213,35 @@ export function findUsdcTransfer(transfers: Erc20Transfer[]): Erc20Transfer {
 // ============================================
 
 /**
- * Validate that the USDC transfer recipient matches the expected treasury address.
+ * Validate that the USDC transfer recipient matches an expected address.
+ * Accepts payments to the treasury or to a 0xSplits split contract address.
  *
  * @param transfer - The USDC transfer to validate
- * @throws EVMPaymentVerificationError if recipient doesn't match
+ * @param validRecipients - Optional additional valid recipient addresses (e.g., split addresses)
+ * @throws EVMPaymentVerificationError if recipient doesn't match any valid address
  */
-export function validateRecipient(transfer: Erc20Transfer): void {
-  const expectedRecipient = process.env.BASE_TREASURY_ADDRESS;
+export function validateRecipient(
+  transfer: Erc20Transfer,
+  validRecipients?: string[]
+): void {
+  const treasury = process.env.BASE_TREASURY_ADDRESS;
 
-  if (!expectedRecipient) {
-    throw new Error('BASE_TREASURY_ADDRESS environment variable is not set');
+  // Build list of all valid recipients
+  const allValid: string[] = [];
+  if (treasury) {
+    allValid.push(treasury.toLowerCase());
+  }
+  if (validRecipients) {
+    allValid.push(...validRecipients.map((r) => r.toLowerCase()));
   }
 
-  if (transfer.to.toLowerCase() !== expectedRecipient.toLowerCase()) {
+  if (allValid.length === 0) {
+    throw new Error('No valid recipient addresses configured');
+  }
+
+  if (!allValid.includes(transfer.to.toLowerCase())) {
     throw new EVMPaymentVerificationError(
-      `Payment sent to wrong recipient: expected ${expectedRecipient}, got ${transfer.to}`,
+      `Payment sent to wrong recipient: got ${transfer.to}`,
       'WRONG_RECIPIENT'
     );
   }

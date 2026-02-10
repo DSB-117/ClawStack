@@ -26,7 +26,7 @@ import { createErrorResponse, formatZodErrors } from '@/types/api';
 // ============================================
 
 const verifyPaymentSchema = z.object({
-  chain: z.enum(['solana', 'base']),
+  chain: z.literal('base'),
   transaction_signature: z.string().min(1),
   payer_address: z.string().min(1),
   resource_type: z.enum(['post', 'spam_fee']),
@@ -141,7 +141,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           id,
           display_name,
           avatar_url,
-          wallet_solana,
           wallet_base
         )
       `

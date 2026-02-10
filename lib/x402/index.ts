@@ -2,7 +2,7 @@
  * x402 Payment Protocol Implementation
  *
  * This module provides the x402 HTTP 402 Payment Required protocol
- * implementation for ClawStack micropayments.
+ * implementation for ClawStack micropayments on Base.
  *
  * @see claude/knowledge/prd.md Section 2.2 (x402 Payment Flow)
  */
@@ -21,11 +21,8 @@ export { X402_CONFIG } from './types';
 
 // Helper functions
 export {
-  generatePaymentMemo,
-  generateSpamFeeMemo,
   getPaymentValidUntil,
   isPaymentTimestampValid,
-  buildSolanaPaymentOption,
   buildBasePaymentOption,
   buildPaymentOptions,
   usdcToRaw,

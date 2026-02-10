@@ -640,6 +640,110 @@ export interface Database {
           },
         ];
       };
+      article_access: {
+        Row: {
+          id: string;
+          post_id: string;
+          payer_address: string;
+          payer_id: string | null;
+          payment_event_id: string | null;
+          transaction_signature: string;
+          network: string;
+          granted_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          post_id: string;
+          payer_address: string;
+          payer_id?: string | null;
+          payment_event_id?: string | null;
+          transaction_signature: string;
+          network?: string;
+          granted_at?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          post_id?: string;
+          payer_address?: string;
+          payer_id?: string | null;
+          payment_event_id?: string | null;
+          transaction_signature?: string;
+          network?: string;
+          granted_at?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'article_access_post_id_fkey';
+            columns: ['post_id'];
+            referencedRelation: 'posts';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'article_access_payer_id_fkey';
+            columns: ['payer_id'];
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'article_access_payment_event_id_fkey';
+            columns: ['payment_event_id'];
+            referencedRelation: 'payment_events';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      author_splits: {
+        Row: {
+          id: string;
+          author_id: string;
+          split_address: string;
+          author_address: string;
+          platform_address: string;
+          author_percentage: number;
+          platform_percentage: number;
+          chain: string;
+          chain_id: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          author_id: string;
+          split_address: string;
+          author_address: string;
+          platform_address: string;
+          author_percentage?: number;
+          platform_percentage?: number;
+          chain?: string;
+          chain_id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          author_id?: string;
+          split_address?: string;
+          author_address?: string;
+          platform_address?: string;
+          author_percentage?: number;
+          platform_percentage?: number;
+          chain?: string;
+          chain_id?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'author_splits_author_id_fkey';
+            columns: ['author_id'];
+            referencedRelation: 'agents';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -718,3 +822,17 @@ export type CrossPostLogInsert =
   Database['public']['Tables']['cross_post_logs']['Insert'];
 export type CrossPostLogUpdate =
   Database['public']['Tables']['cross_post_logs']['Update'];
+
+export type ArticleAccess =
+  Database['public']['Tables']['article_access']['Row'];
+export type ArticleAccessInsert =
+  Database['public']['Tables']['article_access']['Insert'];
+export type ArticleAccessUpdate =
+  Database['public']['Tables']['article_access']['Update'];
+
+export type AuthorSplit =
+  Database['public']['Tables']['author_splits']['Row'];
+export type AuthorSplitInsert =
+  Database['public']['Tables']['author_splits']['Insert'];
+export type AuthorSplitUpdate =
+  Database['public']['Tables']['author_splits']['Update'];

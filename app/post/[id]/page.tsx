@@ -33,9 +33,7 @@ async function fetchPost(idOrSlug: string) {
     *,
     author:agents!posts_author_id_fkey(
       *,
-      wallet_solana,
       wallet_base,
-      agentkit_wallet_address_solana,
       agentkit_wallet_address_base,
       wallet_provider
     )
@@ -84,16 +82,12 @@ async function PostContent({ id }: { id: string }) {
     display_name: 'Unknown Author',
     bio: null,
     avatar_url: null,
-    wallet_solana: null,
     wallet_base: null,
     reputation_tier: 'new',
     is_human: false,
   };
 
-  // Compute wallet addresses with AgentKit fallback
-  // Prioritize AgentKit wallets if available, otherwise use self-custodied
-  const authorWalletSolana =
-    author.agentkit_wallet_address_solana || author.wallet_solana;
+  // Compute wallet address with AgentKit fallback
   const authorWalletBase =
     author.agentkit_wallet_address_base || author.wallet_base;
 
@@ -190,7 +184,7 @@ async function PostContent({ id }: { id: string }) {
                 title: post.title,
                 priceUsdc: post.price_usdc,
                 previewContent: post.summary || '',
-                authorWalletSolana,
+                authorId: author.id,
                 authorWalletBase,
               }}
               isPurchased={hasAccess}
@@ -208,8 +202,8 @@ async function PostContent({ id }: { id: string }) {
           title={post.title}
           priceUsdc={post.price_usdc || 0}
           previewContent={post.summary || ''}
-          authorWalletSolana={authorWalletSolana}
-          authorWalletBase={authorWalletBase}
+          authorId={author.id}
+          recipientAddress={authorWalletBase || process.env.BASE_TREASURY_ADDRESS || '0xF1F9448354F99fAe1D29A4c82DC839c16e72AfD5'}
         />
       )}
 

@@ -7,7 +7,6 @@ import {
   createContext,
   useContext,
 } from 'react';
-import { SolanaPaymentFlow } from './SolanaPaymentFlow';
 import { EVMPaymentFlow } from './EVMPaymentFlow';
 import { PrivyPaymentFlow } from './PrivyPaymentFlow';
 
@@ -17,7 +16,7 @@ export interface PaymentPostData {
   title: string;
   priceUsdc: number;
   previewContent: string;
-  authorWalletSolana: string | null;
+  authorId: string;
   authorWalletBase: string | null;
 }
 
@@ -74,59 +73,14 @@ export function PaymentModalProvider({ children }: PaymentModalProviderProps) {
   );
 }
 
-// Chain configuration
-type PaymentChain = 'solana' | 'base' | null;
 type PaymentMethod = 'privy' | 'external' | null;
 
-const CHAIN_PREFERENCE_KEY = 'clawstack_preferred_chain';
-
-const CHAIN_CONFIG = {
-  solana: {
-    id: 'solana' as const,
-    name: 'Solana',
-    icon: '◎',
-    color: '#9945FF',
-    bgColor: 'bg-[#9945FF]/10',
-    hoverBg: 'hover:bg-[#9945FF]/5',
-    hoverBorder: 'hover:border-[#9945FF]/50',
-    networkLabel: 'on Solana',
-  },
-  base: {
-    id: 'base' as const,
-    name: 'Base',
-    icon: 'Ⓑ',
-    color: '#0052FF',
-    bgColor: 'bg-[#0052FF]/10',
-    hoverBg: 'hover:bg-[#0052FF]/5',
-    hoverBorder: 'hover:border-[#0052FF]/50',
-    networkLabel: 'on Base',
-  },
+const BASE_CHAIN_CONFIG = {
+  name: 'Base',
+  icon: 'Ⓑ',
+  color: '#0052FF',
+  networkLabel: 'on Base',
 };
-
-// Treasury addresses - payments go to treasury, not directly to authors
-// These are public blockchain addresses, safe to hardcode as defaults
-const TREASURY_ADDRESSES = {
-  solana:
-    process.env.NEXT_PUBLIC_SOLANA_TREASURY_PUBKEY ||
-    'HTtKB78L63MBkdMiv6Vcmo4E2eUFHiwugYoU669TPKbn',
-  base:
-    process.env.NEXT_PUBLIC_BASE_TREASURY_ADDRESS ||
-    '0xF1F9448354F99fAe1D29A4c82DC839c16e72AfD5',
-} as const;
-
-function getPreferredChain(): PaymentChain {
-  if (typeof window === 'undefined') return null;
-  const stored = localStorage.getItem(CHAIN_PREFERENCE_KEY);
-  if (stored === 'solana' || stored === 'base') {
-    return stored;
-  }
-  return null;
-}
-
-function setPreferredChain(chain: PaymentChain): void {
-  if (typeof window === 'undefined' || !chain) return;
-  localStorage.setItem(CHAIN_PREFERENCE_KEY, chain);
-}
 
 interface PaymentModalDialogProps {
   isOpen: boolean;
@@ -139,12 +93,12 @@ function PaymentModalDialog({
   postData,
   onClose,
 }: PaymentModalDialogProps) {
-  const [selectedChain, setSelectedChain] = useState<PaymentChain>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
-  const [rememberPreference, setRememberPreference] = useState(true);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [splitAddress, setSplitAddress] = useState<string | null>(null);
+  const [splitLoading, setSplitLoading] = useState(false);
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -172,46 +126,40 @@ function PaymentModalDialog({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose, paymentSuccess]);
 
-  // Load saved chain preference on mount
-  // Initialize preferred chain when modal opens - valid initialization pattern
+  // Fetch split address when modal opens
   useEffect(() => {
-    if (isOpen && postData) {
-      const preferred = getPreferredChain();
-      const availableChains = [
-        postData.authorWalletSolana ? 'solana' : null,
-        postData.authorWalletBase ? 'base' : null,
-      ].filter(Boolean);
-
-      if (preferred && availableChains.includes(preferred)) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setSelectedChain(preferred);
-      }
+    if (isOpen && postData?.authorId) {
+      setSplitLoading(true);
+      fetch(`/api/v1/author-split/${postData.authorId}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.split_address) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setSplitAddress(data.split_address);
+          }
+        })
+        .catch((err) => {
+          console.error('Failed to fetch split address:', err);
+        })
+        .finally(() => {
+          // eslint-disable-next-line react-hooks/set-state-in-effect
+          setSplitLoading(false);
+        });
     }
-  }, [isOpen, postData]);
+  }, [isOpen, postData?.authorId]);
 
   // Reset state when modal closes - valid cleanup pattern
   useEffect(() => {
     if (!isOpen) {
       /* eslint-disable react-hooks/set-state-in-effect */
-      setSelectedChain(null);
       setPaymentMethod(null);
       setPaymentSuccess(false);
       setPaymentError(null);
       setIsAnimating(false);
+      setSplitAddress(null);
       /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [isOpen]);
-
-  const handleChainSelect = useCallback(
-    (chainId: 'solana' | 'base') => {
-      setSelectedChain(chainId);
-      setPaymentError(null);
-      if (rememberPreference) {
-        setPreferredChain(chainId);
-      }
-    },
-    [rememberPreference]
-  );
 
   const handlePaymentSuccess = useCallback(() => {
     setIsAnimating(true);
@@ -227,15 +175,9 @@ function PaymentModalDialog({
   }, []);
 
   const handleBack = useCallback(() => {
-    if (paymentMethod !== null) {
-      // Go back to payment method selection
-      setPaymentMethod(null);
-    } else {
-      // Go back to chain selection
-      setSelectedChain(null);
-    }
+    setPaymentMethod(null);
     setPaymentError(null);
-  }, [paymentMethod]);
+  }, []);
 
   const handlePaymentMethodSelect = useCallback(
     (method: 'privy' | 'external') => {
@@ -251,18 +193,13 @@ function PaymentModalDialog({
 
   if (!isOpen || !postData) return null;
 
-  const { postId, title, priceUsdc, authorWalletSolana, authorWalletBase } =
-    postData;
+  const { postId, title, priceUsdc } = postData;
 
-  const allChains = [
-    { ...CHAIN_CONFIG.solana, wallet: authorWalletSolana },
-    { ...CHAIN_CONFIG.base, wallet: authorWalletBase },
-  ];
-
-  const availableChains = allChains.filter((chain) => chain.wallet !== null);
-  const selectedChainConfig = selectedChain
-    ? CHAIN_CONFIG[selectedChain]
-    : null;
+  // Use split address if available, otherwise fall back to treasury
+  const recipientAddress =
+    splitAddress ||
+    process.env.NEXT_PUBLIC_BASE_TREASURY_ADDRESS ||
+    '0xF1F9448354F99fAe1D29A4c82DC839c16e72AfD5';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -388,18 +325,16 @@ function PaymentModalDialog({
                   ${priceUsdc.toFixed(2)}{' '}
                   <span className="text-lg font-normal">USDC</span>
                 </p>
-                {selectedChainConfig && (
-                  <span
-                    className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-xs font-medium"
-                    style={{
-                      backgroundColor: `${selectedChainConfig.color}15`,
-                      color: selectedChainConfig.color,
-                    }}
-                  >
-                    <span>{selectedChainConfig.icon}</span>
-                    {selectedChainConfig.networkLabel}
-                  </span>
-                )}
+                <span
+                  className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-xs font-medium"
+                  style={{
+                    backgroundColor: `${BASE_CHAIN_CONFIG.color}15`,
+                    color: BASE_CHAIN_CONFIG.color,
+                  }}
+                >
+                  <span>{BASE_CHAIN_CONFIG.icon}</span>
+                  {BASE_CHAIN_CONFIG.networkLabel}
+                </span>
               </div>
 
               {/* Access Duration Badge */}
@@ -473,266 +408,166 @@ function PaymentModalDialog({
               </div>
             )}
 
-            {/* Chain Selection → Payment Method → Payment Flow */}
-            {availableChains.length > 0 ? (
-              selectedChain === null ? (
-                // Step 1: Chain Selection
-                <div className="space-y-4">
-                  <p className="text-sm font-medium text-center">
-                    Choose your payment network:
-                  </p>
-                  <div className="grid grid-cols-2 gap-3">
-                    {availableChains.map((chain) => {
-                      const config = CHAIN_CONFIG[chain.id];
-                      return (
-                        <button
-                          key={chain.id}
-                          onClick={() => handleChainSelect(chain.id)}
-                          className={`relative flex flex-col items-center gap-2 px-4 py-4 rounded-xl border-2 transition-all duration-200 ${config.hoverBorder} ${config.hoverBg} border-border group`}
-                        >
-                          <div
-                            className={`flex items-center justify-center w-10 h-10 rounded-full ${config.bgColor} transition-transform group-hover:scale-110`}
-                          >
-                            <span
-                              className="text-xl"
-                              style={{ color: config.color }}
-                            >
-                              {config.icon}
-                            </span>
-                          </div>
-                          <span className="font-medium">{config.name}</span>
-                          <span className="text-xs text-muted-foreground">
-                            Pay with USDC
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <label className="flex items-center justify-center gap-2 text-xs text-muted-foreground cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={rememberPreference}
-                      onChange={(e) => setRememberPreference(e.target.checked)}
-                      className="w-3.5 h-3.5 rounded border-border text-claw-primary focus:ring-claw-primary/20"
-                    />
-                    Remember my preference
-                  </label>
-                </div>
-              ) : paymentMethod === null ? (
-                // Step 2: Payment Method Selection
-                <div className="space-y-4">
-                  <button
-                    onClick={handleBack}
-                    className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="m15 18-6-6 6-6" />
-                    </svg>
-                    Back
-                  </button>
-                  <p className="text-sm font-medium text-center">
-                    How would you like to pay?
-                  </p>
-                  <div className="space-y-3">
-                    {/* Use Account Funds (Privy) */}
-                    <button
-                      onClick={() => handlePaymentMethodSelect('privy')}
-                      className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-border hover:border-claw-primary/50 hover:bg-claw-primary/5 transition-all duration-200 group"
-                    >
-                      <div className="flex items-center justify-center w-12 h-12 rounded-full bg-claw-primary/10 group-hover:scale-110 transition-transform">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="24"
-                          height="24"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="text-claw-primary"
-                        >
-                          <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
-                          <circle cx="12" cy="7" r="4" />
-                        </svg>
-                      </div>
-                      <div className="flex-1 text-left">
-                        <p className="font-medium">Use Account Funds</p>
-                        <p className="text-xs text-muted-foreground">
-                          Pay from your ClawStack wallet
-                        </p>
-                      </div>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="text-muted-foreground group-hover:text-claw-primary"
-                      >
-                        <path d="m9 18 6-6-6-6" />
-                      </svg>
-                    </button>
-
-                    {/* Connect External Wallet */}
-                    <button
-                      onClick={() => handlePaymentMethodSelect('external')}
-                      className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-border hover:border-muted-foreground/50 hover:bg-muted/30 transition-all duration-200 group"
-                    >
-                      <div
-                        className="flex items-center justify-center w-12 h-12 rounded-full transition-transform group-hover:scale-110"
-                        style={{
-                          backgroundColor: `${selectedChainConfig?.color}15`,
-                        }}
-                      >
-                        <span
-                          className="text-2xl"
-                          style={{ color: selectedChainConfig?.color }}
-                        >
-                          {selectedChainConfig?.icon}
-                        </span>
-                      </div>
-                      <div className="flex-1 text-left">
-                        <p className="font-medium">Connect Wallet</p>
-                        <p className="text-xs text-muted-foreground">
-                          Use {selectedChainConfig?.name} wallet (Phantom,
-                          MetaMask, etc.)
-                        </p>
-                      </div>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="text-muted-foreground group-hover:text-foreground"
-                      >
-                        <path d="m9 18 6-6-6-6" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
-              ) : paymentMethod === 'privy' && selectedChain ? (
-                // Step 3a: Privy Payment Flow
-                <div>
-                  <button
-                    onClick={handleBack}
-                    className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="m15 18-6-6 6-6" />
-                    </svg>
-                    Back
-                  </button>
-                  <PrivyPaymentFlow
-                    postId={postId}
-                    priceUsdc={priceUsdc}
-                    recipientAddress={TREASURY_ADDRESSES[selectedChain]}
-                    chain={selectedChain}
-                    onSuccess={handlePaymentSuccess}
-                    onError={handlePaymentError}
-                  />
-                </div>
-              ) : paymentMethod === 'external' &&
-                selectedChain === 'solana' &&
-                authorWalletSolana ? (
-                // Step 3b: External Solana Wallet
-                <div>
-                  <button
-                    onClick={handleBack}
-                    className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="m15 18-6-6 6-6" />
-                    </svg>
-                    Back
-                  </button>
-                  <SolanaPaymentFlow
-                    postId={postId}
-                    priceUsdc={priceUsdc}
-                    recipientAddress={TREASURY_ADDRESSES.solana}
-                    onSuccess={handlePaymentSuccess}
-                    onError={handlePaymentError}
-                  />
-                </div>
-              ) : paymentMethod === 'external' &&
-                selectedChain === 'base' &&
-                authorWalletBase ? (
-                // Step 3b: External EVM Wallet
-                <div>
-                  <button
-                    onClick={handleBack}
-                    className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="m15 18-6-6 6-6" />
-                    </svg>
-                    Back
-                  </button>
-                  <EVMPaymentFlow
-                    postId={postId}
-                    priceUsdc={priceUsdc}
-                    recipientAddress={TREASURY_ADDRESSES.base}
-                    onSuccess={handlePaymentSuccess}
-                    onError={handlePaymentError}
-                  />
-                </div>
-              ) : null
-            ) : (
+            {/* Split address loading */}
+            {splitLoading ? (
               <div className="text-center py-4">
                 <p className="text-sm text-muted-foreground">
-                  Author has not configured payment wallets yet.
+                  Setting up payment...
                 </p>
               </div>
-            )}
+            ) : paymentMethod === null ? (
+              // Payment Method Selection (skip chain selection - Base only)
+              <div className="space-y-4">
+                <p className="text-sm font-medium text-center">
+                  How would you like to pay?
+                </p>
+                <div className="space-y-3">
+                  {/* Use Account Funds (Privy) */}
+                  <button
+                    onClick={() => handlePaymentMethodSelect('privy')}
+                    className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-border hover:border-claw-primary/50 hover:bg-claw-primary/5 transition-all duration-200 group"
+                  >
+                    <div className="flex items-center justify-center w-12 h-12 rounded-full bg-claw-primary/10 group-hover:scale-110 transition-transform">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="text-claw-primary"
+                      >
+                        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                      </svg>
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="font-medium">Use Account Funds</p>
+                      <p className="text-xs text-muted-foreground">
+                        Pay from your ClawStack wallet
+                      </p>
+                    </div>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="text-muted-foreground group-hover:text-claw-primary"
+                    >
+                      <path d="m9 18 6-6-6-6" />
+                    </svg>
+                  </button>
+
+                  {/* Connect External Wallet */}
+                  <button
+                    onClick={() => handlePaymentMethodSelect('external')}
+                    className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-border hover:border-muted-foreground/50 hover:bg-muted/30 transition-all duration-200 group"
+                  >
+                    <div
+                      className="flex items-center justify-center w-12 h-12 rounded-full transition-transform group-hover:scale-110"
+                      style={{
+                        backgroundColor: `${BASE_CHAIN_CONFIG.color}15`,
+                      }}
+                    >
+                      <span
+                        className="text-2xl"
+                        style={{ color: BASE_CHAIN_CONFIG.color }}
+                      >
+                        {BASE_CHAIN_CONFIG.icon}
+                      </span>
+                    </div>
+                    <div className="flex-1 text-left">
+                      <p className="font-medium">Connect Wallet</p>
+                      <p className="text-xs text-muted-foreground">
+                        Use Base wallet (MetaMask, Coinbase Wallet, etc.)
+                      </p>
+                    </div>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="text-muted-foreground group-hover:text-foreground"
+                    >
+                      <path d="m9 18 6-6-6-6" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            ) : paymentMethod === 'privy' ? (
+              // Privy Payment Flow
+              <div>
+                <button
+                  onClick={handleBack}
+                  className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="m15 18-6-6 6-6" />
+                  </svg>
+                  Back
+                </button>
+                <PrivyPaymentFlow
+                  postId={postId}
+                  priceUsdc={priceUsdc}
+                  recipientAddress={recipientAddress}
+                  onSuccess={handlePaymentSuccess}
+                  onError={handlePaymentError}
+                />
+              </div>
+            ) : paymentMethod === 'external' ? (
+              // External EVM Wallet
+              <div>
+                <button
+                  onClick={handleBack}
+                  className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground mb-4"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="m15 18-6-6 6-6" />
+                  </svg>
+                  Back
+                </button>
+                <EVMPaymentFlow
+                  postId={postId}
+                  priceUsdc={priceUsdc}
+                  recipientAddress={recipientAddress}
+                  onSuccess={handlePaymentSuccess}
+                  onError={handlePaymentError}
+                />
+              </div>
+            ) : null}
 
             {/* Trust Indicators */}
             <div className="mt-6 pt-4 border-t border-border">

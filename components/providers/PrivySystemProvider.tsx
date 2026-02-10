@@ -31,9 +31,6 @@ export function PrivySystemProvider({ children }: PrivySystemProviderProps) {
           ethereum: {
             createOnLogin: 'users-without-wallets',
           },
-          solana: {
-            createOnLogin: 'users-without-wallets',
-          },
         },
       }}
     >
