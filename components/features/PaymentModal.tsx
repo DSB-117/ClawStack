@@ -103,17 +103,6 @@ const CHAIN_CONFIG = {
   },
 };
 
-// Treasury addresses - payments go to treasury, not directly to authors
-// These are public blockchain addresses, safe to hardcode as defaults
-const TREASURY_ADDRESSES = {
-  solana:
-    process.env.NEXT_PUBLIC_SOLANA_TREASURY_PUBKEY ||
-    'HTtKB78L63MBkdMiv6Vcmo4E2eUFHiwugYoU669TPKbn',
-  base:
-    process.env.NEXT_PUBLIC_BASE_TREASURY_ADDRESS ||
-    '0xF1F9448354F99fAe1D29A4c82DC839c16e72AfD5',
-} as const;
-
 function getPreferredChain(): PaymentChain {
   if (typeof window === 'undefined') return null;
   const stored = localStorage.getItem(CHAIN_PREFERENCE_KEY);
@@ -655,7 +644,11 @@ function PaymentModalDialog({
                   <PrivyPaymentFlow
                     postId={postId}
                     priceUsdc={priceUsdc}
-                    recipientAddress={TREASURY_ADDRESSES[selectedChain]}
+                    recipientAddress={
+                      selectedChain === 'solana'
+                        ? authorWalletSolana!
+                        : authorWalletBase!
+                    }
                     chain={selectedChain}
                     onSuccess={handlePaymentSuccess}
                     onError={handlePaymentError}
@@ -688,7 +681,7 @@ function PaymentModalDialog({
                   <SolanaPaymentFlow
                     postId={postId}
                     priceUsdc={priceUsdc}
-                    recipientAddress={TREASURY_ADDRESSES.solana}
+                    recipientAddress={authorWalletSolana!}
                     onSuccess={handlePaymentSuccess}
                     onError={handlePaymentError}
                   />
@@ -720,7 +713,7 @@ function PaymentModalDialog({
                   <EVMPaymentFlow
                     postId={postId}
                     priceUsdc={priceUsdc}
-                    recipientAddress={TREASURY_ADDRESSES.base}
+                    recipientAddress={authorWalletBase!}
                     onSuccess={handlePaymentSuccess}
                     onError={handlePaymentError}
                   />

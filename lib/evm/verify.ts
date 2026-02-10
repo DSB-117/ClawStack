@@ -61,14 +61,17 @@ export interface Erc20Transfer {
 /**
  * Verified payment result returned after successful verification.
  */
+/**
+ * Verified payment result returned after successful verification.
+ */
 export interface VerifiedEVMPayment {
-  transactionHash: `0x${string}`;
+  transactionHash: string; // Can be comma-separated for split payments
   payer: `0x${string}`;
-  recipient: `0x${string}`;
-  amount: bigint;
+  recipient: `0x${string}`; // Primary recipient (Treasury)
+  amount: bigint; // Total amount
   contractAddress: `0x${string}`;
-  blockNumber: bigint;
-  confirmations: number;
+  blockNumber: bigint; // Latest block number among transactions
+  confirmations: number; // Minimum confirmations among transactions
   reference: string | null;
 }
 
@@ -76,9 +79,10 @@ export interface VerifiedEVMPayment {
  * Options for verifying an EVM payment.
  */
 export interface VerifyEVMPaymentOptions {
-  transactionHash: `0x${string}`;
+  transactionHash: string; // Can be comma-separated "0x... , 0x..."
   expectedPostId: string;
   expectedAmountRaw: bigint;
+  expectedAuthorAddress?: string | null; // Optional for split payments
   requestTimestamp?: number;
   referenceExpirationSeconds?: number;
 }
@@ -208,54 +212,6 @@ export function findUsdcTransfer(transfers: Erc20Transfer[]): Erc20Transfer {
   return usdcTransfer;
 }
 
-// ============================================
-// 3.2.4: Validate Recipient Matches Expected
-// ============================================
-
-/**
- * Validate that the USDC transfer recipient matches the expected treasury address.
- *
- * @param transfer - The USDC transfer to validate
- * @throws EVMPaymentVerificationError if recipient doesn't match
- */
-export function validateRecipient(transfer: Erc20Transfer): void {
-  const expectedRecipient = process.env.BASE_TREASURY_ADDRESS;
-
-  if (!expectedRecipient) {
-    throw new Error('BASE_TREASURY_ADDRESS environment variable is not set');
-  }
-
-  if (transfer.to.toLowerCase() !== expectedRecipient.toLowerCase()) {
-    throw new EVMPaymentVerificationError(
-      `Payment sent to wrong recipient: expected ${expectedRecipient}, got ${transfer.to}`,
-      'WRONG_RECIPIENT'
-    );
-  }
-}
-
-// ============================================
-// 3.2.5: Validate Amount Meets Minimum
-// ============================================
-
-/**
- * Validate that the payment amount meets the minimum required.
- * Accepts overpayment but rejects underpayment.
- *
- * @param transfer - The USDC transfer to validate
- * @param expectedAmountRaw - Expected amount in raw units (6 decimals for USDC)
- * @throws EVMPaymentVerificationError if amount is insufficient
- */
-export function validateAmount(
-  transfer: Erc20Transfer,
-  expectedAmountRaw: bigint
-): void {
-  if (transfer.value < expectedAmountRaw) {
-    throw new EVMPaymentVerificationError(
-      `Insufficient payment: expected ${expectedAmountRaw}, got ${transfer.value}`,
-      'INSUFFICIENT_AMOUNT'
-    );
-  }
-}
 
 // ============================================
 // 3.2.6 & 3.2.7: Reference Validation
@@ -407,21 +363,13 @@ export async function getConfirmationCount(
   return Number(currentBlock - receipt.blockNumber);
 }
 
-// ============================================
-// Main Verification Function (combines all checks)
-// ============================================
 
 /**
  * Complete payment verification for a Base USDC ERC-20 transaction.
- * Performs all validation checks in sequence:
- * 1. Fetch transaction receipt
- * 2. Check transaction success (not reverted)
- * 3. Parse ERC-20 transfer events
- * 4. Find USDC transfer
- * 5. Validate recipient
- * 6. Validate amount
- * 7. Validate reference (if provided)
- * 8. Check block confirmations (12+)
+ * Verifies that:
+ * 1. Transaction exists and succeeded
+ * 2. Contains a USDC transfer to the author for the expected amount
+ * 3. Has sufficient block confirmations
  *
  * @param options - Verification options
  * @returns Verified payment details
@@ -433,46 +381,59 @@ export async function verifyEVMPayment(
   const {
     transactionHash,
     expectedAmountRaw,
+    expectedAuthorAddress,
   } = options;
 
-  // 1. Fetch transaction receipt (also checks for reverted status)
-  const receipt = await fetchTransactionReceipt(transactionHash);
+  // 1. Fetch receipt
+  const receipt = await fetchTransactionReceipt(transactionHash as `0x${string}`);
 
-  // 2. Validate transaction success (explicit double-check)
+  // 2. Validate transaction succeeded
   validateTransactionSuccess(receipt);
 
-  // 3. Parse all ERC-20 transfers from USDC contract
+  // 3. Parse ERC-20 transfer events
   const usdcContract = (
     process.env.USDC_CONTRACT_BASE || USDC_CONTRACT_BASE
   ) as `0x${string}`;
-  const transfers = parseErc20Transfers(receipt, usdcContract);
 
-  // 4. Find USDC transfer
-  const usdcTransfer = findUsdcTransfer(transfers);
+  const allTransfers = parseErc20Transfers(receipt, usdcContract);
 
-  // 5. Validate recipient
-  validateRecipient(usdcTransfer);
+  // 4. Find USDC transfer to the author (or fallback treasury)
+  const recipientAddress = expectedAuthorAddress || process.env.BASE_TREASURY_ADDRESS;
+  if (!recipientAddress) throw new Error('No recipient address for verification');
 
-  // 6. Validate amount
-  validateAmount(usdcTransfer, expectedAmountRaw);
+  const usdcTransfer = allTransfers.find(
+    (t) =>
+      t.contractAddress.toLowerCase() === usdcContract.toLowerCase() &&
+      t.to.toLowerCase() === recipientAddress.toLowerCase()
+  );
 
-  // 7. Reference validation is optional for EVM
-  // We rely primarily on timing + exact amount matching
-  // Reference can be extracted from transaction input data if needed
+  if (!usdcTransfer) {
+    throw new EVMPaymentVerificationError(
+      `No USDC transfer found to recipient ${recipientAddress}`,
+      'NO_USDC_TRANSFER'
+    );
+  }
 
-  // 8. Check block confirmations
+  // 5. Validate amount
+  if (usdcTransfer.value < expectedAmountRaw) {
+    throw new EVMPaymentVerificationError(
+      `Insufficient payment: expected ${expectedAmountRaw}, got ${usdcTransfer.value}`,
+      'INSUFFICIENT_AMOUNT'
+    );
+  }
+
+  // 6. Check block confirmations
   const confirmations = await checkBlockConfirmations(receipt);
 
-  // Return verified payment details
   return {
     transactionHash,
     payer: usdcTransfer.from,
-    recipient: usdcTransfer.to,
+    recipient: usdcTransfer.to as `0x${string}`,
     amount: usdcTransfer.value,
     contractAddress: usdcTransfer.contractAddress,
     blockNumber: receipt.blockNumber,
     confirmations,
-    reference: null, // Can be extracted from tx input if needed
+    reference: null,
   };
 }
 
@@ -506,10 +467,13 @@ export function rawToUsdc(raw: bigint): string {
 
 /**
  * Validate a transaction hash format.
+ * Matches single hash or comma-separated list of hashes.
  *
  * @param hash - String to validate
- * @returns True if valid hex hash
+ * @returns True if valid hex hash or list
  */
-export function isValidTransactionHash(hash: string): hash is `0x${string}` {
-  return /^0x[a-fA-F0-9]{64}$/.test(hash);
+export function isValidTransactionHash(hash: string): boolean {
+  if (!hash) return false;
+  const parts = hash.split(',').map(h => h.trim());
+  return parts.every(h => /^0x[a-fA-F0-9]{64}$/.test(h));
 }

@@ -6,8 +6,6 @@ export {
   fetchTransactionReceipt,
   parseErc20Transfers,
   findUsdcTransfer,
-  validateRecipient,
-  validateAmount,
   parseReference,
   validateReference,
   validateTransactionSuccess,

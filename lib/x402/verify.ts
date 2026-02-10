@@ -231,8 +231,8 @@ export async function verifyPayment(
         recipient: proof.chain === 'solana'
           ? process.env.SOLANA_TREASURY_PUBKEY || ''
           : process.env.BASE_TREASURY_ADDRESS || '',
-        amount_raw: usdcToRaw(post.price_usdc || 0),
-        amount_usdc: (post.price_usdc || 0).toFixed(2),
+        amount_raw: usdcToRaw(parseFloat(post.price_usdc || '0')),
+        amount_usdc: parseFloat(post.price_usdc || '0').toFixed(2),
         network: proof.chain,
         chain_id: proof.chain === 'solana' ? 'mainnet-beta' : '8453',
       },
@@ -262,12 +262,13 @@ async function verifySolanaPaymentProof(
   post: PostForPayment
 ): Promise<VerificationResult> {
   try {
-    const expectedAmountRaw = usdcToRaw(post.price_usdc || 0);
+    const expectedAmountRaw = usdcToRaw(parseFloat(post.price_usdc || '0'));
 
     const verifiedPayment = await verifySolanaPayment({
       signature: proof.transaction_signature,
       expectedPostId: post.id,
       expectedAmountRaw,
+      expectedAuthorAddress: post.author.wallet_solana,
       requestTimestamp: proof.timestamp,
       memoExpirationSeconds: X402_CONFIG.PAYMENT_VALIDITY_SECONDS,
     });
@@ -314,12 +315,13 @@ async function verifyBasePaymentProof(
   post: PostForPayment
 ): Promise<VerificationResult> {
   try {
-    const expectedAmountRaw = usdcToRaw(post.price_usdc || 0);
+    const expectedAmountRaw = usdcToRaw(parseFloat(post.price_usdc || '0'));
 
     const verifiedPayment = await verifyEVMPayment({
-      transactionHash: proof.transaction_signature as `0x${string}`,
+      transactionHash: proof.transaction_signature as `0x${string}`, // Type assertion specific to EVM call
       expectedPostId: post.id,
       expectedAmountRaw,
+      expectedAuthorAddress: post.author.wallet_base,
       requestTimestamp: proof.timestamp,
       referenceExpirationSeconds: X402_CONFIG.PAYMENT_VALIDITY_SECONDS,
     });
@@ -357,37 +359,11 @@ async function verifyBasePaymentProof(
   }
 }
 
-// ============================================
-// 2.3.9: Record Payment Event on Success
-// ============================================
 
-/**
- * Platform fee in basis points (500 = 5%)
- */
-const PLATFORM_FEE_BPS = parseInt(process.env.PLATFORM_FEE_BPS || '1000', 10);
-
-/**
- * Calculate platform fee from gross amount.
- */
-export function calculatePlatformFee(grossAmountRaw: bigint): bigint {
-  return (grossAmountRaw * BigInt(PLATFORM_FEE_BPS)) / BigInt(10000);
-}
-
-/**
- * Calculate author amount after platform fee.
- */
-export function calculateAuthorAmount(grossAmountRaw: bigint): bigint {
-  return grossAmountRaw - calculatePlatformFee(grossAmountRaw);
-}
 
 /**
  * Record a verified payment event in the database.
- * Calculates 95/5 split between author and platform.
- *
- * @param proof - The payment proof
- * @param post - The post that was paid for
- * @param verificationResult - The verification result with payment details
- * @returns The inserted payment event ID or null on error
+ * 100% of the payment goes to the author (no platform fee).
  */
 export async function recordPaymentEvent(
   proof: PaymentProof,
@@ -401,8 +377,7 @@ export async function recordPaymentEvent(
 
   const payment = verificationResult.payment;
   const grossAmountRaw = payment.amount_raw;
-  const platformFeeRaw = calculatePlatformFee(grossAmountRaw);
-  const authorAmountRaw = calculateAuthorAmount(grossAmountRaw);
+  const authorAmountRaw = grossAmountRaw; // 100% to author
 
   // Get recipient address based on network
   const recipientAddress =
@@ -430,7 +405,7 @@ export async function recordPaymentEvent(
         recipient_id: post.author_id,
         recipient_address: recipientAddress,
         gross_amount_raw: Number(grossAmountRaw),
-        platform_fee_raw: Number(platformFeeRaw),
+        platform_fee_raw: 0,
         author_amount_raw: Number(authorAmountRaw),
         status: 'confirmed' as const,
         verified_at: new Date().toISOString(),
@@ -453,7 +428,7 @@ export async function recordPaymentEvent(
     }
 
     console.log(
-      `Payment recorded: ${data.id} - ${rawToUsdc(grossAmountRaw)} USDC (author: ${rawToUsdc(authorAmountRaw)}, platform: ${rawToUsdc(platformFeeRaw)})`
+      `Payment recorded: ${data.id} - ${rawToUsdc(grossAmountRaw)} USDC (100% to author)`
     );
 
     return data.id;

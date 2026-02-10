@@ -17,8 +17,6 @@ import {
   parsePaymentProof,
   usdcToRaw,
   rawToUsdc,
-  calculatePlatformFee,
-  calculateAuthorAmount,
   X402_CONFIG,
 } from '../index';
 
@@ -218,54 +216,6 @@ describe('x402 Protocol', () => {
     });
   });
 
-  describe('Fee Split Calculations (Tasks 2.3.9, 2.4.1-2.4.3)', () => {
-    it('calculates 10% platform fee correctly', () => {
-      // $0.25 payment
-      const gross = 250000n;
-      const platformFee = calculatePlatformFee(gross);
-
-      // 10% of 250000 = 25000
-      expect(platformFee).toBe(25000n);
-    });
-
-    it('calculates 90% author amount correctly', () => {
-      // $0.25 payment
-      const gross = 250000n;
-      const authorAmount = calculateAuthorAmount(gross);
-
-      // 90% of 250000 = 225000
-      expect(authorAmount).toBe(225000n);
-    });
-
-    it('fee + author amount equals gross', () => {
-      const testAmounts = [50000n, 250000n, 500000n, 990000n];
-
-      for (const gross of testAmounts) {
-        const fee = calculatePlatformFee(gross);
-        const author = calculateAuthorAmount(gross);
-
-        expect(fee + author).toBe(gross);
-      }
-    });
-
-    it('handles minimum price ($0.05) correctly', () => {
-      const gross = 50000n;
-      const fee = calculatePlatformFee(gross);
-      const author = calculateAuthorAmount(gross);
-
-      expect(fee).toBe(5000n); // $0.005
-      expect(author).toBe(45000n); // $0.045
-    });
-
-    it('handles maximum price ($0.99) correctly', () => {
-      const gross = 990000n;
-      const fee = calculatePlatformFee(gross);
-      const author = calculateAuthorAmount(gross);
-
-      expect(fee).toBe(99000n); // $0.099
-      expect(author).toBe(891000n); // $0.891
-    });
-  });
 
   describe('X402 Configuration', () => {
     it('exports correct protocol version', () => {

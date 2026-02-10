@@ -171,7 +171,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       content: post.content,
       summary: post.summary,
       is_paid: post.is_paid,
-      price_usdc: post.price_usdc,
+      price_usdc: post.price_usdc != null ? String(post.price_usdc) : null,
       paid_view_count: post.paid_view_count,
       author_id: post.author_id,
       author: Array.isArray(post.author) ? post.author[0] : post.author,

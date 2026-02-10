@@ -13,8 +13,6 @@ import {
   EVMPaymentVerificationError,
   parseErc20Transfers,
   findUsdcTransfer,
-  validateRecipient,
-  validateAmount,
   parseReference,
   validateReference,
   validateTransactionSuccess,
@@ -220,98 +218,6 @@ describe('findUsdcTransfer', () => {
   });
 });
 
-// ============================================
-// validateRecipient Tests
-// ============================================
-
-describe('validateRecipient', () => {
-  it('should pass for correct recipient', () => {
-    const transfer: Erc20Transfer = {
-      from: MOCK_PAYER_ADDRESS as `0x${string}`,
-      to: MOCK_TREASURY_ADDRESS as `0x${string}`,
-      value: BigInt(250000),
-      contractAddress: USDC_CONTRACT_BASE as `0x${string}`,
-    };
-
-    expect(() => validateRecipient(transfer)).not.toThrow();
-  });
-
-  it('should throw for wrong recipient', () => {
-    const transfer: Erc20Transfer = {
-      from: MOCK_PAYER_ADDRESS as `0x${string}`,
-      to: '0x9999999999999999999999999999999999999999' as `0x${string}`,
-      value: BigInt(250000),
-      contractAddress: USDC_CONTRACT_BASE as `0x${string}`,
-    };
-
-    expect(() => validateRecipient(transfer)).toThrow(EVMPaymentVerificationError);
-    expect(() => validateRecipient(transfer)).toThrow('wrong recipient');
-  });
-
-  it('should be case-insensitive for address comparison', () => {
-    const transfer: Erc20Transfer = {
-      from: MOCK_PAYER_ADDRESS as `0x${string}`,
-      to: MOCK_TREASURY_ADDRESS.toLowerCase() as `0x${string}`,
-      value: BigInt(250000),
-      contractAddress: USDC_CONTRACT_BASE as `0x${string}`,
-    };
-
-    expect(() => validateRecipient(transfer)).not.toThrow();
-  });
-
-  it('should throw if BASE_TREASURY_ADDRESS not set', () => {
-    process.env.BASE_TREASURY_ADDRESS = '';
-
-    const transfer: Erc20Transfer = {
-      from: MOCK_PAYER_ADDRESS as `0x${string}`,
-      to: MOCK_TREASURY_ADDRESS as `0x${string}`,
-      value: BigInt(250000),
-      contractAddress: USDC_CONTRACT_BASE as `0x${string}`,
-    };
-
-    expect(() => validateRecipient(transfer)).toThrow('BASE_TREASURY_ADDRESS environment variable is not set');
-  });
-});
-
-// ============================================
-// validateAmount Tests
-// ============================================
-
-describe('validateAmount', () => {
-  it('should pass for exact amount', () => {
-    const transfer: Erc20Transfer = {
-      from: MOCK_PAYER_ADDRESS as `0x${string}`,
-      to: MOCK_TREASURY_ADDRESS as `0x${string}`,
-      value: BigInt(250000),
-      contractAddress: USDC_CONTRACT_BASE as `0x${string}`,
-    };
-
-    expect(() => validateAmount(transfer, BigInt(250000))).not.toThrow();
-  });
-
-  it('should pass for overpayment', () => {
-    const transfer: Erc20Transfer = {
-      from: MOCK_PAYER_ADDRESS as `0x${string}`,
-      to: MOCK_TREASURY_ADDRESS as `0x${string}`,
-      value: BigInt(300000), // Paid more than required
-      contractAddress: USDC_CONTRACT_BASE as `0x${string}`,
-    };
-
-    expect(() => validateAmount(transfer, BigInt(250000))).not.toThrow();
-  });
-
-  it('should throw for underpayment', () => {
-    const transfer: Erc20Transfer = {
-      from: MOCK_PAYER_ADDRESS as `0x${string}`,
-      to: MOCK_TREASURY_ADDRESS as `0x${string}`,
-      value: BigInt(200000), // Paid less than required
-      contractAddress: USDC_CONTRACT_BASE as `0x${string}`,
-    };
-
-    expect(() => validateAmount(transfer, BigInt(250000))).toThrow(EVMPaymentVerificationError);
-    expect(() => validateAmount(transfer, BigInt(250000))).toThrow('Insufficient payment');
-  });
-});
 
 // ============================================
 // parseReference Tests

@@ -146,7 +146,7 @@ export interface PostForPayment {
   content: string;
   summary: string | null;
   is_paid: boolean;
-  price_usdc: number | null;
+  price_usdc: string | null;
   paid_view_count: number;
   author_id: string;
   author: {

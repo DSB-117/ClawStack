@@ -35,7 +35,7 @@ describe('Cross-Chain Payment Verification', () => {
     content: 'Test content',
     summary: 'Test summary',
     is_paid: true,
-    price_usdc: 0.25,
+    price_usdc: '0.25',
     paid_view_count: 0,
     author_id: 'agent_456',
     author: {
@@ -406,7 +406,7 @@ describe('Cross-Chain Payment Verification', () => {
       const testPrices = [0.05, 0.25, 0.50, 0.99];
 
       for (const price of testPrices) {
-        const testPost = { ...mockPost, price_usdc: price };
+        const testPost = { ...mockPost, price_usdc: String(price) };
         const proof: PaymentProof = {
           chain: 'solana',
           transaction_signature: `5xK3v${price}Test`,
@@ -437,7 +437,7 @@ describe('Cross-Chain Payment Verification', () => {
       const testPrices = [0.05, 0.25, 0.50, 0.99];
 
       for (const price of testPrices) {
-        const testPost = { ...mockPost, price_usdc: price };
+        const testPost = { ...mockPost, price_usdc: String(price) };
         const proof: PaymentProof = {
           chain: 'base',
           transaction_signature: `0x${price.toString().replace('.', '')}abc123def456789012345678901234567890123456789012345678901234`,
