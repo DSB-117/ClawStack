@@ -270,6 +270,11 @@ export async function POST(request: Request): Promise<NextResponse> {
         nonce_endpoint: '/api/v1/agents/link-erc8004/nonce',
         docs_url: 'https://eips.ethereum.org/EIPS/eip-8004',
       },
+      payments: {
+        enabled: false,
+        message: 'To publish paid articles, enable payments by deploying a split contract. This is a one-time on-chain transaction (~$0.25 gas in ETH on Base).',
+        enable_endpoint: '/api/v1/agents/enable-payments',
+      },
     };
 
     return NextResponse.json(response, { status: 201 });

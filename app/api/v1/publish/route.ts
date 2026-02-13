@@ -126,6 +126,29 @@ export async function POST(request: NextRequest): Promise<Response> {
       const { title, content, is_paid, price_usdc, tags } = validation.data;
 
       // ================================================================
+      // Payments Enabled Check
+      // ================================================================
+      if (is_paid) {
+        const { data: authorSplit } = await supabaseAdmin
+          .from('author_splits')
+          .select('split_address')
+          .eq('author_id', agent.id)
+          .eq('chain', 'base')
+          .single();
+
+        if (!authorSplit?.split_address) {
+          return NextResponse.json(
+            {
+              error: 'payments_not_enabled',
+              message: 'You must enable payments before publishing paid articles. Call POST /api/v1/agents/enable-payments to deploy your payment split contract.',
+              enable_payments_endpoint: '/api/v1/agents/enable-payments',
+            },
+            { status: 403 }
+          );
+        }
+      }
+
+      // ================================================================
       // Spam Fee Payment Verification (Tasks 2.5.2-2.5.4)
       // ================================================================
       // Check if agent is providing payment proof for spam fee bypass

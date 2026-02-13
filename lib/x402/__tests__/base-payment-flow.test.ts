@@ -1,7 +1,7 @@
 /**
  * Base Payment Flow Integration Tests
  *
- * Tests the complete multi-chain x402 payment flow for Base L2.
+ * Tests the complete x402 payment flow for Base L2.
  *
  * @see claude/operations/tasks.md Task 3.3.8
  */
@@ -14,9 +14,7 @@ import {
 import {
   buildPaymentOptions,
   buildBasePaymentOption,
-  buildSolanaPaymentOption,
 } from '../helpers';
-// import { PaymentProof, PostForPayment, PaymentOption } from '../types';
 import { PaymentProof, PostForPayment } from '../types';
 
 // ============================================
@@ -36,13 +34,11 @@ const MOCK_POST: PostForPayment = {
     id: 'agent_author123',
     display_name: 'TestAuthor',
     avatar_url: null,
-    wallet_solana: 'SoLaNaWaLLeTaDdReSs111111111111111111111111',
     wallet_base: '0x742d35Cc6634C0532925a3b844Bc9e7595f8fE3D',
   },
 };
 
 const MOCK_BASE_TX_HASH = '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890';
-const MOCK_SOLANA_SIGNATURE = '5xK3vPqhZrVBGpKiSvXvPqhZrVBGpKiSvXvPqhZrVBGpKiSvXvPqhZrVBGpKiSvX';
 const MOCK_PAYER_ADDRESS = '0x1234567890123456789012345678901234567890';
 
 // ============================================
@@ -57,8 +53,6 @@ beforeEach(() => {
     ...originalEnv,
     BASE_TREASURY_ADDRESS: '0x742d35Cc6634C0532925a3b844Bc9e7595f8fE3D',
     USDC_CONTRACT_BASE: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
-    SOLANA_TREASURY_PUBKEY: 'CStkPay111111111111111111111111111111111111',
-    USDC_MINT_SOLANA: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
   };
 });
 
@@ -101,29 +95,17 @@ describe('buildBasePaymentOption', () => {
 });
 
 // ============================================
-// Task 3.3.2: Add Base Option to 402 Response
+// Task 3.3.2: Build Payment Options
 // ============================================
 
-describe('buildPaymentOptions (multi-chain)', () => {
-  it('should include both Solana and Base options by default', () => {
+describe('buildPaymentOptions', () => {
+  it('should include Base option', () => {
     const options = buildPaymentOptions('post_abc123');
 
-    expect(options).toHaveLength(2);
+    expect(options).toHaveLength(1);
 
-    const solanaOption = options.find((o) => o.chain === 'solana');
     const baseOption = options.find((o) => o.chain === 'base');
-
-    expect(solanaOption).toBeDefined();
     expect(baseOption).toBeDefined();
-  });
-
-  it('should include Solana-specific fields', () => {
-    const options = buildPaymentOptions('post_abc123');
-    const solanaOption = options.find((o) => o.chain === 'solana');
-
-    expect(solanaOption?.chain_id).toBe('mainnet-beta');
-    expect(solanaOption?.token_mint).toBe(process.env.USDC_MINT_SOLANA);
-    expect(solanaOption?.memo).toMatch(/^clawstack:post_abc123:\d+$/);
   });
 
   it('should include Base-specific fields', () => {
@@ -135,25 +117,12 @@ describe('buildPaymentOptions (multi-chain)', () => {
     expect(baseOption?.reference).toMatch(/^0xclawstack_post_abc123_\d+$/);
   });
 
-  it('should allow filtering to single chain', () => {
-    const solanaOnly = buildPaymentOptions('post_abc123', ['solana']);
-    const baseOnly = buildPaymentOptions('post_abc123', ['base']);
-
-    expect(solanaOnly).toHaveLength(1);
-    expect(solanaOnly[0].chain).toBe('solana');
-
-    expect(baseOnly).toHaveLength(1);
-    expect(baseOnly[0].chain).toBe('base');
-  });
-
   it('should gracefully handle missing chain config', () => {
     process.env.BASE_TREASURY_ADDRESS = '';
 
     const options = buildPaymentOptions('post_abc123');
 
-    // Should still have Solana option
-    expect(options).toHaveLength(1);
-    expect(options[0].chain).toBe('solana');
+    expect(options).toHaveLength(0);
   });
 });
 
@@ -244,19 +213,6 @@ describe('parsePaymentProof (EVM support)', () => {
 
     expect(proof).toBeNull();
   });
-
-  it('should still accept valid Solana signatures', () => {
-    const header = JSON.stringify({
-      chain: 'solana',
-      transaction_signature: MOCK_SOLANA_SIGNATURE,
-      payer_address: 'SoLaNaWaLLeTaDdReSs111111111111111111111111',
-    });
-
-    const proof = parsePaymentProof(header);
-
-    expect(proof).not.toBeNull();
-    expect(proof?.chain).toBe('solana');
-  });
 });
 
 // ============================================
@@ -274,18 +230,6 @@ describe('chain validation', () => {
     const proof = parsePaymentProof(header);
 
     expect(proof).toBeNull();
-  });
-
-  it('should accept solana chain', () => {
-    const header = JSON.stringify({
-      chain: 'solana',
-      transaction_signature: MOCK_SOLANA_SIGNATURE,
-      payer_address: 'SoLaNaWaLLeTaDdReSs111111111111111111111111',
-    });
-
-    const proof = parsePaymentProof(header);
-
-    expect(proof?.chain).toBe('solana');
   });
 
   it('should accept base chain', () => {
@@ -322,22 +266,6 @@ describe('verifyPayment routing', () => {
     expect(result.error_code).not.toBe('NOT_IMPLEMENTED');
   });
 
-  it('should route solana chain to Solana verifier', async () => {
-    const proof: PaymentProof = {
-      chain: 'solana',
-      transaction_signature: MOCK_SOLANA_SIGNATURE,
-      payer_address: 'SoLaNaWaLLeTaDdReSs111111111111111111111111',
-      timestamp: Math.floor(Date.now() / 1000),
-    };
-
-    // This will fail because we're not mocking the RPC call,
-    // but it should fail with a Solana-specific error
-    const result = await verifyPayment(proof, MOCK_POST);
-
-    // Should NOT return "not implemented" error
-    expect(result.error_code).not.toBe('NOT_IMPLEMENTED');
-  });
-
   it('should return unsupported chain error for unknown chains', async () => {
     const proof = {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -360,18 +288,6 @@ describe('verifyPayment routing', () => {
 // ============================================
 
 describe('payment option structure', () => {
-  it('should have all required fields for Solana', () => {
-    const option = buildSolanaPaymentOption('post_abc123');
-
-    expect(option).toHaveProperty('chain', 'solana');
-    expect(option).toHaveProperty('chain_id', 'mainnet-beta');
-    expect(option).toHaveProperty('recipient');
-    expect(option).toHaveProperty('token_mint');
-    expect(option).toHaveProperty('token_symbol', 'USDC');
-    expect(option).toHaveProperty('decimals', 6);
-    expect(option).toHaveProperty('memo');
-  });
-
   it('should have all required fields for Base', () => {
     const option = buildBasePaymentOption('post_abc123');
 

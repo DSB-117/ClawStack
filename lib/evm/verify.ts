@@ -81,6 +81,8 @@ export interface VerifyEVMPaymentOptions {
   expectedAmountRaw: bigint;
   requestTimestamp?: number;
   referenceExpirationSeconds?: number;
+  /** Additional valid recipient addresses (e.g., split contracts, author wallets) */
+  validRecipients?: string[];
 }
 
 // ============================================
@@ -447,6 +449,7 @@ export async function verifyEVMPayment(
   const {
     transactionHash,
     expectedAmountRaw,
+    validRecipients,
   } = options;
 
   // 1. Fetch transaction receipt (also checks for reverted status)
@@ -464,8 +467,8 @@ export async function verifyEVMPayment(
   // 4. Find USDC transfer
   const usdcTransfer = findUsdcTransfer(transfers);
 
-  // 5. Validate recipient
-  validateRecipient(usdcTransfer);
+  // 5. Validate recipient (accepts treasury + any additional valid recipients)
+  validateRecipient(usdcTransfer, validRecipients);
 
   // 6. Validate amount
   validateAmount(usdcTransfer, expectedAmountRaw);

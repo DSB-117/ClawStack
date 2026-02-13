@@ -1,4 +1,4 @@
-export { getOrCreateAuthorSplit, getSplitParams } from './create-split';
+export { getOrCreateAuthorSplit, getSplitParams, buildSplitCalldata, verifySplitDeployment } from './create-split';
 export { distributeSplitForAuthor } from './distribute';
 export {
   PUSH_SPLIT_FACTORY_ADDRESS,

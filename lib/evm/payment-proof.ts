@@ -28,8 +28,16 @@ export function createEVMPaymentProof(
   };
 }
 
+/** Max retries when waiting for block confirmations */
+const CONFIRMATION_MAX_RETRIES = 10;
+/** Delay between retries in ms (~3 seconds, Base has ~2s block times) */
+const CONFIRMATION_RETRY_DELAY_MS = 3000;
+
 /**
- * Submit payment proof to the API to unlock content
+ * Submit payment proof to the API to unlock content.
+ * Automatically retries if the server returns INSUFFICIENT_CONFIRMATIONS,
+ * polling every 3s for up to ~30s until the transaction has enough blocks.
+ *
  * @param postId - The ID of the post to unlock
  * @param proof - The payment proof object
  * @returns Result of the submission
@@ -38,49 +46,70 @@ export async function submitEVMPaymentProof(
   postId: string,
   proof: EVMPaymentProof
 ): Promise<EVMPaymentProofSubmissionResult> {
-  try {
-    const response = await fetch(`/api/v1/post/${postId}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Payment-Proof": JSON.stringify(proof),
-      },
-    });
+  for (let attempt = 0; attempt <= CONFIRMATION_MAX_RETRIES; attempt++) {
+    try {
+      const response = await fetch(`/api/v1/post/${postId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Payment-Proof": JSON.stringify(proof),
+        },
+      });
 
-    if (response.ok) {
-      const data = await response.json();
-      return {
-        success: true,
-        accessGranted: true,
-        expiresAt: data.access_expires_at,
-      };
-    }
+      if (response.ok) {
+        const data = await response.json();
+        return {
+          success: true,
+          accessGranted: true,
+          expiresAt: data.access_expires_at,
+        };
+      }
 
-    // Handle error responses
-    const errorData = await response.json().catch(() => ({}));
+      // Parse error response
+      const errorData = await response.json().catch(() => ({}));
 
-    if (response.status === 402) {
+      if (response.status === 402) {
+        // If INSUFFICIENT_CONFIRMATIONS, wait and retry (unless last attempt)
+        if (
+          errorData.verification_error_code === "INSUFFICIENT_CONFIRMATIONS" &&
+          attempt < CONFIRMATION_MAX_RETRIES
+        ) {
+          await new Promise((resolve) =>
+            setTimeout(resolve, CONFIRMATION_RETRY_DELAY_MS)
+          );
+          continue;
+        }
+
+        return {
+          success: false,
+          accessGranted: false,
+          error:
+            errorData.verification_error ||
+            "Payment verification failed. Please try again.",
+        };
+      }
+
       return {
         success: false,
         accessGranted: false,
-        error: "Payment verification failed. Please try again.",
+        error:
+          errorData.message || `Request failed with status ${response.status}`,
+      };
+    } catch (error) {
+      console.error("Error submitting EVM payment proof:", error);
+      return {
+        success: false,
+        accessGranted: false,
+        error: error instanceof Error ? error.message : "Network error",
       };
     }
-
-    return {
-      success: false,
-      accessGranted: false,
-      error:
-        errorData.message || `Request failed with status ${response.status}`,
-    };
-  } catch (error) {
-    console.error("Error submitting EVM payment proof:", error);
-    return {
-      success: false,
-      accessGranted: false,
-      error: error instanceof Error ? error.message : "Network error",
-    };
   }
+
+  return {
+    success: false,
+    accessGranted: false,
+    error: "Payment verification timed out waiting for block confirmations.",
+  };
 }
 
 /**

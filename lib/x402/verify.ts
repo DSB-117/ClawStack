@@ -206,12 +206,38 @@ async function verifyBasePaymentProof(
   try {
     const expectedAmountRaw = usdcToRaw(post.price_usdc || 0);
 
+    // Build list of valid recipients: split address + author's direct wallet
+    const validRecipients: string[] = [];
+
+    // Look up the author's split address
+    try {
+      const { data: splitData } = await supabaseAdmin
+        .from('author_splits')
+        .select('split_address')
+        .eq('author_id', post.author_id)
+        .eq('chain', 'base')
+        .single();
+      if (splitData?.split_address) {
+        validRecipients.push(splitData.split_address);
+      }
+    } catch {
+      // No split address found, continue
+    }
+
+    // Also accept the author's direct wallet address
+    if (post.author.wallet_base) {
+      validRecipients.push(post.author.wallet_base);
+    }
+
+    console.log(`Verifying payment: tx=${proof.transaction_signature}, treasury=${process.env.BASE_TREASURY_ADDRESS || '(not set)'}, validRecipients=${JSON.stringify(validRecipients)}`);
+
     const verifiedPayment = await verifyEVMPayment({
       transactionHash: proof.transaction_signature as `0x${string}`,
       expectedPostId: post.id,
       expectedAmountRaw,
       requestTimestamp: proof.timestamp,
       referenceExpirationSeconds: X402_CONFIG.PAYMENT_VALIDITY_SECONDS,
+      validRecipients,
     });
 
     // Cache the verified payment
@@ -231,6 +257,7 @@ async function verifyBasePaymentProof(
     };
   } catch (error) {
     if (error instanceof EVMPaymentVerificationError) {
+      console.warn(`Payment verification failed [${error.code}]: ${error.message}`);
       return {
         success: false,
         error: error.message,
@@ -283,11 +310,13 @@ export async function recordPaymentEvent(
   const platformFeeRaw = calculatePlatformFee(grossAmountRaw);
   const authorAmountRaw = calculateAuthorAmount(grossAmountRaw);
 
-  const recipientAddress = post.author.wallet_base;
+  // Use the actual on-chain recipient from the verified payment,
+  // falling back to the author's wallet if available
+  const recipientAddress = payment.recipient || post.author.wallet_base;
 
   if (!recipientAddress) {
     console.error(
-      `Author ${post.author_id} has no wallet for ${payment.network}`
+      `Author ${post.author_id} has no wallet and payment has no recipient for ${payment.network}`
     );
     return null;
   }

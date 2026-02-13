@@ -1,7 +1,7 @@
 /**
  * x402 Protocol Integration Tests
  *
- * Tests the full Solana payment flow:
+ * Tests the full Base payment flow:
  * 1. Request paid post → receive 402 with payment_options
  * 2. Verify payment with X-Payment-Proof header → receive 200 with content
  * 3. Payment event recorded in database
@@ -10,9 +10,8 @@
  */
 
 import {
-  generatePaymentMemo,
   getPaymentValidUntil,
-  buildSolanaPaymentOption,
+  buildBasePaymentOption,
   buildPaymentOptions,
   parsePaymentProof,
   usdcToRaw,
@@ -30,8 +29,6 @@ describe('x402 Protocol', () => {
     // Set test environment variables
     process.env = {
       ...originalEnv,
-      SOLANA_TREASURY_PUBKEY: 'CStkPayTestTreasury11111111111111111111111111',
-      USDC_MINT_SOLANA: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
       BASE_TREASURY_ADDRESS: '0x742d35Cc6634C0532925a3b844Bc9e7595f8fE3D',
       USDC_CONTRACT_BASE: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913',
       PLATFORM_FEE_BPS: '1000',
@@ -40,29 +37,6 @@ describe('x402 Protocol', () => {
 
   afterAll(() => {
     process.env = originalEnv;
-  });
-
-  describe('Payment Memo Generation (Task 2.3.2)', () => {
-    it('generates memo with correct format', () => {
-      const postId = 'test-post-123';
-      const memo = generatePaymentMemo(postId);
-
-      expect(memo).toMatch(/^clawstack:test-post-123:\d+$/);
-
-      const parts = memo.split(':');
-      expect(parts[0]).toBe('clawstack');
-      expect(parts[1]).toBe(postId);
-      expect(parseInt(parts[2], 10)).toBeCloseTo(Math.floor(Date.now() / 1000), -1);
-    });
-
-    it('generates unique memos for different posts', () => {
-      const memo1 = generatePaymentMemo('post-1');
-      const memo2 = generatePaymentMemo('post-2');
-
-      expect(memo1).not.toBe(memo2);
-      expect(memo1).toContain('post-1');
-      expect(memo2).toContain('post-2');
-    });
   });
 
   describe('Payment Validity Window (Task 2.3.3)', () => {
@@ -92,68 +66,57 @@ describe('x402 Protocol', () => {
     });
   });
 
-  describe('Solana Payment Option Builder (Task 2.3.4)', () => {
+  describe('Base Payment Option Builder', () => {
     it('builds complete payment option', () => {
       const postId = 'abc123';
-      const option = buildSolanaPaymentOption(postId);
+      const option = buildBasePaymentOption(postId);
 
-      expect(option).toEqual({
-        chain: 'solana',
-        chain_id: 'mainnet-beta',
-        recipient: 'CStkPayTestTreasury11111111111111111111111111',
-        token_mint: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v',
-        token_symbol: 'USDC',
-        decimals: 6,
-        memo: expect.stringMatching(/^clawstack:abc123:\d+$/),
-      });
+      expect(option.chain).toBe('base');
+      expect(option.chain_id).toBe('8453');
+      expect(option.recipient).toBe('0x742d35Cc6634C0532925a3b844Bc9e7595f8fE3D');
+      expect(option.token_contract).toBe('0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913');
+      expect(option.token_symbol).toBe('USDC');
+      expect(option.decimals).toBe(6);
+      expect(option.reference).toMatch(/^0xclawstack_abc123_\d+$/);
     });
 
-    it('includes all required fields for agent parsing', () => {
-      const option = buildSolanaPaymentOption('test-post');
+    it('includes all required fields', () => {
+      const option = buildBasePaymentOption('test-post');
 
       expect(option).toHaveProperty('chain');
       expect(option).toHaveProperty('chain_id');
       expect(option).toHaveProperty('recipient');
-      expect(option).toHaveProperty('token_mint');
+      expect(option).toHaveProperty('token_contract');
       expect(option).toHaveProperty('token_symbol');
       expect(option).toHaveProperty('decimals');
-      expect(option).toHaveProperty('memo');
+      expect(option).toHaveProperty('reference');
     });
   });
 
   describe('Payment Options Array Builder (Task 2.3.5)', () => {
-    it('builds array with Solana option by default', () => {
+    it('builds array with Base option', () => {
       const options = buildPaymentOptions('post-123');
 
-      expect(options).toHaveLength(2);
-      expect(options[0].chain).toBe('solana');
-      expect(options[1].chain).toBe('base');
-    });
-
-    it('can build multiple chain options', () => {
-      const options = buildPaymentOptions('post-123', ['solana', 'base']);
-
-      expect(options).toHaveLength(2);
-      expect(options.map((o) => o.chain)).toContain('solana');
-      expect(options.map((o) => o.chain)).toContain('base');
+      expect(options).toHaveLength(1);
+      expect(options[0].chain).toBe('base');
     });
   });
 
   describe('Payment Proof Parsing (Task 2.3.6)', () => {
     it('parses valid JSON proof', () => {
       const header = JSON.stringify({
-        chain: 'solana',
-        transaction_signature: '5xK3vAbc123',
-        payer_address: '7sK9xDef456',
+        chain: 'base',
+        transaction_signature: '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
+        payer_address: '0x1234567890123456789012345678901234567890',
         timestamp: 1706959800,
       });
 
       const proof = parsePaymentProof(header);
 
       expect(proof).toEqual({
-        chain: 'solana',
-        transaction_signature: '5xK3vAbc123',
-        payer_address: '7sK9xDef456',
+        chain: 'base',
+        transaction_signature: '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
+        payer_address: '0x1234567890123456789012345678901234567890',
         timestamp: 1706959800,
       });
     });
@@ -167,12 +130,12 @@ describe('x402 Protocol', () => {
     });
 
     it('returns null for missing required fields', () => {
-      expect(parsePaymentProof(JSON.stringify({ chain: 'solana' }))).toBeNull();
+      expect(parsePaymentProof(JSON.stringify({ chain: 'base' }))).toBeNull();
       expect(
         parsePaymentProof(
           JSON.stringify({
-            chain: 'solana',
-            transaction_signature: 'abc',
+            chain: 'base',
+            transaction_signature: '0xabc',
           })
         )
       ).toBeNull();
@@ -181,8 +144,8 @@ describe('x402 Protocol', () => {
     it('returns null for unsupported chain', () => {
       const header = JSON.stringify({
         chain: 'ethereum',
-        transaction_signature: 'abc',
-        payer_address: 'xyz',
+        transaction_signature: '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
+        payer_address: '0x1234567890123456789012345678901234567890',
       });
 
       expect(parsePaymentProof(header)).toBeNull();
@@ -190,9 +153,9 @@ describe('x402 Protocol', () => {
 
     it('defaults timestamp to current time if not provided', () => {
       const header = JSON.stringify({
-        chain: 'solana',
-        transaction_signature: 'abc',
-        payer_address: 'xyz',
+        chain: 'base',
+        transaction_signature: '0xabcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890',
+        payer_address: '0x1234567890123456789012345678901234567890',
       });
 
       const proof = parsePaymentProof(header);
@@ -307,25 +270,25 @@ describe('x402 Payment Flow Integration', () => {
      *   "price_usdc": "0.25",
      *   "valid_until": "2026-02-03T12:35:00Z",
      *   "payment_options": [{
-     *     "chain": "solana",
-     *     "chain_id": "mainnet-beta",
-     *     "recipient": "CStkPay...",
-     *     "token_mint": "EPjFWdd5...",
+     *     "chain": "base",
+     *     "chain_id": "8453",
+     *     "recipient": "0x742d35Cc...",
+     *     "token_contract": "0x833589fC...",
      *     "token_symbol": "USDC",
      *     "decimals": 6,
-     *     "memo": "clawstack:abc123:1706960000"
+     *     "reference": "0xclawstack_abc123_1706960000"
      *   }],
      *   "preview": { "title": "...", "summary": "..." }
      * }
      */
 
     /**
-     * STEP 2: Client executes Solana transaction
+     * STEP 2: Client executes Base EVM transaction
      *
-     * - Build SPL Token transfer instruction
+     * - Build ERC-20 transfer transaction
      * - Set amount to price_usdc * 10^6 (raw units)
      * - Set destination to recipient from payment_options
-     * - Include memo instruction with memo from payment_options
+     * - Include reference from payment_options
      * - Sign and submit transaction
      * - Wait for confirmation
      */
@@ -334,7 +297,7 @@ describe('x402 Payment Flow Integration', () => {
      * STEP 3: Request paid post with payment proof
      *
      * curl http://localhost:3000/api/v1/post/{paid-post-id} \
-     *   -H 'X-Payment-Proof: {"chain":"solana","transaction_signature":"5xK3v...","payer_address":"7sK9x..."}'
+     *   -H 'X-Payment-Proof: {"chain":"base","transaction_signature":"0xabc123...","payer_address":"0x7890..."}'
      *
      * Response (200 OK):
      * {
@@ -349,15 +312,15 @@ describe('x402 Payment Flow Integration', () => {
      * Headers:
      * - X-Payment-Version: x402-v1
      * - X-Payment-Verified: true
-     * - X-Payment-Transaction: 5xK3v...
+     * - X-Payment-Transaction: 0xabc123...
      */
 
     /**
      * STEP 4: Verify payment recorded
      *
      * SELECT * FROM payment_events
-     * WHERE transaction_signature = '5xK3v...'
-     *   AND network = 'solana';
+     * WHERE transaction_signature = '0xabc123...'
+     *   AND network = 'base';
      *
      * Expected row:
      * - resource_type: 'post'

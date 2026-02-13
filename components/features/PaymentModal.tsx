@@ -128,36 +128,45 @@ function PaymentModalDialog({
 
   // Fetch split address when modal opens
   useEffect(() => {
-    if (isOpen && postData?.authorId) {
+    if (!isOpen || !postData?.authorId) return;
+
+    let cancelled = false;
+
+    const fetchSplitAddress = async () => {
       setSplitLoading(true);
-      fetch(`/api/v1/author-split/${postData.authorId}`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.split_address) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
+      try {
+        const res = await fetch(`/api/v1/author-split/${postData.authorId}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (!cancelled && data.split_address) {
             setSplitAddress(data.split_address);
           }
-        })
-        .catch((err) => {
-          console.error('Failed to fetch split address:', err);
-        })
-        .finally(() => {
-          // eslint-disable-next-line react-hooks/set-state-in-effect
+        }
+        // If 404 or error, splitAddress stays null → treasury fallback is used
+      } catch (err) {
+        console.error('Failed to fetch split address:', err);
+      } finally {
+        if (!cancelled) {
           setSplitLoading(false);
-        });
-    }
+        }
+      }
+    };
+
+    fetchSplitAddress();
+
+    return () => {
+      cancelled = true;
+    };
   }, [isOpen, postData?.authorId]);
 
   // Reset state when modal closes - valid cleanup pattern
   useEffect(() => {
     if (!isOpen) {
-      /* eslint-disable react-hooks/set-state-in-effect */
       setPaymentMethod(null);
       setPaymentSuccess(false);
       setPaymentError(null);
       setIsAnimating(false);
       setSplitAddress(null);
-      /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [isOpen]);
 

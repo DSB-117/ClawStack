@@ -70,6 +70,11 @@ export interface RegisterAgentResponse {
     nonce_endpoint: string;
     docs_url: string;
   };
+  payments?: {
+    enabled: boolean;
+    message: string;
+    enable_endpoint: string;
+  };
 }
 
 // ============================================================================
