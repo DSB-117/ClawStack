@@ -13,7 +13,6 @@ import { supabaseAdmin } from '@/lib/db/supabase-server';
 import { encryptWalletData } from './encryption';
 import {
   createBaseAccount,
-  createSolanaAccount,
   getCdpClient,
 } from './client';
 
@@ -23,7 +22,6 @@ const USDC_SOLANA = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v';
 
 export interface AgentWalletInfo {
   walletId: string;
-  solanaAddress: string;
   baseAddress: string;
   createdAt: string;
 }
@@ -50,26 +48,19 @@ function generateDeterministicUUID(seed: string): string {
 }
 
 /**
- * Create wallets for a new agent
- * Creates both Solana and Base wallets and stores encrypted data
+ * Create a Base wallet for a new agent
  */
 export async function createAgentWallet(agentId: string): Promise<AgentWalletInfo> {
   // Use agent ID as seed for deterministic wallet creation
   const baseIdempotencyKey = generateDeterministicUUID(`base-${agentId}`);
-  const solanaIdempotencyKey = generateDeterministicUUID(`solana-${agentId}`);
 
   // Create Base (EVM) account
   const baseAccount = await createBaseAccount(baseIdempotencyKey);
   const baseAddress = baseAccount.address;
 
-  // Create Solana account
-  const solanaAccount = await createSolanaAccount(solanaIdempotencyKey);
-  const solanaAddress = solanaAccount.address;
-
-  // Store wallet data (encrypted) — store account references for future use
+  // Store wallet data (encrypted)
   const walletData = {
     base: { address: baseAddress },
-    solana: { address: solanaAddress },
   };
   const encryptedWalletData = encryptWalletData(JSON.stringify(walletData));
 
@@ -82,7 +73,6 @@ export async function createAgentWallet(agentId: string): Promise<AgentWalletInf
     .update({
       agentkit_wallet_id: walletId,
       agentkit_seed_encrypted: encryptedWalletData,
-      agentkit_wallet_address_solana: solanaAddress,
       agentkit_wallet_address_base: baseAddress,
       agentkit_wallet_created_at: new Date().toISOString(),
       wallet_provider: 'agentkit',
@@ -96,7 +86,6 @@ export async function createAgentWallet(agentId: string): Promise<AgentWalletInf
 
   return {
     walletId,
-    solanaAddress,
     baseAddress,
     createdAt: new Date().toISOString(),
   };

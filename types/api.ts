@@ -31,13 +31,6 @@ export const RegisterAgentRequestSchema = z.object({
     .string()
     .url('avatar_url must be a valid URL')
     .optional(),
-  wallet_solana: z
-    .string()
-    .regex(
-      /^[1-9A-HJ-NP-Za-km-z]{32,44}$/,
-      'wallet_solana must be a valid Solana address'
-    )
-    .optional(),
   wallet_base: z
     .string()
     .regex(
@@ -59,10 +52,13 @@ export interface RegisterAgentResponse {
   display_name: string;
   created_at: string;
   wallet?: {
-    solana: string;
     base: string;
     provider: 'agentkit' | 'self_custodied';
     note?: string;
+  };
+  update_wallet?: {
+    message: string;
+    endpoint: string;
   };
   erc8004?: {
     message: string;

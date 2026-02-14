@@ -11,7 +11,6 @@
  *   "display_name": "MyAgent",       // Required, max 100 chars
  *   "bio": "Agent description...",   // Optional, max 500 chars
  *   "avatar_url": "https://...",     // Optional, valid URL
- *   "wallet_solana": "ABC123...",    // Optional, Solana pubkey
  *   "wallet_base": "0x123..."        // Optional, EVM address
  * }
  *
@@ -97,7 +96,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       });
     }
 
-    const { display_name, bio, avatar_url, wallet_solana, wallet_base } =
+    const { display_name, bio, avatar_url, wallet_base } =
       validation.data;
 
     // Check for duplicate display_name
@@ -118,26 +117,7 @@ export async function POST(request: Request): Promise<NextResponse> {
       );
     }
 
-    // Check for duplicate wallet addresses
-    if (wallet_solana) {
-      const { data: existingBySolana } = await supabaseAdmin
-        .from('agents')
-        .select('id')
-        .eq('wallet_solana', wallet_solana)
-        .limit(1)
-        .maybeSingle();
-
-      if (existingBySolana) {
-        return NextResponse.json(
-          createErrorResponse(
-            ErrorCodes.INVALID_REQUEST_BODY,
-            'This Solana wallet address is already registered to another agent.'
-          ),
-          { status: 409 }
-        );
-      }
-    }
-
+    // Check for duplicate wallet address
     if (wallet_base) {
       const { data: existingByBase } = await supabaseAdmin
         .from('agents')
@@ -162,7 +142,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     const apiKeyHash = await hashApiKey(apiKey);
 
     // Determine wallet provider type
-    const isSelfCustodied = !!(wallet_solana || wallet_base);
+    const isSelfCustodied = !!wallet_base;
 
     // Insert agent into database
     const { data: agent, error: dbError } = await supabaseAdmin
@@ -172,7 +152,6 @@ export async function POST(request: Request): Promise<NextResponse> {
         bio: bio || null,
         avatar_url: avatar_url || null,
         api_key_hash: apiKeyHash,
-        wallet_solana: wallet_solana || null,
         wallet_base: wallet_base || null,
         wallet_provider: isSelfCustodied ? 'self_custodied' : 'agentkit',
         reputation_tier: 'new',
@@ -215,7 +194,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         return NextResponse.json(
           createErrorResponse(
             ErrorCodes.INTERNAL_ERROR,
-            'Wallet auto-provisioning is not available. Please register with your own wallet addresses (wallet_solana and/or wallet_base).'
+            'Wallet auto-provisioning is not available. Please register with your own Base wallet address (wallet_base).'
           ),
           { status: 503 }
         );
@@ -226,10 +205,9 @@ export async function POST(request: Request): Promise<NextResponse> {
         const { createAgentWallet } = await import('@/lib/agentkit/wallet-service');
         const agentWallet = await createAgentWallet(agent.id);
         walletInfo = {
-          solana: agentWallet.solanaAddress,
           base: agentWallet.baseAddress,
           provider: 'agentkit',
-          note: 'Wallets created automatically. Base transactions are gas-free. Solana requires small SOL balance (~$0.50) for gas.',
+          note: 'Wallet created automatically. Base transactions are gas-free via CDP Smart Wallet.',
         };
       } catch (walletError) {
         console.error('Failed to create AgentKit wallet:', walletError);
@@ -250,7 +228,6 @@ export async function POST(request: Request): Promise<NextResponse> {
     } else {
       // Self-custodied wallets provided
       walletInfo = {
-        solana: wallet_solana || '',
         base: wallet_base || '',
         provider: 'self_custodied',
       };
@@ -269,6 +246,10 @@ export async function POST(request: Request): Promise<NextResponse> {
         link_endpoint: '/api/v1/agents/link-erc8004',
         nonce_endpoint: '/api/v1/agents/link-erc8004/nonce',
         docs_url: 'https://eips.ethereum.org/EIPS/eip-8004',
+      },
+      update_wallet: {
+        message: 'Need to change your Base wallet later? Use the update-wallet endpoint.',
+        endpoint: '/api/v1/agents/update-wallet',
       },
       payments: {
         enabled: false,
